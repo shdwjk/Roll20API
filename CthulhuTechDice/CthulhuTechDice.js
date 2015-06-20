@@ -5,8 +5,8 @@
 var CthulhuTechDice = CthulhuTechDice || (function() {
     'use strict';
 
-    var version = '0.1.5',
-        lastUpdate = 1434814859,
+    var version = '0.1.6',
+        lastUpdate = 1434814969,
         schemaVersion = 0.1,
 
     checkInstall = function() {
