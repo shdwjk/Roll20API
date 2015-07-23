@@ -5,14 +5,16 @@
 var DiceTests = DiceTests || (function() {
     'use strict';
 
-    var version = '0.1.0',
-        lastUpdate = 1437610247,
+    var version = '0.1.1',
+        lastUpdate = 1437610705,
         schemaVersion = 0.1,
 		tests = [
 			{ expr: '[[ [a] 1d1 ]]', worksInChat: true },
 			{ expr: '[[[a] 1d1 ]]', worksInChat: false },
 			{ expr: '[[1d1 ]]', worksInChat: true },
 			{ expr: '[[ 1d1 ]]', worksInChat: true },
+			{ expr: '[[d1 ]]', worksInChat: true },
+			{ expr: '[[ d1 ]]', worksInChat: true },
 			{ expr: '[[(1d1) ]]', worksInChat: true },
 			{ expr: '[[ (1d1) ]]', worksInChat: true },
 			{ expr: '[[{1d1} ]]', worksInChat: true },
