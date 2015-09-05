@@ -5,11 +5,12 @@
 var DiceTests = DiceTests || (function() {
     'use strict';
 
-    var version = '0.1.2',
-        lastUpdate = 1437611730,
+    var version = '0.1.3',
+        lastUpdate = 1441461842,
         schemaVersion = 0.1,
-		tests = [
-			{ expr: '[[ [a] 1d1 ]]', worksInChat: true },
+    	tests = [
+			{ expr: '[[[[1d1]]d1]]', worksInChat: true },
+    		{ expr: '[[ [a] 1d1 ]]', worksInChat: true },
 			{ expr: '[[[a] 1d1 ]]', worksInChat: false },
 			{ expr: '[[1d1 ]]', worksInChat: true },
 			{ expr: '[[ 1d1 ]]', worksInChat: true },
@@ -18,7 +19,9 @@ var DiceTests = DiceTests || (function() {
 			{ expr: '[[(1d1) ]]', worksInChat: true },
 			{ expr: '[[ (1d1) ]]', worksInChat: true },
 			{ expr: '[[{1d1} ]]', worksInChat: true },
-			{ expr: '[[ {1d1} ]]', worksInChat: true }
+			{ expr: '[[ {1d1} ]]', worksInChat: true },
+    		{ expr: '[[@{Rook|charisma} ]]', worksInChat: true },
+    		{ expr: '[[ @{Rook|charisma} ]]', worksInChat: true }
 		],
 
     checkInstall = function() {
@@ -74,7 +77,7 @@ var DiceTests = DiceTests || (function() {
                     o+='<div style="'+
                         'font-weight: bold;'+
                         '">'+
-                            '<span style="display: inline-block;width: 8em;">'+
+                            '<span style="display: inline-block;width: 18em;">'+
                                 '<code>'+
                                     HE(r.expr)+
                                 '</code>'+
@@ -161,3 +164,4 @@ on('ready',function() {
     DiceTests.RegisterEventHandlers();
     DiceTests.RunTests();
 });
+
