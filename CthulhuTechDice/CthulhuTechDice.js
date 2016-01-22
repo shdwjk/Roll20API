@@ -5,8 +5,8 @@
 var CthulhuTechDice = CthulhuTechDice || (function() {
     'use strict';
 
-    var version = '0.1.10',
-        lastUpdate = 1453430760,
+    var version = '0.1.9',
+        lastUpdate = 1442927134,
         schemaVersion = 0.1,
 
     checkInstall = function() {
@@ -21,22 +21,17 @@ var CthulhuTechDice = CthulhuTechDice || (function() {
     },
     
     getDiceCounts = function(msg,idx) {
-        var rolls = {};
-        if( msg.inlinerolls
+        return ( msg.inlinerolls
             && msg.inlinerolls[idx]
             && msg.inlinerolls[idx].results
             && msg.inlinerolls[idx].results.rolls[0]
-        ) {
-            _.each(msg.inlinerolls[idx].results.rolls,function(res){
-                rolls=_.reduce(_.map(res.results,function(r){
-                    return r.v;
-                }).sort()  || [], function(m,r){
-                    m[r]=(m[r]||0)+1;
-                    return m;
-                },rolls);
-            });
-        }
-        return rolls;
+            && msg.inlinerolls[idx].results.rolls[0].results
+            && (_.reduce(_.map(msg.inlinerolls[idx].results.rolls[0].results, function(r){
+                return r.v;
+            }).sort()  || [], function(m,r){
+                m[r]=(m[r]||0)+1;
+                return m;
+            },{})));
     },
 
     getDiceArray = function(c) {
