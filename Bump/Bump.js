@@ -5,9 +5,9 @@
 var Bump = Bump || (function() {
     'use strict';
 
-    var version = '0.2.5',
-        lastUpdate = 1455262954,
-        schemaVersion = 0.3,
+    var version = '0.2.6',
+        lastUpdate = 1455263986,
+        schemaVersion = 0.2,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461',
 
@@ -112,9 +112,6 @@ var Bump = Bump || (function() {
                 case 0.1:
                     state.Bump.config.autoSlave = false;
                     /* break; // intentional drop through */
-                case 0.2:
-                    delete state.Bump.config.autoSlave;
-                    /* break; // intentional drop through */
 
                 case 'UpdateSchemaVersion':
                     state.Bump.version = schemaVersion;
@@ -128,7 +125,8 @@ var Bump = Bump || (function() {
                                 'gmlayer' : '#008000',
                                 'objects' : '#800080'
                             },
-                            autoPush: false
+                            autoPush: false,
+                            autoSlave: false
                         },
                         mirrored: {}
                     };
@@ -263,7 +261,7 @@ var Bump = Bump || (function() {
                     setSlaveLayer(pair.slave,'objects');
                     break;
             }
-        } else {
+        } else if(state.Bump.config.autoSlave) {
             createMirrored(id, false, who);
         }
     },
@@ -364,8 +362,19 @@ var Bump = Bump || (function() {
         );
     },
 
+    getConfigOption_AutoSlave = function() {
+        return makeConfigOption(
+            state.Bump.config.autoSlave,
+            '!bump-config --toggle-auto-slave',
+            '<b>Auto Slave</b> causes tokens that are not in Bump to be put into Bump when ever !bump is run with them selected.'
+        );
+    },
+
     getAllConfigOptions = function() {
-        return getConfigOption_GMLayerColor() + getConfigOption_ObjectsLayerColor() + getConfigOption_AutoPush() ;
+        return getConfigOption_GMLayerColor() +
+            getConfigOption_ObjectsLayerColor() +
+            getConfigOption_AutoPush() +
+            getConfigOption_AutoSlave();
     },
 
     showHelp = function(who) {
@@ -377,13 +386,26 @@ var Bump = Bump || (function() {
 	+'</div>'
 	+'<div style="padding-left:10px;margin-bottom:3px;">'
 		+'<p>Bump provides a way to invisibly manipulate tokens on the GM Layer from the Objects Layer, and vice versa.</p>'
-        +'<p>When a token is added to Bump a slave token is created that mimics everything about to master token.  The slave token has a color on it to show if the master is on the GM Layer or the Objects layer.  Moving the slave token will move the master token and vice versa.  The slave token represents the came character as the master token.  Changes on the slave token will be reflected on the master token.</p>'
+        +'<p>When a token is added to Bump a slave token is created that mimics everything about to master token.  The slave token is only visible to the GM and has a color on it to show if the master token is on the GM Layer or the Objects layer.  Moving the slave token will move the master token and vice versa.  The slave token represents the same character as the master token and changes on the slave token will be reflected on the master token.</p>'
 	+'</div>'
 	+'<b>Commands</b>'
 	+'<div style="padding-left:10px;">'
+		+'<b><span style="font-family: serif;">!bump-slave [--push|--help]</span></b>'
+		+'<div style="padding-left: 10px;padding-right:20px">'
+			+'<p>Adds the selected tokens to Bump, creating their slave tokens.</p>'
+			+'<ul>'
+				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
+					+'<b><span style="font-family: serif;">--push</span></b> '+ch('-')+' If the selected token is on the Objects Layer, it will be pushed to the GM Layer.'
+				+'</li> '
+				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
+					+'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'
+				+'</li> '
+			+'</ul>'
+		+'</div>'
+    +'</div>'
+	+'<div style="padding-left:10px;">'
 		+'<b><span style="font-family: serif;">!bump [--help]</span></b>'
 		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'<p>If used on a token that is not currently in Bump, it adds an invisible token on the other layer.</p>'
 			+'<p>Using !bump on a token in Bump causes it to swap with it'+ch("'")+' counterpart on the other layer.</p>'
 			+'<ul>'
 				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
@@ -408,7 +430,6 @@ var Bump = Bump || (function() {
 
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
-            case '!bump-slave':
             case '!bump':
                 if(!msg.selected || _.contains(args,'--help')) {
                     showHelp(who);
@@ -418,6 +439,17 @@ var Bump = Bump || (function() {
                     bumpToken(s._id,who);
                 });
                 break;
+
+            case '!bump-slave':
+                if(!msg.selected || _.contains(args,'--help')) {
+                    showHelp(who);
+                    return;
+                }
+                _.each(msg.selected,function(s){
+                    createMirrored(s._id,_.contains(args,'--push'), who);
+                });
+                break;
+
 
             case '!bump-config':
                 if(_.contains(args,'--help')) {
@@ -472,6 +504,15 @@ var Bump = Bump || (function() {
                             sendChat('','/w '+who+' '
                                 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                     +getConfigOption_AutoPush()
+                                +'</div>'
+                            );
+                            break;
+                        
+                        case '--toggle-auto-slave':
+                            state.Bump.config.autoSlave=!state.Bump.config.autoSlave;
+                            sendChat('','/w '+who+' '
+                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
+                                    +getConfigOption_AutoSlave()
                                 +'</div>'
                             );
                             break;
