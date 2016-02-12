@@ -2,18 +2,17 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-// Insipired by Stephen S. in: https://app.roll20.net/forum/post/1758461/thinking-about-bump-in-script-dot-dot-dot-for-gms/#post-1761852
-
 var Bump = Bump || (function() {
     'use strict';
 
-    var version = '0.2.4',
-        lastUpdate = 1437941889,
-        schemaVersion = 0.2,
+    var version = '0.2.5',
+        lastUpdate = 1455262954,
+        schemaVersion = 0.3,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
+        checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461',
 
         regex = {
-			colors: /^(transparent|(?:#?[0-9a-fA-F]{6}))$/
+    		colors: /^(transparent|(?:#?[0-9a-fA-F]{6}))$/
         },
 
         mirroredProps = [
@@ -23,6 +22,86 @@ var Bump = Bump || (function() {
             'tint_color', 'lastmove',
             'represents','bar1_link','bar2_link','bar3_link'
         ],
+        defaults = {
+            css: {
+                button: {
+                    'border': '1px solid #cccccc',
+                    'border-radius': '1em',
+                    'background-color': '#006dcc',
+                    'margin': '0 .1em',
+                    'font-weight': 'bold',
+                    'padding': '.1em 1em',
+                    'color': 'white'
+                }
+            }
+        },
+        templates = {},
+
+    buildTemplates = function() {
+        templates.cssProperty =_.template(
+            '<%=name %>: <%=value %>;'
+        );
+
+        templates.style = _.template(
+            'style="<%='+
+                '_.map(css,function(v,k) {'+
+                    'return templates.cssProperty({'+
+                        'defaults: defaults,'+
+                        'templates: templates,'+
+                        'name:k,'+
+                        'value:v'+
+                    '});'+
+                '}).join("")'+
+            ' %>"'
+        );
+
+        templates.button = _.template(
+            '<a <%= templates.style({'+
+                'defaults: defaults,'+
+                'templates: templates,'+
+                'css: _.defaults(css,defaults.css.button)'+
+                '}) %> href="<%= command %>"><%= label||"Button" %></a>'
+        );
+
+    },
+    makeButton = function(command, label, backgroundColor, color){
+        return templates.button({
+            command: command,
+            label: label,
+            templates: templates,
+            defaults: defaults,
+            css: {
+                color: color,
+                'background-color': backgroundColor
+            }
+        });
+    },
+    
+	cleanupObjectReferences = function(){
+		var inverse = _.invert(state.Bump.mirrored),
+            ids = _.union(_.keys(state.Bump.mirrored),_.keys(inverse));
+		filterObjs(function(o){
+			ids=_.without(ids,o.id);
+			return false;
+		});
+        _.each(ids,function(id){
+            var obj;
+            if(_.has(state.Bump.mirrored,id)){
+                if(!_.contains(ids,state.Bump.mirrored[id])){
+                    obj=getObj('graphic',state.Bump.mirrored[id]);
+                    if(obj){
+                        obj.remove();
+                    }
+                }
+                delete state.Bump.mirrored[id];
+            } else {
+                delete state.Bump.mirrored[inverse[id]];
+                if(!_.contains(ids,inverse[id])){
+                    createMirrored(inverse[id], false, 'gm');
+                }
+            }
+        });
+    },
 
     checkInstall = function() {
         log('-=> Bump v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
@@ -32,6 +111,12 @@ var Bump = Bump || (function() {
             switch(state.Bump && state.Bump.version) {
                 case 0.1:
                     state.Bump.config.autoSlave = false;
+                    /* break; // intentional drop through */
+                case 0.2:
+                    delete state.Bump.config.autoSlave;
+                    /* break; // intentional drop through */
+
+                case 'UpdateSchemaVersion':
                     state.Bump.version = schemaVersion;
                     break;
 
@@ -43,14 +128,15 @@ var Bump = Bump || (function() {
                                 'gmlayer' : '#008000',
                                 'objects' : '#800080'
                             },
-                            autoPush: false,
-                            autoSlave: false
+                            autoPush: false
                         },
                         mirrored: {}
                     };
                     break;
             }
         }
+        buildTemplates();
+        cleanupObjectReferences();
     },
 
 	ch = function (c) {
@@ -177,7 +263,7 @@ var Bump = Bump || (function() {
                     setSlaveLayer(pair.slave,'objects');
                     break;
             }
-        } else if(state.Bump.config.autoSlave) {
+        } else {
             createMirrored(id, false, who);
         }
     },
@@ -200,7 +286,7 @@ var Bump = Bump || (function() {
     
     handleTokenChange = function(obj,prev) {
         var pair = getMirroredPair(obj.id);
-        if(pair) {
+        if(pair && obj) {
             (pair.master.id === obj.id ? pair.slave : pair.master).set(_.reduce(mirroredProps,function(m,p){
                 m[p]=obj.get(p);
                 return m;
@@ -216,99 +302,89 @@ var Bump = Bump || (function() {
         }
     },
 
-    getConfigOption_GMLayerColor = function() {
-        var text = ('transparent' === state.Bump.config.layerColors.gmlayer ? 'transparent' : '&nbsp;');
-        return '<div>'
-            +'GM Layer (Visible) Color:'
-            +'<div style="width: 50px; display: inline-block; background-color: '
-                +('transparent' === state.Bump.config.layerColors.gmlayer 
-                    ? 'white' 
-                    : state.Bump.config.layerColors.gmlayer
-                )
-            +';">'
-                +text
-            +'</div> '
-            +'<a href="!bump-config --gm-layer-color|?{What aura color for when the master token is visible? (transparent for none, #RRGGBB for a color)|'+state.Bump.config.layerColors.gmlayer+'}">'
-                +'Set Color'
-            +'</a>'
-        +'</div>';
-    },
-    getConfigOption_ObjectsLayerColor = function() {
-        var text = ('transparent' === state.Bump.config.layerColors.objects ? 'transparent' : '&nbsp;');
-        return '<div>'
-            +'Objects Layer (Invisible) Color: '
-            +'<div style="width: 50px; display: inline-block; background-color: '
-                +('transparent' === state.Bump.config.layerColors.objects 
-                    ? 'white' 
-                    : state.Bump.config.layerColors.objects
-                )
-            +';">'
-                +text
-            +'</div> '
-            +'<a href="!bump-config --objects-layer-color|?{What aura color for when the master token is invisible? (transparent for none, #RRGGBB for a color)|'+state.Bump.config.layerColors.objects+'}">'
-                +'Set Color'
-            +'</a>'
-        +'</div>';
-    },
-    getConfigOption_AutoPush = function() {
-        var text = (state.Bump.config.autoPush ? 'On' : 'Off' );
-        return '<div>'
-            +'Auto Push is currently <b>'
-                +text
-            +'</b> '
-            +'<a href="!bump-config --toggle-auto-push">'
-                +'Toggle'
-            +'</a>'
-        +'</div>';
+    makeConfigOption = function(config,command,text) {
+        var onOff = (config ? 'On' : 'Off' ),
+            color = (config ? '#5bb75b' : '#faa732' );
+        return '<div style="'+
+                'border: 1px solid #ccc;'+
+                'border-radius: .2em;'+
+                'background-color: white;'+
+                'margin: 0 1em;'+
+                'padding: .1em .3em;'+
+            '">'+
+                '<div style="float:right;">'+
+                    makeButton(command,onOff,color)+
+                '</div>'+
+                text+
+                '<div style="clear:both;"></div>'+
+            '</div>';
         
     },
 
-    getConfigOption_AutoSlave = function() {
-        var text = (state.Bump.config.autoSlave ? 'On' : 'Off' );
-        return '<div>'
-            +'Auto Slave is currently <b>'
-                +text
-            +'</b> '
-            +'<a href="!bump-config --toggle-auto-slave">'
-                +'Toggle'
-            +'</a>'
-        +'</div>';
-        
+    makeConfigOptionColor = function(config,command,text) {
+        var color = ('transparent' === config ? "background-image: url('"+checkerURL+"');" : "background-color: "+config+";"),
+            buttonText ='<div style="border:1px solid #1d1d1d;width:40px;height:40px;display:inline-block;'+color+'">&nbsp;</div>';
+        return '<div style="'+
+                'border: 1px solid #ccc;'+
+                'border-radius: .2em;'+
+                'background-color: white;'+
+                'margin: 0 1em;'+
+                'padding: .1em .3em;'+
+            '">'+
+                '<div style="float:right;">'+
+                    makeButton(command,buttonText)+
+                '</div>'+
+                text+
+                '<div style="clear:both;"></div>'+
+            '</div>';
+    },
+
+    getConfigOption_GMLayerColor = function() {
+        return makeConfigOptionColor(
+            state.Bump.config.layerColors.gmlayer,
+            '!bump-config --gm-layer-color|?{What aura color for when the master token is visible? (transparent for none, #RRGGBB for a color)|'+state.Bump.config.layerColors.gmlayer+'}',
+            '<b>GM Layer (Visible) Color</b> is the color the overlay turns when it is on the GM Layer, thus indicating that the Bumped token is visible to the players on the Object Layer.'
+        );
+
+    },
+
+    getConfigOption_ObjectsLayerColor = function() {
+        return makeConfigOptionColor(
+            state.Bump.config.layerColors.objects,
+            '!bump-config --objects-layer-color|?{What aura color for when the master token is invisible? (transparent for none, #RRGGBB for a color)|'+state.Bump.config.layerColors.objects+'}',
+            '<b>Objects Layer (Invisible) Color</b> is the color the overlay turns when it is on the Objects Layer, thus indicating that the Bumped token is invisible to the players on the GM Layer.'
+        );
+    },
+
+    getConfigOption_AutoPush = function() {
+        return makeConfigOption(
+            state.Bump.config.autoPush,
+            '!bump-config --toggle-auto-push',
+            '<b>Auto Push</b> automatically moves a bumped token to the GM Layer when it gets added to Bump.'
+        );
     },
 
     getAllConfigOptions = function() {
-        return getConfigOption_GMLayerColor() + getConfigOption_ObjectsLayerColor() + getConfigOption_AutoPush() + getConfigOption_AutoSlave();
+        return getConfigOption_GMLayerColor() + getConfigOption_ObjectsLayerColor() + getConfigOption_AutoPush() ;
     },
 
     showHelp = function(who) {
 
         sendChat('','/w '+who+' '
-+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
++'<div style="margin-left: -40px;border: 1px solid black; background-color: white; padding: 3px 3px;">'
 	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
 		+'Bump v'+version
 	+'</div>'
 	+'<div style="padding-left:10px;margin-bottom:3px;">'
 		+'<p>Bump provides a way to invisibly manipulate tokens on the GM Layer from the Objects Layer, and vice versa.</p>'
+        +'<p>When a token is added to Bump a slave token is created that mimics everything about to master token.  The slave token has a color on it to show if the master is on the GM Layer or the Objects layer.  Moving the slave token will move the master token and vice versa.  The slave token represents the came character as the master token.  Changes on the slave token will be reflected on the master token.</p>'
 	+'</div>'
 	+'<b>Commands</b>'
 	+'<div style="padding-left:10px;">'
-		+'<b><span style="font-family: serif;">!bump-slave [--push|--help]</span></b>'
-		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'<p>Adds an invisible slave token on the other layer.</p>'
-			+'<ul>'
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">--push</span></b> '+ch('-')+' If the selected token is on the Objects Layer, it will be pushed to the GM Layer.'
-				+'</li> '
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'
-				+'</li> '
-			+'</ul>'
-		+'</div>'
-    +'</div>'
-	+'<div style="padding-left:10px;">'
 		+'<b><span style="font-family: serif;">!bump [--help]</span></b>'
 		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'<p>Swaps the selected Tokens for their counterparts on the other layer.</p>'
+			+'<p>If used on a token that is not currently in Bump, it adds an invisible token on the other layer.</p>'
+			+'<p>Using !bump on a token in Bump causes it to swap with it'+ch("'")+' counterpart on the other layer.</p>'
 			+'<ul>'
 				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
 					+'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'
@@ -316,26 +392,7 @@ var Bump = Bump || (function() {
 			+'</ul>'
 		+'</div>'
     +'</div>'
-	+'<div style="padding-left:10px;">'
-		+'<b><span style="font-family: serif;">!bump-config ['+ch('<')+'Options'+ch('>')+'|--help]</span></b>'
-		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'<p>Swaps the selected Tokens for their counterparts on the other layer.</p>'
-			+'<ul>'
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'
-				+'</li> '
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">'+ch('<')+'Options'+ch('>')+'</span></b> '+ch('-')+' Any combination of the below:'
-                    +'<ul>'
-                        +'<li><b><span style="font-family: serif;">--gm-layer-color|'+ch('<')+'html color|transparent'+ch('>')+'</span></b> '+ch('-')+' Set the aura color for the slave token when it is on the GM Layer (i.e.: the '+ch('"')+'Visible'+ch('"')+' color.)</li>'
-                        +'<li><b><span style="font-family: serif;">--objects-layer-color|'+ch('<')+'html color|transparent'+ch('>')+'</span></b> '+ch('-')+' Set the aura color for the slave token when it is on the Objects Layer (i.e.: the '+ch('"')+'Invisible'+ch('"')+' color.)</li>'
-                        +'<li><b><span style="font-family: serif;">--toggle-auto-push</span></b> '+ch('-')+' Sets whether !bump-slave always forces the master token to the GM Layer.</li>'
-                        +'<li><b><span style="font-family: serif;">--toggle-auto-slave</span></b> '+ch('-')+' Sets whether !bump automatically creates a slave for tokens without them.</li>'
-                    +'</ul>'
-				+'</li> '
-			+'</ul>'
-		+'</div>'
-    +'</div>'
+	+'<b>Configuration</b>'
     +getAllConfigOptions()
 +'</div>'
         );
@@ -351,6 +408,7 @@ var Bump = Bump || (function() {
 
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
+            case '!bump-slave':
             case '!bump':
                 if(!msg.selected || _.contains(args,'--help')) {
                     showHelp(who);
@@ -358,16 +416,6 @@ var Bump = Bump || (function() {
                 }
                 _.each(msg.selected,function(s){
                     bumpToken(s._id,who);
-                });
-                break;
-
-            case '!bump-slave':
-                if(!msg.selected || _.contains(args,'--help')) {
-                    showHelp(who);
-                    return;
-                }
-                _.each(msg.selected,function(s){
-                    createMirrored(s._id,_.contains(args,'--push'), who);
                 });
                 break;
 
@@ -428,15 +476,6 @@ var Bump = Bump || (function() {
                             );
                             break;
 
-                        case '--toggle-auto-slave':
-                            state.Bump.config.autoSlave=!state.Bump.config.autoSlave;
-                            sendChat('','/w '+who+' '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +getConfigOption_AutoSlave()
-                                +'</div>'
-                            );
-                            break;
-
                         default:
                             sendChat('','/w '+who+' '
                                 +'<div><b>Unsupported Option:</div> '+a+'</div>'
@@ -491,3 +530,4 @@ on('ready',function() {
     Bump.CheckInstall();
     Bump.RegisterEventHandlers();
 });
+
