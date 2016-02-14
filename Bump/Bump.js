@@ -5,8 +5,8 @@
 var Bump = Bump || (function() {
     'use strict';
 
-    var version = '0.2.6',
-        lastUpdate = 1455263986,
+    var version = '0.2.7',
+        lastUpdate = 1455413324,
         schemaVersion = 0.2,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461',
@@ -218,13 +218,7 @@ var Bump = Bump || (function() {
             slave = createObj('graphic',baseObj);
             state.Bump.mirrored[master.id]=slave.id;
         } else {
-            if(slave) {
-                sendChat('','/w '+who+' '
-                    +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                        +'<b>Error:</b> Slave Token already exists.'
-                    +'</div>'
-                );
-            } else {
+            if(!slave) {
                 sendChat('','/w '+who+' '
                     +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                         +'<b>Error:</b> Couldn'+ch("'")+'t find a token for id: '+id
@@ -380,7 +374,7 @@ var Bump = Bump || (function() {
     showHelp = function(who) {
 
         sendChat('','/w '+who+' '
-+'<div style="margin-left: -40px;border: 1px solid black; background-color: white; padding: 3px 3px;">'
++'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
 		+'Bump v'+version
 	+'</div>'
