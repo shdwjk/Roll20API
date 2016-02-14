@@ -5,14 +5,15 @@
 var MapLock = MapLock || (function() {
     'use strict';
 
-    var version = 0.3,
+    var version = '0.4.0',
+        lastUpdate = 1427604253,
         schemaVersion = 0.4,
 
     checkInstall = function() {
-		log('-=> MapLock v'+version+' <=-');
+        log('-=> MapLock v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'MapLock') || state.MapLock.version !== schemaVersion) {
-            log('MapLock: Resetting state');
+            log('  > Updating Schema to v'+schemaVersion+' <');
             state.MapLock = {
                 version: schemaVersion,
                 highlighting: false,
@@ -104,7 +105,7 @@ var MapLock = MapLock || (function() {
     handleInput = function(msg) {
         var args,who,ids,cnt=0;
 
-        if (msg.type !== "api" || !isGM(msg.playerid)) {
+        if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
 
@@ -194,13 +195,6 @@ var MapLock = MapLock || (function() {
 on('ready',function() {
     'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-        MapLock.CheckInstall();
-        MapLock.RegisterEventHandlers();
-    } else {
-        log('--------------------------------------------------------------');
-        log('MapLock requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
+	MapLock.CheckInstall();
+	MapLock.RegisterEventHandlers();
 });
