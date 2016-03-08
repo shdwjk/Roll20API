@@ -4,8 +4,8 @@
 var TokenNameNumber = TokenNameNumber || (function() {
     'use strict';
 
-    var version = '0.5.6',
-        lastUpdate = 1454280144,
+    var version = '0.5.7',
+        lastUpdate = 1457420266,
         schemaVersion = 0.3,
         statuses = [
             'red', 'blue', 'green', 'brown', 'purple', 'pink', 'yellow', // 0-6
@@ -84,9 +84,9 @@ var TokenNameNumber = TokenNameNumber || (function() {
 	},
 
     getConfigOption_RandomSpace = function() {
-        var text = ( state.TokenNameNumber.config.randomSpace > 0
-                ? '<span style="color: green; font-weight:bold;">'+ state.TokenNameNumber.config.randomSpace+ '</span>' 
-                : '<span style="color: red; font-weight:bold;">Off</span>' );
+        var text = ( state.TokenNameNumber.config.randomSpace > 0 ?
+            '<span style="color: green; font-weight:bold;">'+ state.TokenNameNumber.config.randomSpace+ '</span>' :
+            '<span style="color: red; font-weight:bold;">Off</span>' );
         return '<div>'+
             'Random Space of numbers between each consecutively generated token number:'+
                 text+'. '+
@@ -97,9 +97,9 @@ var TokenNameNumber = TokenNameNumber || (function() {
     },
 
     getConfigOption_UseDots = function() {
-        var text = (state.TokenNameNumber.config.useDots 
-                ? '<span style="color: green; font-weight:bold;">On</span>' 
-                : '<span style="color: red; font-weight:bold;">Off</span>');
+        var text = (state.TokenNameNumber.config.useDots ?
+            '<span style="color: green; font-weight:bold;">On</span>' :
+            '<span style="color: red; font-weight:bold;">Off</span>');
 
         return '<div>'+
             'Use Dots is currently <b>'+
@@ -198,13 +198,13 @@ var TokenNameNumber = TokenNameNumber || (function() {
                     return;
                 }
                 if(!args.length) {
-                    sendChat('','/w '+who+' '
-+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
-		+'TokenNameNumber v'+version
-	+'</div>'
-    +getAllConfigOptions()
-+'</div>'
+                    sendChat('','/w '+who+' '+
+                        '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                            '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+                                'TokenNameNumber v'+version+
+                            '</div>'+
+                            getAllConfigOptions()+
+                        '</div>'
                     );
                     return;
                 }
@@ -213,10 +213,10 @@ var TokenNameNumber = TokenNameNumber || (function() {
                     switch(opt.shift()) {
                         case 'toggle-use-dots':
                             state.TokenNameNumber.config.useDots=!state.TokenNameNumber.config.useDots;
-                            sendChat('','/w '+who+' '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +getConfigOption_UseDots()
-                                +'</div>'
+                            sendChat('','/w '+who+' '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    getConfigOption_UseDots()+
+                                '</div>'
                             );
                             break;
 
@@ -226,26 +226,26 @@ var TokenNameNumber = TokenNameNumber || (function() {
                             } else {
                                 state.TokenNameNumber.config.dots.push(opt[0]);
                             }
-                            sendChat('','/w '+who+' '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +getConfigOption_Dots()
-                                +'</div>'
+                            sendChat('','/w '+who+' '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    getConfigOption_Dots()+
+                                '</div>'
                             );
                             break;
 
 
                         case 'random-space':
                            state.TokenNameNumber.config.randomSpace=parseInt(opt[0],10);
-                            sendChat('','/w '+who+' '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +getConfigOption_RandomSpace()
-                                +'</div>'
+                            sendChat('','/w '+who+' '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    getConfigOption_RandomSpace()+
+                                '</div>'
                             );
                             break;
 
                         default:
-                            sendChat('','/w '+who+' '
-                                +'<div><b>Unsupported Option:</div> '+a+'</div>'
+                            sendChat('','/w '+who+' '+
+                                '<div><b>Unsupported Option:</div> '+a+'</div>'
                             );
                     }
                             
@@ -257,26 +257,26 @@ var TokenNameNumber = TokenNameNumber || (function() {
 
 
 
-	getMatchers = function(pageid,represents) {
-		var matchers = [];
-		if(_.has(state.TokenNameNumber.registry, pageid)
-			&& _.has(state.TokenNameNumber.registry[pageid],represents) ) {
-			_.each(state.TokenNameNumber.registry[pageid][represents], function(regstr) {
-				matchers.push(new RegExp(regstr));
-			});
-		}
-		return matchers;
-	},
-	addMatcher = function(pageid,represents,matcherRegExpStr) {
-		if( ! _.has(state.TokenNameNumber.registry, pageid) ) {
-			state.TokenNameNumber.registry[pageid] = {};
-		}
-		if( ! _.has(state.TokenNameNumber.registry[pageid],represents) ) {
-			state.TokenNameNumber.registry[pageid][represents]=[matcherRegExpStr];
-		} else {
-			state.TokenNameNumber.registry[pageid][represents].push(matcherRegExpStr);
-		}
-	},
+    getMatchers = function(pageid,represents) {
+        var matchers = [];
+        if(_.has(state.TokenNameNumber.registry, pageid) &&
+            _.has(state.TokenNameNumber.registry[pageid],represents) ) {
+                _.each(state.TokenNameNumber.registry[pageid][represents], function(regstr) {
+                    matchers.push(new RegExp(regstr));
+                });
+            }
+            return matchers;
+    },
+    addMatcher = function(pageid,represents,matcherRegExpStr) {
+        if( ! _.has(state.TokenNameNumber.registry, pageid) ) {
+            state.TokenNameNumber.registry[pageid] = {};
+        }
+        if( ! _.has(state.TokenNameNumber.registry[pageid],represents) ) {
+            state.TokenNameNumber.registry[pageid][represents]=[matcherRegExpStr];
+        } else {
+            state.TokenNameNumber.registry[pageid][represents].push(matcherRegExpStr);
+        }
+    },
 
     getDotNumber = function(num) {
         var base = (function (b){
@@ -291,103 +291,112 @@ var TokenNameNumber = TokenNameNumber || (function() {
             }) || function(){return [];};
         }(state.TokenNameNumber.config.dots.length));
 
-       return base(num); 
+        return base(num); 
     },
 
     saveTokenId = function(obj){
         tokenIds.push(obj.id);
+
+        setTimeout((function(id){
+            return function(){
+                var token=getObj('graphic',id);
+                if(token){
+                    setNumberOnToken(token);
+                }
+            };
+        }(obj.id)),100);
     },
 
-	setNumberOnToken = function(obj) {
-		var matchers,
-			tokenName,
-			matcher,
-			renamer,
-			parts,
-			num,
-            statuspart='';
+    setNumberOnToken = function(obj) {
+        var matchers,
+        tokenName,
+        matcher,
+        renamer,
+        parts,
+        num,
+        statuspart='';
 
         if(_.contains(tokenIds,obj.id)){
             tokenIds=_.without(tokenIds,obj.id);
 
-            if( 'graphic' === obj.get('type') 
-                && 'token'   === obj.get('subtype') ) {
+            if( 'graphic' === obj.get('type') &&
+                'token'   === obj.get('subtype') ) {
 
-                matchers = (getMatchers(obj.get('pageid'), obj.get('represents'))) || [];
-                tokenName = (obj.get('name'));
+                    matchers = (getMatchers(obj.get('pageid'), obj.get('represents'))) || [];
+                    tokenName = (obj.get('name'));
 
 
 
-                if(tokenName.match( /%%NUMBERED%%/ ) || _.some(matchers,function(m) { return m.test(tokenName);}) ) {
-                    if( 0 === matchers.length || !_.some(matchers,function(m) { return m.test(tokenName);}) ) {
-                        matcher='^('+esRE(tokenName).replace(/%%NUMBERED%%/,')(\\d+)(')+')$';
-                        addMatcher(obj.get('pageid'), obj.get('represents'), matcher );
-                    }
-                    if( !_.some(matchers,function(m) {
-                        if(m.test(tokenName)) {
-                            matcher=m;
-                            return true;
+                    if(tokenName.match( /%%NUMBERED%%/ ) || _.some(matchers,function(m) { return m.test(tokenName);}) ) {
+                        if( 0 === matchers.length || !_.some(matchers,function(m) { return m.test(tokenName);}) ) {
+                            matcher='^('+esRE(tokenName).replace(/%%NUMBERED%%/,')(\\d+)(')+')$';
+                            addMatcher(obj.get('pageid'), obj.get('represents'), matcher );
                         }
-                        return false;
-                    }) ) {
-                        matcher=new RegExp('^('+esRE(tokenName).replace(/%%NUMBERED%%/,')(\\d+)(')+')$');
-                        renamer=new RegExp('^('+esRE(tokenName).replace(/%%NUMBERED%%/,')(%%NUMBERED%%)(')+')$');
-                    }
-                    renamer = renamer || matcher;
-
-                    num = (_.chain(findObjs({
-                        type: 'graphic',
-                        subtype: 'token',
-                        represents: obj.get('represents'),
-                        pageid: obj.get('pageid')
-                    }))
-                    .filter(function(t){
-                        return matcher.test(t.get('name'));
-                    })
-                    .reduce(function(memo,t){
-                        var c=parseInt(matcher.exec(t.get('name'))[2],10);
-                        return Math.max(memo,c);
-                    },0)
-                    .value() );
-
-                    num += ( state.TokenNameNumber.config.randomSpace ? (randomInteger(state.TokenNameNumber.config.randomSpace)-1) : 0);
-
-                    if(state.TokenNameNumber.config.useDots) {
-                        statuspart = _.map(getDotNumber(num), function(n){
-                            return state.TokenNameNumber.config.dots[n];
-                        }).join(',');
-                        if(statuspart) {
-                            obj.set({
-                                statusmarkers: statuspart
-                            });
+                        if( !_.some(matchers,function(m) {
+                            if(m.test(tokenName)) {
+                                matcher=m;
+                                return true;
+                            }
+                            return false;
+                        }) ) {
+                            matcher=new RegExp('^('+esRE(tokenName).replace(/%%NUMBERED%%/,')(\\d+)(')+')$');
+                            renamer=new RegExp('^('+esRE(tokenName).replace(/%%NUMBERED%%/,')(%%NUMBERED%%)(')+')$');
                         }
-                    }
+                        renamer = renamer || matcher;
 
-                    parts=renamer.exec(tokenName);
-                    obj.set({
-                        name: parts[1]+(++num)+parts[3]
-                    });
+                        num = (_.chain(findObjs({
+                            type: 'graphic',
+                            subtype: 'token',
+                            represents: obj.get('represents'),
+                            pageid: obj.get('pageid')
+                        }))
+                        .filter(function(t){
+                            return matcher.test(t.get('name'));
+                        })
+                        .reduce(function(memo,t){
+                            var c=parseInt(matcher.exec(t.get('name'))[2],10);
+                            return Math.max(memo,c);
+                        },0)
+                        .value() );
+
+                        num += ( state.TokenNameNumber.config.randomSpace ? (randomInteger(state.TokenNameNumber.config.randomSpace)-1) : 0);
+
+                        if(state.TokenNameNumber.config.useDots) {
+                            statuspart = _.map(getDotNumber(num), function(n){
+                                return state.TokenNameNumber.config.dots[n];
+                            }).join(',');
+                            if(statuspart) {
+                                obj.set({
+                                    statusmarkers: statuspart
+                                });
+                            }
+                        }
+
+                        parts=renamer.exec(tokenName);
+                        obj.set({
+                            name: parts[1]+(++num)+parts[3]
+                        });
+                    }
                 }
-            }
         }
-	},
+    },
 
-	registerEventHandlers = function() {
+    registerEventHandlers = function() {
         on('chat:message', handleInput);
-		on('add:graphic', saveTokenId);
+        on('add:graphic', saveTokenId);
         on('change:graphic', setNumberOnToken);
-	};
+    };
 
-	return {
+    return {
         CheckInstall: checkInstall,
-		RegisterEventHandlers: registerEventHandlers
-	};
+        RegisterEventHandlers: registerEventHandlers
+    };
 }());
 
 on("ready",function(){
-	'use strict';
+    'use strict';
 
-	TokenNameNumber.CheckInstall(); 
-	TokenNameNumber.RegisterEventHandlers();
+    TokenNameNumber.CheckInstall(); 
+    TokenNameNumber.RegisterEventHandlers();
 });
 
