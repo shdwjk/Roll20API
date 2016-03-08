@@ -6,8 +6,8 @@ var globalConfig = globalConfig || undefined;
 var MonsterHitDice5e = MonsterHitDice5e || (function() {
     'use strict';
 
-    var version = '0.3.0',
-        lastUpdate = 1457420007,
+    var version = '0.3.1',
+        lastUpdate = 1457421795,
         schemaVersion = 0.1,
         tokenIds = [],
 
@@ -145,8 +145,8 @@ var MonsterHitDice5e = MonsterHitDice5e || (function() {
                                     hp+=val.total;
                                 }
                             });
-                            sets[bar+"_value"] = hp;
-                            sets[bar+"_max"] = hp;
+                            sets[bar+"_value"] = hp||1;
+                            sets[bar+"_max"] = hp||1;
                             obj.set(sets);
                         });
                     }
