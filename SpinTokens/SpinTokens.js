@@ -5,7 +5,8 @@
 var SpinTokens = SpinTokens || (function(){
     'use strict';
 
-	var version = 0.3,
+	var version = '0.4.1',
+        lastUpdate = 1427604266,
 		schemaVersion = 0.1,
 		spinInterval = false,
 		stepRate = 200,
@@ -70,7 +71,7 @@ var SpinTokens = SpinTokens || (function(){
 		var args,
             secondsPerCycle;
         
-		if ( "api" !== msg.type || !isGM(msg.playerid) ) {
+		if ( "api" !== msg.type || !playerIsGM(msg.playerid) ) {
 			return;
 		}
 
@@ -153,8 +154,10 @@ var SpinTokens = SpinTokens || (function(){
 
 
 	checkInstall = function() {
+        log('-=> SpinTokens v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+
         if( ! _.has(state,'SpinTokens') || state.SpinTokens.version !== schemaVersion) {
-            log('SpinTokens: Resetting state');
+            log('  > Updating Schema to v'+schemaVersion+' <');
 
             state.SpinTokens = {
 				version: schemaVersion,
@@ -179,13 +182,6 @@ var SpinTokens = SpinTokens || (function(){
 on("ready",function(){
 	'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-		SpinTokens.CheckInstall();
-		SpinTokens.RegisterEventHandlers();
-    } else {
-        log('--------------------------------------------------------------');
-        log('SpinTokens requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
+	SpinTokens.CheckInstall();
+	SpinTokens.RegisterEventHandlers();
 });

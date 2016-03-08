@@ -5,7 +5,8 @@
 var TempHPAndStatus = TempHPAndStatus || (function() {
     'use strict';
 
-    var version = 0.2,
+    var version = '0.4.1',
+        lastUpdate = 1427604271,
 		HitPointBarNum  = 3,
         TempHitPointsIn = 'temp_HP',
 
@@ -97,16 +98,23 @@ var TempHPAndStatus = TempHPAndStatus || (function() {
           }
     },
 
+	checkInstall = function() {
+        log('-=> TempHPAndStatus v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
+
     RegisterEventHandlers = function() {
         on('change:token', TokenChange);
     };
 
     return {
+		CheckInstall: checkInstall,
         RegisterEventHandlers: RegisterEventHandlers
     };
 }());
 
 on('ready',function(){
     'use strict';
+
+    TempHPAndStatus.CheckInstall();
     TempHPAndStatus.RegisterEventHandlers();
 });

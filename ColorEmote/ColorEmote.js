@@ -5,7 +5,7 @@
 var ColorEmote = ColorEmote || (function() {
     'use strict';
 
-    var version = '0.1.2',
+    var version = '0.1.3',
         lastUpdate = 1455714420,
         schemaVersion = 0.4,
         symbols = {

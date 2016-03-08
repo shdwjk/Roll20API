@@ -5,7 +5,7 @@
 var Bump = Bump || (function() {
     'use strict';
 
-    var version = '0.2.7',
+    var version = '0.2.8',
         lastUpdate = 1455413324,
         schemaVersion = 0.2,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',

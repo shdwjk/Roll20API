@@ -5,12 +5,15 @@
 var DarknessClosingIn = DarknessClosingIn || (function() {
 	'use strict';
 
-    var version = 0.1,
+    var version = '0.2.1',
+        lastUpdate = 1427604242,
 		schemaVersion = 0.1,
 
 	checkInstall = function() {
+        log('-=> DarknessClosingIn v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+		
         if( ! _.has(state,'DarknessClosingIn') || state.DarknessClosingIn.version !== schemaVersion) {
-            log('DarknessClosingIn: Resetting state');
+            log('  > Updating Schema to v'+schemaVersion+' <');
             state.DarknessClosingIn = {
 				version: schemaVersion,
 				gettingDarker: false
@@ -21,7 +24,7 @@ var DarknessClosingIn = DarknessClosingIn || (function() {
 	handleInput = function(msg) {
 		var args;
 
-		if (msg.type !== "api" || ! isGM(msg.playerid) ) {
+		if (msg.type !== "api" || ! playerIsGM(msg.playerid) ) {
 			return;
 		}
 
@@ -63,13 +66,6 @@ var DarknessClosingIn = DarknessClosingIn || (function() {
 on('ready',function() {
 	'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-		DarknessClosingIn.CheckInstall();
-		DarknessClosingIn.RegisterEventHandlers();
-    } else {
-        log('--------------------------------------------------------------');
-        log('DarknessClosingIn requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
+	DarknessClosingIn.CheckInstall();
+	DarknessClosingIn.RegisterEventHandlers();
 });

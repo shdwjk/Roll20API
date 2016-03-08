@@ -1,9 +1,12 @@
-// GIST: https://gist.github.com/shdwjk/42f34ecfd167ec56c9f7
+// Github:   https://github.com/shdwjk/Roll20API/blob/master/Emas/Emas.js
+// By:       The Aaron, Arcane Scriptomancer
+// Contact:  https://app.roll20.net/users/104025/the-aaron
 
 var Emas = Emas || (function() {
     'use strict';
 
-	var version = 0.7,
+	var version = '0.8.1',
+        lastUpdate = 1427604244,
 
 	ch = function (c) {
 		var entities = {
@@ -27,6 +30,9 @@ var Emas = Emas || (function() {
 		return '';
 	},
 
+	checkInstall = function() {
+        log('-=> Emas v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
 
 	showHelp = function(who) {
         sendChat('',
@@ -192,6 +198,7 @@ var Emas = Emas || (function() {
 	};
 
 	return {
+		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers
 	};
 }());
@@ -199,5 +206,6 @@ var Emas = Emas || (function() {
 on("ready",function(){
 	'use strict';
 
+	Emas.CheckInstall();
 	Emas.RegisterEventHandlers();
 });

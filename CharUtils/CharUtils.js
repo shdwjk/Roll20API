@@ -5,7 +5,7 @@
 var CharUtils = CharUtils || (function() {
     'use strict';
 
-    var version = '0.6.3',
+    var version = '0.6.4',
         lastUpdate = 1453471300,
 
     ch = function (c) {

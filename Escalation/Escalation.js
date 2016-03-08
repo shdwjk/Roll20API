@@ -5,9 +5,19 @@
 var Escalation = Escalation || (function() {
     'use strict';
 
-    var version = 0.1,
+    var version = '0.2.1',
+        lastUpdate = 1427604246,
 		dieName = 'Escalation Die',
 		dieMax = 6,
+
+	checkInstall = function() {
+        log('-=> Escalation v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+
+		if( "" === Campaign().get('turnorder')) {
+			Campaign().set({turnorder: '[]'});
+		}
+		handleEscalationDieReset(Campaign(),{});
+	},
 
 	handleEscalationDieReset = function(obj, prev) {
 		var to=JSON.parse(obj.get('turnorder')),
@@ -32,12 +42,6 @@ var Escalation = Escalation || (function() {
 		obj.set({turnorder: JSON.stringify(to)});
 	},
 
-	reset = function() {
-		if( "" === Campaign().get('turnorder')) {
-			Campaign().set({turnorder: '[]'});
-		}
-		handleEscalationDieReset(Campaign(),{});
-	},
 
 	handleEscalationDieTurn = function(obj, prev) {
         var to,lastto;
@@ -62,14 +66,14 @@ var Escalation = Escalation || (function() {
 	};
 
 	return {
-		RegisterEventHandlers: registerEventHandlers,
-		Reset: reset
+		CheckInstall: checkInstall,
+		RegisterEventHandlers: registerEventHandlers
 	};
 }());
 
 on("ready",function(){
 	'use strict';
 
-	Escalation.Reset();
+	Escalation.CheckInstall();
 	Escalation.RegisterEventHandlers();
 });

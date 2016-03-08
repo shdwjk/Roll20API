@@ -5,8 +5,8 @@
 var RecursiveTable = RecursiveTable || (function() {
     'use strict';
 
-    var version = '0.1.0',
-        lastUpdate = 1453176327,
+    var version = '0.1.2',
+        lastUpdate = 1453302547,
         schemaVersion = 0.1,
         maxParseDepth = 10,
 
@@ -73,7 +73,7 @@ var RecursiveTable = RecursiveTable || (function() {
         );
     },
 
-    parseMessage = function(msgs,depth,who){
+    parseMessage = function(msgs, context ){
         var msg = msgs.shift();
 		if(_.has(msg,'inlinerolls')){
 			msg.content = _.chain(msg.inlinerolls)
@@ -95,10 +95,11 @@ var RecursiveTable = RecursiveTable || (function() {
 				},msg.content)
 				.value();
 		}
-        if(depth < maxParseDepth && msg.content.match(/\[\[.+\]\]/)){
-            sendChat('',msg.content,function(msg){parseMessage(msg,++depth,who);});
+        if(context.depth < maxParseDepth && msg.content.match(/\[\[.+\]\]/)){
+            ++context.depth;
+            sendChat('',msg.content,function(msg){parseMessage(msg,context);});
         } else {
-            sendChat(who,msg.content.replace(/%%SLASH%%/,'/'));
+            sendChat(context.who, (context.rolltemplate ? '&{template:'+context.rolltemplate+'} ':'')+msg.content.replace(/%%SLASH%%/,'/'));
         }
     },
 
@@ -118,7 +119,11 @@ var RecursiveTable = RecursiveTable || (function() {
                     showHelp(who);
                 } else {
                     msg.content = msg.content.replace(/^!rt\s+/,'').replace(/\//,'%%SLASH%%');
-                    parseMessage([msg],0,msg.who);
+                    parseMessage([msg],{
+                        depth: 0,
+                        who: msg.who,
+                        rolltemplate: msg.rolltemplate
+                    });
                 }
                 break;
         }

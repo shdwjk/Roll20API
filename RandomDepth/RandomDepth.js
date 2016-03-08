@@ -5,7 +5,7 @@
 var RandomDepth = RandomDepth || (function() {
     'use strict';
 
-    var version = '0.3.0',
+    var version = '0.3.1',
         lastUpdate = 1427604261,
 
 	checkInstall = function() {

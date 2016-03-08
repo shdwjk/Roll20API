@@ -5,7 +5,7 @@
 var TableExport = TableExport || (function() {
 	'use strict';
 
-	var version  = '0.2.2',
+	var version  = '0.2.3',
         lastUpdate = 1453209012,
         tableCache = {},
         escapes = {

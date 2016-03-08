@@ -5,7 +5,7 @@
 var WildDice = WildDice || (function() {
     'use strict';
 
-    var version = '0.3.0',
+    var version = '0.3.1',
         lastUpdate = 1435721274,
 
 	ch = function (c) {

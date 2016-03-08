@@ -5,9 +5,14 @@
 var IsGreater = IsGreater || (function() {
     'use strict';
 
-    var version = 0.1,
+    var version = '0.2.1',
+        lastUpdate = 1427604251,
 
-	HandleInput = function(msg) {
+	checkInstall = function() {
+        log('-=> IsGreater v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
+
+	handleInput = function(msg) {
 		var args;
 
 		if (msg.type !== "api") {
@@ -40,10 +45,11 @@ var IsGreater = IsGreater || (function() {
 	},
 
 	registerEventHandlers = function() {
-		on('chat:message', HandleInput);
+		on('chat:message', handleInput);
 	};
 
 	return {
+		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers
 	};
 }());
@@ -51,5 +57,6 @@ var IsGreater = IsGreater || (function() {
 on("ready",function(){
 	'use strict';
 
+	IsGreater.CheckInstall();
 	IsGreater.RegisterEventHandlers();
 });

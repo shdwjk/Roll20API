@@ -5,7 +5,12 @@
 var ZombieDice = ZombieDice || (function() {
     'use strict';
 
-    var version = 0.3,
+    var version = '0.4.1',
+        lastUpdate = 1427604281,
+
+	checkInstall = function() {
+        log('-=> ZombieDice v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
 
     getDiceCounts = function(msg,idx) {
         return ( msg.inlinerolls
@@ -113,6 +118,7 @@ var ZombieDice = ZombieDice || (function() {
     };
 
     return {
+		CheckInstall: checkInstall,
         RegisterEventHandlers: registerEventHandlers
     };
     
@@ -121,5 +127,6 @@ var ZombieDice = ZombieDice || (function() {
 on('ready',function() {
     'use strict';
 
+    ZombieDice.CheckInstall();
     ZombieDice.RegisterEventHandlers();
 });

@@ -5,7 +5,7 @@
 var MapSnap = MapSnap || (function() {
     'use strict';
 
-    var version = '0.1.2',
+    var version = '0.1.3',
         lastUpdate = 1435116180,
         schemaVersion = 0.1,
 

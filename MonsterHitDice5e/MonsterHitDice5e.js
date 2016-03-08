@@ -15,9 +15,10 @@ on('ready', function() {
     on('add:graphic',function(obj) {
         var sets = {};
 
-        if( 'graphic' === obj.get('type') 
-            && 'token'   === obj.get('subtype') 
-            && ''        !== obj.get('represents')) {
+        if( 'graphic' === obj.get('type') &&
+			'token'   === obj.get('subtype') &&
+			''        !== obj.get('represents')
+		) {
 
             setTimeout(_.bind(function(id){
                 var obj=getObj('graphic',id),
@@ -40,7 +41,7 @@ on('ready', function() {
                             bonus = _.reduce(hdAttrib.get('current').match(/(\d+)d\d+/g),function(m,die){
                                 m+=parseInt(die.match(/(\d+)d\d+/)[1],10);
                                 return m;
-                            },0)*((conAttrib.get('current')-10)/2);
+                            },0)*Math.round((conAttrib.get('current')-10)/2);
                         }
 
                         sendChat('','/r '+hdAttrib.get('current')+'+'+bonus,function(r){

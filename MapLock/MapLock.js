@@ -5,8 +5,8 @@
 var MapLock = MapLock || (function() {
     'use strict';
 
-    var version = '0.4.0',
-        lastUpdate = 1427604253,
+    var version = '0.4.1',
+        lastUpdate = 1456074072,
         schemaVersion = 0.4,
 
     checkInstall = function() {
@@ -22,7 +22,7 @@ var MapLock = MapLock || (function() {
         }
     },
 
-	ch = function (c) {
+    ch = function (c) {
 		var entities = {
 			'<' : 'lt',
 			'>' : 'gt',
@@ -57,7 +57,7 @@ var MapLock = MapLock || (function() {
 	+'</div>'
 	+'<b>Commands</b>'
 	+'<div style="padding-left:10px;">'
-		+'<b><span style="font-family: serif;">!map-lock '+ch('<')+' <i>lock</i> '+ch('|')+' <i>unlock</i> '+ch('|')+' <i>toggle-highlight</i> '+ch('|')+' <i>--help</i> '+ch('>')+'</span></b>'
+		+'<b><span style="font-family: serif;">!map-lock '+ch('<')+' <i>lock</i> '+ch('|')+' <i>unlock</i> '+ch('|')+' <i>toggle</i> '+ch('|')+' <i>toggle-highlight</i> '+ch('|')+' <i>--help</i> '+ch('>')+'</span></b>'
 		+'<div style="padding-left: 10px;padding-right:20px">'
 			+'<p>Adjusts locking options for selected graphics.</p>'
 			+'<ul>'
@@ -66,6 +66,9 @@ var MapLock = MapLock || (function() {
 				+'</li> '
 				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
 					+'<b><span style="font-family: serif;">unlock</span></b> '+ch('-')+' Removes these graphics from the list of locked items.'
+				+'</li> '
+				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
+					+'<b><span style="font-family: serif;">toggle</span></b> '+ch('-')+' Switched the selected graphics from locked to unlocked or vice versa.'
 				+'</li> '
 				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
 					+'<b><span style="font-family: serif;">toggle-highlight</span></b> '+ch('-')+' Turns on or off the red tinting of locked graphics.'
@@ -95,6 +98,8 @@ var MapLock = MapLock || (function() {
             .reject(_.isUndefined)
             .each(function(o){
                 var t = state.MapLock.locked[o.id];
+                $d(t);
+                $d([highlight,t]);
 
                 o.set({
                     tint_color: ( highlight ? '#ff0000' : t || 'transparent')
@@ -115,11 +120,30 @@ var MapLock = MapLock || (function() {
                 who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
                 ids=_.pluck(msg.selected,'_id');
                 switch(args.shift()) {
+                    case 'toggle':
+                        if(ids) {
+                            _.each(ids,function(id){
+                                var o=getObj('graphic',id);
+                                ++cnt;
+                                if( o && !_.has(state.MapLock.locked,id) ){
+                                    state.MapLock.locked[id]=o.get('tint_color');
+                                    tintGraphics([id], state.MapLock.highlighting);
+                                } else {
+                                    tintGraphics([id], false);
+                                    delete state.MapLock.locked[id];
+                                }
+                            });
+                            msgPlayer(who, 'Toggled '+cnt+' token'+(1 === cnt ? '' : 's'));
+
+                        } else {
+                            msgPlayer(who, '<span style="font-color: #ff0000;">ERROR:</span> Nothing selected.');
+                        }
+                        break;
                     case 'lock':
                         if(ids) {
                             _.each(ids,function(id){
                                 var o=getObj('graphic',id);
-                                if( o && !_.has(state.MapLock,id) ){
+                                if( o && !_.has(state.MapLock.locked,id) ){
                                     ++cnt;
                                     state.MapLock.locked[id]=o.get('tint_color');
                                 }
@@ -198,3 +222,4 @@ on('ready',function() {
 	MapLock.CheckInstall();
 	MapLock.RegisterEventHandlers();
 });
+

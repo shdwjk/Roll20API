@@ -5,8 +5,9 @@
 var SizeLock = SizeLock || (function() {
     'use strict';
 
-    var version = 0.1,
-	schemaVersion = 0.1,
+    var version = '0.2.1',
+        lastUpdate = 1427604263,
+		schemaVersion = 0.1,
 
 	performLock = function() {
 		if( ! state.SizeLock.locked ) {
@@ -18,6 +19,7 @@ var SizeLock = SizeLock || (function() {
 			+'</div>'
 		);
 	},
+
 	performUnlock = function() {
 		if( state.SizeLock.locked ) {
 			state.SizeLock.locked = false;
@@ -28,6 +30,7 @@ var SizeLock = SizeLock || (function() {
 			+'</div>'
 		);
 	},
+
 	showHelp = function() {
 		var stateColor = (state.SizeLock.locked) ? ('#990000') : ('#009900'),
 		    stateName  = (state.SizeLock.locked) ? ('Locked') : ('Unlocked');
@@ -62,10 +65,10 @@ var SizeLock = SizeLock || (function() {
             );
     },
 
-	HandleInput = function(msg) {
+	handleInput = function(msg) {
 		var args;
 
-		if (msg.type !== "api" || !isGM(msg.playerid) ) {
+		if (msg.type !== "api" || !playerIsGM(msg.playerid) ) {
 			return;
 		}
 
@@ -89,7 +92,7 @@ var SizeLock = SizeLock || (function() {
 
 	},
 
-	HandleResize = function(obj,prev) {
+	handleResize = function(obj,prev) {
 		if(state.SizeLock.locked 
 		&& 'token' === obj.get('subtype')
 		&& ( obj.get('width') !== prev.width || obj.get('height') !== prev.height ) ) {
@@ -102,8 +105,11 @@ var SizeLock = SizeLock || (function() {
 		}
 	},
 
-    CheckInstall = function() {    
+    checkInstall = function() {    
+        log('-=> SizeLock v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	
         if( ! _.has(state,'SizeLock') || state.SizeLock.version !== SizeLock.schemaVersion)
+            log('  > Updating Schema to v'+schemaVersion+' <');
         {
             /* Default Settings stored in the state. */
             state.SizeLock = {
@@ -113,36 +119,20 @@ var SizeLock = SizeLock || (function() {
 		}
 	},
 
-	RegisterEventHandlers = function() {
-		on('chat:message', HandleInput);
-		on('change:graphic', HandleResize);
+	registerEventHandlers = function() {
+		on('chat:message', handleInput);
+		on('change:graphic', handleResize);
 	};
 
 	return {
-		RegisterEventHandlers: RegisterEventHandlers,
-		CheckInstall: CheckInstall
+		RegisterEventHandlers: registerEventHandlers,
+		CheckInstall: checkInstall
 	};
 }());
 
 on("ready",function(){
 	'use strict';
 
-    var Has_IsGM=false;
-    try {
-        _.isFunction(isGM);
-        Has_IsGM=true;
-    }
-    catch (err)
-    {
-        log('--------------------------------------------------------------');
-        log('SizeLock requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
-
-    if( Has_IsGM )
-    {
-        SizeLock.CheckInstall(); 
-        SizeLock.RegisterEventHandlers();
-    }
+	SizeLock.CheckInstall(); 
+	SizeLock.RegisterEventHandlers();
 });

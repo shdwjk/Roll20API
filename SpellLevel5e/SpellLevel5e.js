@@ -5,8 +5,10 @@
 var SpellLevel5e = SpellLevel5e || (function() {
     'use strict';
 
-    var version = 0.1,
+    var version = '0.2.1',
+        lastUpdate = 1427604265,
         schemaVersion = 0.1,
+
         attrActions = {
             bard_level: ['cantripDice'],
             cleric_level: ['cantripDice'],
@@ -16,6 +18,7 @@ var SpellLevel5e = SpellLevel5e || (function() {
             sorcerer_level: ['cantripDice'],
             wizard_level: ['cantripDice']
         },
+
         attrOperations = {
             cantripDice: function(level) {
                 return Math.round( (parseInt(level,10)+4)/6, 0);
@@ -24,6 +27,8 @@ var SpellLevel5e = SpellLevel5e || (function() {
 
 
     checkInstall = function() {
+        log('-=> SpellLevel5e v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+
         var allAttrs = findObjs({type:'attribute'}),
             attrNames = _.chain(attrActions)
                 .map(function(o,k){

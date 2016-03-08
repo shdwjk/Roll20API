@@ -5,7 +5,8 @@
 var MovePlayers = MovePlayers || (function() {
     'use strict';
 
-	var version = 0.1,
+	var version = '0.2.1',
+        lastUpdate = 1427604257,
 
 	ch = function (c) {
 		var entities = {
@@ -27,6 +28,10 @@ var MovePlayers = MovePlayers || (function() {
 			return ('&'+entities[c]+';');
 		}
 		return '';
+	},
+
+	checkInstall = function() {
+        log('-=> MovePlayers v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 	},
 
 	showHelp = function() {
@@ -58,7 +63,7 @@ var MovePlayers = MovePlayers || (function() {
 	handleInput = function(msg) {
 		var args, obj;
 
-		if (msg.type !== "api" || !isGM(msg.playerid)) {
+		if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
 			return;
 		}
 
@@ -89,6 +94,7 @@ var MovePlayers = MovePlayers || (function() {
 	};
 
 	return {
+		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers
 	};
 }());
@@ -96,12 +102,6 @@ var MovePlayers = MovePlayers || (function() {
 on("ready",function(){
 	'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-		MovePlayers.RegisterEventHandlers();
-    } else {
-        log('--------------------------------------------------------------');
-        log('MovePlayers requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
+	MovePlayers.CheckInstall();
+	MovePlayers.RegisterEventHandlers();
 });

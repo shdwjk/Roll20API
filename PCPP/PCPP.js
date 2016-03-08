@@ -5,7 +5,7 @@
 var PCPP = PCPP || (function() {
 	'use strict';
 
-    var version = '0.3.0',
+    var version = '0.3.1',
         lastUpdate = 1428467091,
         schemaVersion = 0.1,
 

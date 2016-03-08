@@ -5,7 +5,7 @@
 var ScaleOnAdd = ScaleOnAdd || (function() {
     'use strict';
 
-    var version = '0.1.0',
+    var version = '0.1.1',
         lastUpdate = 1447802869,
         schemaVersion = 0.1,
         lastAddId = null,

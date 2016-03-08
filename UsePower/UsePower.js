@@ -5,7 +5,8 @@
 var UsePower = UsePower || (function() {
 	'use strict';
 
-	var version = 0.31,
+	var version = '0.4.1',
+        lastUpdate = 1427604279,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -124,7 +125,7 @@ var UsePower = UsePower || (function() {
 		switch(args[0]) {
 
 			case '!short-rest': 
-				if(!isGM(msg.playerid)) {
+				if(!playerIsGM(msg.playerid)) {
 					sendChat('','/w '+ who+' '
 						+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 							+'<span style="font-weight:bold;color:#990000;">Error:</span> '
@@ -148,7 +149,7 @@ var UsePower = UsePower || (function() {
 				break;
 
 			case '!long-rest': 
-				if(!isGM(msg.playerid)) {
+				if(!playerIsGM(msg.playerid)) {
 					sendChat('','/w '+ who+' '
 						+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 							+'<span style="font-weight:bold;color:#990000;">Error:</span> '
@@ -190,7 +191,7 @@ var UsePower = UsePower || (function() {
 										+'<span style="font-weight:bold;color:#990000;">Error:</span> '
 										+capitalize(args[1])+' Power '+'['+obj.get('name')+'] has already been used.'
 									+'</div>';
-							if(!isGM(msg.playerid)) {
+							if(!playerIsGM(msg.playerid)) {
 								sendChat('','/w gm '+notice);
 							}
 							sendChat('','/w '+ who+' '+notice);
@@ -213,7 +214,7 @@ var UsePower = UsePower || (function() {
 				break;
 
 			case '!add-use-power':
-				if(!isGM(msg.playerid)) {
+				if(!playerIsGM(msg.playerid)) {
 					sendChat('','/w '+ who+' '
 						+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 							+'<span style="font-weight:bold;color:#990000;">Error:</span> '
@@ -359,7 +360,10 @@ var UsePower = UsePower || (function() {
 
 	},
 	checkInstall = function() {    
+        log('-=> UsePower v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+
 		if( ! _.has(state,'UsePower') || state.UsePower.version !== schemaVersion)
+            log('  > Updating Schema to v'+schemaVersion+' <');
 		{
 			state.UsePower = {
 				version: schemaVersion,
@@ -387,13 +391,6 @@ var UsePower = UsePower || (function() {
 on("ready",function(){
 	'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-		UsePower.CheckInstall();
-		UsePower.RegisterEventHandlers();
-	} else {
-		log('--------------------------------------------------------------');
-		log('UsePower requires the isGM module to work.');
-		log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-		log('--------------------------------------------------------------');
-	}
+	UsePower.CheckInstall();
+	UsePower.RegisterEventHandlers();
 });

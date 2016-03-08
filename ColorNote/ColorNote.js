@@ -1,7 +1,7 @@
 var ColorNote = ColorNote || (function() {
     'use strict';
  
-    var version = '0.2.0',
+    var version = '0.2.1',
         lastUpdate = 1432818056,
  
     ch = function (c) {

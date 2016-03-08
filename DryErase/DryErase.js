@@ -5,7 +5,7 @@
 var DryErase = DryErase || (function() {
     'use strict';
 
-    var version = '0.1.5',
+    var version = '0.1.6',
         lastUpdate = 1455114250,
         schemaVersion = 0.3,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',

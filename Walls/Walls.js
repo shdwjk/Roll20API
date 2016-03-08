@@ -2,22 +2,14 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var Walls = Walls || {
-	version: 0.1,
-	schemaVersion: 0.2,
+var Walls = Walls || (function() {
+    'use strict';
 
-	CheckInstall: function() {
-		if( ! _.has(state,'Walls') || state.Walls.schemaVersion != Walls.schemaVersion)
-		{
-			/* Default Settings stored in the state. */
-			state.Walls = {
-				version: Walls.schemaVersion,
-				work: {}
-			}
-		}
-		Walls._ResetWork();
-	},
-	_ResetWork: function() {
+	var version = '0.3.1',
+        lastUpdate = 1439851789,
+        schemaVersion = 0.2,
+
+	resetWork = function() {
 		state.Walls.work={
 			accumulating: {},
 			mapGraphic: {
@@ -35,20 +27,36 @@ var Walls = Walls || {
 			workPath: []
 		};
 	},
-	HandleInput: function(tokens,msg) {
-		switch(tokens[0])
-		{
+
+	checkInstall = function() {
+        log('-=> Walls v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+
+		if( ! _.has(state,'Walls') || state.Walls.schemaVersion !== schemaVersion) {
+            log('  > Updating Schema to v'+schemaVersion+' <');
+
+			state.Walls = {
+				version: schemaVersion,
+				work: {}
+			};
+		}
+		resetWork();
+	},
+
+	handleInput = function(tokens,msg) {
+        var map,left,top,width,height;
+
+		switch(tokens[0]) {
+
 			case 'begin':
-				Walls._ResetWork();
-				if(_.has(msg,'selected') && 1==msg.selected.length && 'graphic'== msg.selected[0]._type)
-				{
-					var map=getObj('graphic',msg.selected[0]._id);
-					if(undefined != map)
+				resetWork();
+				if(_.has(msg,'selected') && 1===msg.selected.length && 'graphic'=== msg.selected[0]._type) {
+					map=getObj('graphic',msg.selected[0]._id);
+					if(undefined !== map)
 						{
-							var left=map.get('left');
-							var top =map.get('top');
-							var width=map.get('width');
-							var height=map.get('height');
+							left=map.get('left');
+							top =map.get('top');
+							width=map.get('width');
+							height=map.get('height');
 
 							state.Walls.work.mapGraphic.id=map.id;
 							state.Walls.work.mapGraphic.x=Math.round((left-(width/2))*100)/100;
@@ -56,24 +64,19 @@ var Walls = Walls || {
 							state.Walls.work.mapGraphic.height=height;
 							state.Walls.work.mapGraphic.width=width;
 						}
-				}
-				else
-				{
+				} else {
 					log('Walls: Warning - select exactly one graphic on the map layer.');
 				}
 				break;
 
 			case 'end':
-				if(state.Walls.work.workPath.length)
-				{
+				if(state.Walls.work.workPath.length) {
 					state.Walls.work.completedPaths.push(state.Walls.work.workPath);
 					state.Walls.work.workPath=[];
 				}
-				if(undefined != state.Walls.work.mapGraphic.id)
-				{
-					var map=getObj('graphic',state.Walls.work.mapGraphic.id);
-					if(undefined != map)
-					{
+				if(undefined !== state.Walls.work.mapGraphic.id) {
+					map=getObj('graphic',state.Walls.work.mapGraphic.id);
+					if(undefined !== map) {
 						_.each(state.Walls.work.completedPaths,function(p){
 							// find bounding box
 							var lowX    = 1000000.0,
@@ -83,11 +86,11 @@ var Walls = Walls || {
 								lowY    = 1000000.0,
 								centerY = 0,
 								highY   = 0,
-								height  = 0;
+								height  = 0,
+                                newP, pathstring;
 
 							_.each(p,function(elem){
-								switch(elem[0])
-								{
+								switch(elem[0]) {
 									case 'M':
 										lowX  = _.min([lowX,elem[1]]);
 										highX = _.max([highX,elem[1]]);
@@ -111,11 +114,10 @@ var Walls = Walls || {
 							centerX = lowX + ( width  / 2 ) + state.Walls.work.mapGraphic.x;
 							centerY = lowY + ( height / 2 ) + state.Walls.work.mapGraphic.y;
 
-							var newP = []
+							newP = [];
 							// re-bias points
 							_.each(p,function(elem){
-								switch(elem[0])
-								{
+								switch(elem[0]) {
 									case 'M':
 										newP.push(['M',elem[1]-lowX,elem[2]-lowY]);
 									break;
@@ -127,9 +129,9 @@ var Walls = Walls || {
 								}
 							});
 
-							var pathstring=JSON.stringify(newP);
+							pathstring=JSON.stringify(newP);
 
-							var path=createObj('path',{
+							createObj('path',{
 								pageid: map.get('pageid'),
 								stroke: '#ff0000',
 								left: centerX,
@@ -141,7 +143,6 @@ var Walls = Walls || {
 								path: pathstring
 							});
 
-							path=fixNewObject(path);
 						});
 					}
 					sendChat('','/w gm Walls finished.');
@@ -154,8 +155,7 @@ var Walls = Walls || {
 				break;
 
 			case 'moveto':
-				if(state.Walls.work.workPath.length)
-				{
+				if(state.Walls.work.workPath.length) {
 					state.Walls.work.completedPaths.push(state.Walls.work.workPath);
 					state.Walls.work.workPath=[];
 				}
@@ -171,58 +171,38 @@ var Walls = Walls || {
 				break;
 		}
 	},
-	RegisterEventHandlers: function(){        
+
+	registerEventHandlers = function(){        
 		on("chat:message", function (msg) {
-			/* Exit if not an api command */
-			if (msg.type != "api") return;
+            var tokenized, command;
+			if (msg.type !== "api") {
+                return;
+            }
 
-			// get minimal player name (hopefully unique!)
-			var who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+			tokenized = msg.content.split(" ");
+			command = tokenized[0];
 
-			var tokenized = msg.content.split(" ");
-			var command = tokenized[0];
-
-			switch(command)
-			{
+			switch(command) {
 				case "!walls":
-					if(isGM(msg.playerid))
-					{
-						Walls.HandleInput(_.rest(tokenized),msg);
+					if(playerIsGM(msg.playerid)) {
+						handleInput(_.rest(tokenized),msg);
 					}
 					break;
 			}
 		});
-	}
+	};
 
-};
+    return {
+        CheckInstall: checkInstall,
+        RegisterEventHandlers: registerEventHandlers
+    };
+}());
 
 
 on("ready",function(){
-	var Has_IsGM=false;
-	try {
-		_.isFunction(isGM);
-		Has_IsGM=true;
-	}
-	catch (err)
-	{
-		log('--------------------------------------------------------------');
-		log('Walls requires the isGM module to work.');
-		log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625')
-		log('--------------------------------------------------------------');
-	}
+    'use strict';
 
-	if( Has_IsGM )
-	{
-		Walls.CheckInstall(); 
-		Walls.RegisterEventHandlers();
-	}
+	Walls.CheckInstall(); 
+	Walls.RegisterEventHandlers();
 });
-
-// Utility Function
-var fixNewObject = fixNewObject || function(obj){
-	var p = obj.changed._fbpath;
-	var new_p = p.replace(/([^\/]*\/){4}/, "/");
-	obj.fbpath = new_p;
-	return obj;
-};
 

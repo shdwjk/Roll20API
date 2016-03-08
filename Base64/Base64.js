@@ -6,8 +6,13 @@
 var Base64 = Base64 || (function () {
 	'use strict';
 
-    var version = 0.2,
+    var version = '0.3.1',
+        lastUpdate = 1427604235,
 	    keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+	checkInstall = function() {
+        log('-=> Base64 v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
  
     // private method for UTF-8 encoding
     utf8_encode = function (string) {
@@ -143,7 +148,14 @@ var Base64 = Base64 || (function () {
 
 	return {
 		encode: encode,
-		decode: decode
+		decode: decode,
+		CheckInstall: checkInstall
 	};
  
 }());
+
+on("ready",function(){
+	'use strict';
+
+	Base64.CheckInstall();
+});

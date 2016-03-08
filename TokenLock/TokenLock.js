@@ -5,7 +5,7 @@
 var TokenLock = TokenLock || (function() {
     'use strict';
 
-    var version = '0.2.2',
+    var version = '0.2.3',
         lastUpdate = 1428859122,
     	schemaVersion = 0.2,
 

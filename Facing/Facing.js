@@ -5,7 +5,7 @@
 var Facing = Facing || (function() {
     'use strict';
 
-    var version = '0.1.1',
+    var version = '0.1.2',
     lastUpdate = 1430571841,
     schemaVersion = 0.1,
     defaults = {

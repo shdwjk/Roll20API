@@ -5,8 +5,8 @@
 var MutantYearZero = MutantYearZero || (function() {
     'use strict';
 
-    var version = '0.1.7',
-        lastUpdate = 1455510787,
+    var version = '0.1.8',
+        lastUpdate = 1455584304,
         schemaVersion = 0.4,
         symbols = {
             biohazard: '&#'+'9763;',
@@ -818,7 +818,7 @@ var MutantYearZero = MutantYearZero || (function() {
                 }
                 args = _.rest(msg.content.split(/\s+--/));
                 if(_.contains(args,'help')) {
-                    showHelp(who);
+                    showHelp(msg.playerid);
                     return;
                 }
                 if(!args.length) {

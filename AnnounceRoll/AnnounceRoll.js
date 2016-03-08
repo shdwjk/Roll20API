@@ -5,8 +5,12 @@
 var AnnounceRoll = AnnounceRoll || (function() {
     'use strict';
 
-    var version = 0.1,
+    var version = '0.2.1',
+        lastUpdate = 1427604233,
 
+    checkInstall = function() {    
+        log('-=> AnnounceRoll v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
     handleInput = function(msg) {
         var rolldata,out=[];
 
@@ -40,6 +44,7 @@ var AnnounceRoll = AnnounceRoll || (function() {
     };
 
     return {
+        CheckInstall: checkInstall,
         RegisterEventHandlers: registerEventHandlers
     };
 
@@ -48,6 +53,7 @@ var AnnounceRoll = AnnounceRoll || (function() {
 on('ready',function() {
     'use strict';
 
+    AnnounceRoll.CheckInstall();
     AnnounceRoll.RegisterEventHandlers();
 });
 

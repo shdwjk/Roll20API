@@ -5,7 +5,8 @@
 var APIHeartBeat = APIHeartBeat || (function() {
     'use strict';
 
-    var version = 0.3,
+    var version = '0.4.1',
+        lastUpdate = 1427602482,
         schemaVersion = 0.2,
         beatInterval = false,
         beatPeriod = 200,
@@ -153,7 +154,7 @@ var APIHeartBeat = APIHeartBeat || (function() {
     handleInput = function(msg) {
         var args, errors, player, who, color;
 
-        if (msg.type !== "api" && !isGM(msg.playerid)) {
+        if (msg.type !== "api" && !playerIsGM(msg.playerid)) {
             return;
         }
         player = getObj('player',msg.playerid);
@@ -234,8 +235,9 @@ var APIHeartBeat = APIHeartBeat || (function() {
     },
 
     checkInstall = function() {
+        log('-=> APIHeartBeat v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
         if( ! _.has(state,'APIHeartBeat') || state.APIHeartBeat.version !== schemaVersion) {
-            log('APIHeartBeat: Resetting state');
+            log('  > Updating Schema to v'+schemaVersion+' <');
             state.APIHeartBeat = {
                 version: schemaVersion,
                 devMode: false,
@@ -261,13 +263,6 @@ var APIHeartBeat = APIHeartBeat || (function() {
 on('ready',function() {
     'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-        APIHeartBeat.CheckInstall();
-        APIHeartBeat.RegisterEventHandlers();
-    } else {
-        log('--------------------------------------------------------------');
-        log('APIHeartBeat requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
+	APIHeartBeat.CheckInstall();
+	APIHeartBeat.RegisterEventHandlers();
 });

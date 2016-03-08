@@ -5,7 +5,8 @@
 var FateDots = FateDots || (function(){
     'use strict';
 
-    var version = 0.1,
+    var version = '0.2.1',
+        lastUpdate = 1427604247,
         schemaVersion = 0.3,
 		regex = {
 			statuses: /^(?:red|blue|green|brown|purple|pink|yellow|skull|sleepy|half-heart|half-haze|interdiction|snail|lightning-helix|spanner|chained-heart|chemical-bolt|death-zone|drink-me|edge-crack|ninja-mask|stopwatch|fishing-net|overdrive|strong|fist|padlock|three-leaves|fluffy-wing|pummeled|tread|arrowed|aura|back-pain|black-flag|bleeding-eye|bolt-shield|broken-heart|cobweb|broken-shield|flying-flag|radioactive|trophy|broken-skull|frozen-orb|rolling-bomb|white-tower|grab|screaming|grenade|sentry-gun|all-for-one|angel-outfit|archery-target)$/
@@ -122,7 +123,7 @@ var FateDots = FateDots || (function(){
 	handleInput = function(msg) {
 		var args;
         
-		if ( "api" !== msg.type || !isGM(msg.playerid) ) {
+		if ( "api" !== msg.type || !playerIsGM(msg.playerid) ) {
 			return;
 		}
 
@@ -189,8 +190,10 @@ var FateDots = FateDots || (function(){
 
 
 	checkInstall = function() {
+        log('-=> FateDots v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+
         if( ! _.has(state,'FateDots') || state.FateDots.version !== schemaVersion) {
-            log('FateDots: Resetting state');
+            log('  > Updating Schema to v'+schemaVersion+' <');
 
             state.FateDots = {
 				version: schemaVersion,
@@ -213,13 +216,6 @@ var FateDots = FateDots || (function(){
 on("ready",function(){
 	'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-		FateDots.CheckInstall();
-		FateDots.RegisterEventHandlers();
-    } else {
-        log('--------------------------------------------------------------');
-        log('FateDots requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
+	FateDots.CheckInstall();
+	FateDots.RegisterEventHandlers();
 });

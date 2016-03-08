@@ -5,7 +5,12 @@
 var Measure = Measure || (function() {
     'use strict';
 
-    var version = 0.2,
+    var version = '0.3.1',
+        lastUpdate = 1427604255,
+
+	checkInstall = function() {
+        log('-=> Measure v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
 
     handleInput = function(msg) {
         var args,
@@ -77,6 +82,7 @@ var Measure = Measure || (function() {
     };
 
     return {
+		CheckInstall: checkInstall,
         RegisterEventHandlers: registerEventHandlers
     };
     
@@ -85,5 +91,6 @@ var Measure = Measure || (function() {
 on('ready',function() {
     'use strict';
 
+    Measure.CheckInstall();
     Measure.RegisterEventHandlers();
 });

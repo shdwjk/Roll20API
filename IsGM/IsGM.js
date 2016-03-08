@@ -5,7 +5,8 @@
 var IsGMModule = IsGMModule || (function() {
     'use strict';
 
-    var version = 0.7,
+    var version = '0.7.1',
+        lastUpdate = 1427604250,
         schemaVersion = 0.6,
         active = true,
         reset_password = "swordfish",
@@ -15,6 +16,7 @@ var IsGMModule = IsGMModule || (function() {
         var players = findObjs({_type:"player"});
 
         if( ! _.has(state,'IsGM') || ! _.has(state.IsGM,'version') || state.IsGM.version !== schemaVersion ) {
+            log('  > Updating Schema to v'+schemaVersion+' <');
             state.IsGM={
                 version: schemaVersion,
                 gms: [],

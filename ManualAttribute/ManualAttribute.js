@@ -5,17 +5,15 @@
 var ManualAttribute = ManualAttribute || (function() {
     'use strict';
 
-    var version = 0.1,
+    var version = '0.2.1',
+        lastUpdate = 1427604252,
         autoCalcStatName = 'hp-current',
         manualStatName   = 'manual_HP',
         barNumber        = 3,
 
-        fixNewObj= function(obj) {
-        var p = obj.changed._fbpath,
-        new_p = p.replace(/([^\/]*\/){4}/, "/");
-        obj.fbpath = new_p;
-        return obj;
-    },
+	checkInstall = function() {
+        log('-=> ManualAttribute v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
 
     setupManualAttribute = function(token) {
         var attr = findObjs({type: 'attribute', characterid: token.get('represents'), name: manualStatName })[0],
@@ -23,12 +21,12 @@ var ManualAttribute = ManualAttribute || (function() {
             up = {};
            
         if(!attr) {
-            attr=fixNewObj(createObj('attribute', {
+            attr=createObj('attribute', {
                 name: manualStatName,
                 characterid: token.get('represents'),
                 current: srcHP,
                 max: srcHP
-                }));
+                });
         } else {
             attr.set({
                 current: srcHP,
@@ -68,6 +66,7 @@ var ManualAttribute = ManualAttribute || (function() {
     };
 
     return {
+		CheckInstall: checkInstall,
         RegisterEventHandlers: registerEventHandlers
     };
     
@@ -76,6 +75,6 @@ var ManualAttribute = ManualAttribute || (function() {
 on('ready',function() {
     'use strict';
 
+    ManualAttribute.CheckInstall();
     ManualAttribute.RegisterEventHandlers();
-    log('ManualAttribute: Ready!');
 });

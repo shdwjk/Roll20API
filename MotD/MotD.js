@@ -5,27 +5,18 @@
 var MotD = MotD || (function() {
 	'use strict';
 
-	var version = 0.1,
+	var version = '0.2.1',
+        lastUpdate = 1427604256,
 		motdNoteId,
 		motdNoteName = 'MotD Note',
 		motdText,
-
-	fixedCreateObj = (function () {
-		return function () {
-			var obj = createObj.apply(this, arguments);
-			if (obj && !obj.fbpath) {
-				obj.fbpath = obj.changed._fbpath.replace(/([^\/]*\/){4}/, "/");
-			}
-			return obj;
-		};
-	}()),
 
 	loadMotDNote = function (text) {
 		motdText=text;
 	},
 
 	createMotDNote = function() {
-		var motdNote = fixedCreateObj('handout',{
+		var motdNote = createObj('handout',{
 			name: motdNoteName
 		});
 		motdText='Welcome to the Game!';
@@ -34,6 +25,8 @@ var MotD = MotD || (function() {
 	},
 
 	checkInstall = function(callback) {
+        log('-=> MotD v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+
 		var motdNote = filterObjs(function(o){
 			return ( 'handout' === o.get('type') && motdNoteName === o.get('name') && false === o.get('archived'));
 		})[0];

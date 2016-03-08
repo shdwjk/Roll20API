@@ -5,7 +5,7 @@
 var WeightedDice = WeightedDice || (function() {
     "use strict";
 
-    var version  = '0.3.1',
+    var version  = '0.3.2',
         lastUpdate = 1442947489,
         schemaVersion = 0.1,
 

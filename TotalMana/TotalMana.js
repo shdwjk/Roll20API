@@ -5,7 +5,7 @@
 var TotalMana = TotalMana || (function() {
     'use strict';
 
-    var version = '0.1.2',
+    var version = '0.1.3',
         lastUpdate = 1444830577,
         schemaVersion = 0.1,
 

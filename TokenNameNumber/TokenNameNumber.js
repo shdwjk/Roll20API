@@ -1,11 +1,10 @@
-// Github:   https://github.com/shdwjk/Roll20API/blob/master/TokenNameNumber/TokenNameNumber.js
-// By:       The Aaron, Arcane Scriptomancer
+// Github:   https://github.com/shdwjk/Roll20API/blob/master/TokenNameNumber/TokenNameNumber.js // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
 var TokenNameNumber = TokenNameNumber || (function() {
     'use strict';
 
-    var version = '0.5.5',
+    var version = '0.5.6',
         lastUpdate = 1454280144,
         schemaVersion = 0.3,
         statuses = [

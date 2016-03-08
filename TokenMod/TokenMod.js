@@ -5,7 +5,7 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.18',
+    var version = '0.8.19',
         lastUpdate = 1454855624,
         schemaVersion = 0.1,
 

@@ -9,7 +9,7 @@
 var TurnMarker = TurnMarker || (function(){
     "use strict";
     
-    var version = '1.3.2',
+    var version = '1.3.3',
         lastUpdate = 1455059959,
         schemaVersion = 1.16,
         active = false,

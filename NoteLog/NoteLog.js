@@ -5,7 +5,7 @@
 var NoteLog = NoteLog || (function() {
     'use strict';
 
-    var version = '0.1.0',
+    var version = '0.1.1',
         lastUpdate = 1434428711,
         schemaVersion = 0.1,
         noteLogName = 'Log',
@@ -53,6 +53,7 @@ var NoteLog = NoteLog || (function() {
             case '!note-log':
                 nl = getNoteLog();
                 nl.get('notes', function(n){
+                    if(!_.isNull(n)){
                     setTimeout(function(){
                         var text=n+'<br>'+bulletChar+' '+args.join(' ');
                         nl.set('notes',text);                        

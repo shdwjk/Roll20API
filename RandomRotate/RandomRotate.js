@@ -3,9 +3,10 @@
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
 var RandomRotate = RandomRotate || (function(){
-    'use strict';
+	'use strict';
 
-	var version = 0.1,
+	var version = '0.2.1',
+        lastUpdate = 1427604262,
 
 	ch = function (c) {
 		var entities = {
@@ -27,6 +28,10 @@ var RandomRotate = RandomRotate || (function(){
 			return ('&'+entities[c]+';');
 		}
 		return '';
+	},
+
+	checkInstall = function(){
+        log('-=> RandomRotate v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 	},
 
 	showHelp = function() {
@@ -52,19 +57,39 @@ var RandomRotate = RandomRotate || (function(){
 
 
 	handleInput = function(msg) {
-		var args;
-        
-		if ( "api" !== msg.type || !isGM(msg.playerid) ) {
+		var args, tok,
+			lx = 100000,
+			ly = 100000,
+			hx = 0,
+			hy = 0,
+			optionRotate = false,
+			optionGrid = false;
+
+		if ( "api" !== msg.type || !playerIsGM(msg.playerid) ) {
 			return;
 		}
 
 		args = msg.content.split(/\s+/);
-		
+
 		switch(args[0]) {
-			case '!random-rotate':
+			case '!random-spread':
 				if(!( msg.selected && msg.selected.length > 0 ) ) {
 					showHelp();
 					return;
+				}
+				args = msg.content.split(/\s+--/);
+				args.shift();
+				while(args.length) {
+					tok = args.shift().split(/\s+/);
+					switch(tok[0]) {
+						case 'rotate':
+							optionRotate = true;
+							break;
+						
+						case 'grid':
+							optionGrid = true;
+							break;
+					}
 				}
 
 				_.chain(msg.selected)
@@ -74,10 +99,45 @@ var RandomRotate = RandomRotate || (function(){
 					.filter(function(o){
 						return 'token' === o.get('subtype');
 					})
+					.map(function(o){
+						lx=Math.min(lx,o.get('left'));
+						ly=Math.min(ly,o.get('top'));
+						hx=Math.max(hx,o.get('left'));
+						hy=Math.max(hy,o.get('top'));
+						return o;
+					})
 					.each(function(o){
-						o.set({rotation: (randomInteger(360)-1)});
+						var x = (randomInteger(hx-lx)+lx),
+							y = (randomInteger(hy-ly)+ly),
+							mod = { 
+								top: y, 
+								left: x
+							};
+						if(optionRotate) {
+							mod.rotation  = (randomInteger(360)-1);
+						}
+						o.set(mod);
 					})
 					;
+				break;            
+
+			case '!random-rotate':
+				if(!( msg.selected && msg.selected.length > 0 ) ) {
+					showHelp();
+					return;
+				}
+
+				_.chain(msg.selected)
+				.map(function (o) {
+					return getObj(o._type,o._id);
+				})
+				.filter(function(o){
+					return 'token' === o.get('subtype');
+				})
+				.each(function(o){
+					o.set({rotation: (randomInteger(360)-1)});
+				})
+				;
 				break;
 
 		}
@@ -89,6 +149,7 @@ var RandomRotate = RandomRotate || (function(){
 	};
 
 	return {
+		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers
 	};
 }());
@@ -96,12 +157,6 @@ var RandomRotate = RandomRotate || (function(){
 on("ready",function(){
 	'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-		RandomRotate.RegisterEventHandlers();
-    } else {
-        log('--------------------------------------------------------------');
-        log('RandomRotate requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
+	RandomRotate.CheckInstall();
+	RandomRotate.RegisterEventHandlers();
 });

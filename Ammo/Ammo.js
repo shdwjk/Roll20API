@@ -5,7 +5,7 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.0',
+    var version = '0.3.1',
         lastUpdate = 1427602798,
 		schemaVersion = 0.1,
 

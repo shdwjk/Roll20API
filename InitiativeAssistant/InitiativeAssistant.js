@@ -5,7 +5,7 @@
 var InitiativeAssistant = InitiativeAssistant || (function() {
     'use strict';
 
-    var version = '0.1.2',
+    var version = '0.1.3',
         lastUpdate = 1429545338,
         schemaVersion = 0.2,
         sorters = {

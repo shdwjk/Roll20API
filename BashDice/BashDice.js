@@ -1,9 +1,12 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/BashDice/BashDice.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+ 
+ var BashDice = BashDice || (function() {
 	'use strict';
 
-	var version = 0.1,
+	var version = '0.2.1',
+        lastUpdate = 1427604236,
 
 	ch = function (c) {
 		var entities = {
@@ -25,6 +28,10 @@
 			return ('&'+entities[c]+';');
 		}
 		return '';
+	},
+
+	checkInstall = function() {
+        log('-=> BashDice v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 	},
 
 	getBashRoll = function() {
@@ -105,6 +112,7 @@
 	};
 
 	return {
+		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers
 	};
 	
@@ -113,5 +121,6 @@
 on('ready',function() {
 	'use strict';
 
+	BashDice.CheckInstall();
 	BashDice.RegisterEventHandlers();
 });

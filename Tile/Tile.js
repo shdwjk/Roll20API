@@ -5,7 +5,8 @@
 var Tile = Tile || (function() {
     'use strict';
 
-    var version = 0.3,
+    var version = '0.3.1',
+        lastUpdate = 1427604272,
         tileNextMove = false,
 
     getCleanImgsrc = function (imgsrc) {
@@ -19,7 +20,7 @@ var Tile = Tile || (function() {
     handleInput = function(msg) {
         var args;
 
-        if (msg.type !== "api" || !isGM(msg.playerid)) {
+        if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
 
@@ -56,7 +57,6 @@ var Tile = Tile || (function() {
                 t = {
                     imgsrc: img,
                     pageid: obj.get('pageid'),
-                    rotation: obj.get('rotation'),
                     layer: 'map',
                     width: prev.width,
                     height: prev.height       
@@ -83,12 +83,17 @@ var Tile = Tile || (function() {
         }
     },
 
+	checkInstall = function() {
+        log('-=> Tile v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+	},
+
     registerEventHandlers = function() {
         on('change:graphic', handleMove);
         on('chat:message', handleInput);
     };
 
     return {
+		CheckInstall: checkInstall,
         RegisterEventHandlers: registerEventHandlers
     };
     
@@ -97,12 +102,6 @@ var Tile = Tile || (function() {
 on('ready',function() {
     'use strict';
 
-    if("undefined" !== typeof isGM && _.isFunction(isGM)) {
-        Tile.RegisterEventHandlers();
-    } else {
-        log('--------------------------------------------------------------');
-        log('Tile requires the isGM module to work.');
-        log('isGM GIST: https://gist.github.com/shdwjk/8d5bb062abab18463625');
-        log('--------------------------------------------------------------');
-    }
+	Tile.CheckInstall();
+	Tile.RegisterEventHandlers();
 });
