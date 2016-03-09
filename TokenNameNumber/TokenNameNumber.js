@@ -1,13 +1,13 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/TokenNameNumber/TokenNameNumber.js // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var globalConfig = globalConfig || undefined;
+var globalconfig = globalconfig || undefined;
 var TokenNameNumber = TokenNameNumber || (function() {
     'use strict';
 
-    var version = '0.5.8',
-        lastUpdate = 1457495062,
-        schemaVersion = 0.4,
+    var version = '0.5.9',
+        lastUpdate = 1457563292,
+        schemaVersion = 0.5,
         statuses = [
             'red', 'blue', 'green', 'brown', 'purple', 'pink', 'yellow', // 0-6
             'skull', 'sleepy', 'half-heart', 'half-haze', 'interdiction',
@@ -30,9 +30,9 @@ var TokenNameNumber = TokenNameNumber || (function() {
 
     checkGlobalConfig = function(){
         var s=state.TokenNameNumber,
-            g=globalConfig && globalConfig.tokennamenumber,
+            g=globalconfig && globalconfig.tokennamenumber,
             parsedDots;
-        if(g && g.lastsaved && g.lastsaved > s.globalConfigCache.lastsaved
+        if(g && g.lastsaved && g.lastsaved > s.globalconfigCache.lastsaved
         ){
           log('  > Updating from Global Config <  ['+(new Date(g.lastsaved*1000))+']');
 
@@ -48,7 +48,7 @@ var TokenNameNumber = TokenNameNumber || (function() {
               s.config.dots = parsedDots;
             }
           }
-          state.TokenNameNumber.globalConfigCache=globalConfig.tokennamenumber;
+          state.TokenNameNumber.globalconfigCache=globalconfig.tokennamenumber;
         }
     },
     checkInstall = function() {    
@@ -58,7 +58,9 @@ var TokenNameNumber = TokenNameNumber || (function() {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.TokenNameNumber && state.TokenNameNumber.version) {
                 case 0.3: 
-                  state.TokenNameNumber.globalConfigCache = {lastsaved:0};
+				case 0.4:
+				  delete state.TokenNameNumber.globalConfigCache;
+                  state.TokenNameNumber.globalconfigCache = {lastsaved:0};
 
                 /* falls through */
                 case 'UpdateSchemaVersion':
@@ -68,7 +70,7 @@ var TokenNameNumber = TokenNameNumber || (function() {
                 default:
                     state.TokenNameNumber = {
                         version: schemaVersion,
-                        globalConfigCache: {lastsaved:0},
+                        globalconfigCache: {lastsaved:0},
                         config: {
                             randomSpace: 0,
                             useDots: false,

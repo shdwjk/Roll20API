@@ -1,20 +1,20 @@
-// Github:   https://github.com/shdwjk/Roll20API/blob/master/MonsterHitDice5e/MonsterHitDice5e.js
+// Github:   https://github.com/shdwjk/Roll20API/blob/master/MonsterHitDice/MonsterHitDice.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var globalConfig = globalConfig || undefined;
+var globalconfig = globalconfig || undefined;
 var MonsterHitDice = MonsterHitDice || (function() {
     'use strict';
 
-    var version = '0.3.2',
-        lastUpdate = 1457484454,
-        schemaVersion = 0.1,
+    var version = '0.3.3',
+        lastUpdate = 1457563185,
+        schemaVersion = 0.2,
         tokenIds = [],
 
     checkGlobalConfig = function(){
         var s=state.MonsterHitDice,
-            g=globalConfig && globalConfig.monsterhitdice;
-        if(g && g.lastsaved && g.lastsaved > s.globalConfigCache.lastsaved
+            g=globalconfig && globalconfig.monsterhitdice;
+        if(g && g.lastsaved && g.lastsaved > s.globalconfigCache.lastsaved
         ){
            log('  > Updating from Global Config <  ['+(new Date(g.lastsaved*1000))+']');
            s.config.bar = parseInt(g.Bar.match(/\d+/)[0]);
@@ -49,7 +49,7 @@ var MonsterHitDice = MonsterHitDice || (function() {
                     s.config.conBonusIsStat = 'conIsStat' === g['Constitution is Stat'];
                     break;
             }
-            state.MonsterHitDice.globalConfigCache=globalConfig.monsterhitdice;
+            state.MonsterHitDice.globalconfigCache=globalconfig.monsterhitdice;
         }
     },
     checkInstall = function() {
@@ -57,18 +57,30 @@ var MonsterHitDice = MonsterHitDice || (function() {
 
         if( ! _.has(state,'MonsterHitDice') || state.MonsterHitDice.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
-            state.MonsterHitDice = {
-                version: schemaVersion,
-                globalConfigCache: {lastsaved:0},
-                config: {
-                    bar: 3,
-                    hitDiceAttribute: 'npc_HP_hit_dice',
-                    findSRDFormula: false,
-                    useConBonus: true,
-                    conBonusAttribute: 'npc_constitution',
-                    conBonusIsStat: true
-                }
-            };
+            switch(state.MonsterHitDice && state.MonsterHitDice.version) {
+                case 0.1:
+                  delete state.MonsterHitDice.globalConfigCache;
+                  state.MonsterHitDice.globalconfigCache = {lastsaved:0};
+
+                /* falls through */
+                case 'UpdateSchemaVersion':
+                    state.MonsterHitDice.version = schemaVersion;
+                    break;
+				
+				default:
+					state.MonsterHitDice = {
+						version: schemaVersion,
+						globalconfigCache: {lastsaved:0},
+						config: {
+							bar: 3,
+							hitDiceAttribute: 'npc_HP_hit_dice',
+							findSRDFormula: false,
+							useConBonus: true,
+							conBonusAttribute: 'npc_constitution',
+							conBonusIsStat: true
+						}
+					};
+			}
         }
         checkGlobalConfig();
     },

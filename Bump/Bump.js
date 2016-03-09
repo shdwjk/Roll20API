@@ -2,13 +2,13 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var globalConfig = globalConfig || undefined;
+var globalconfig = globalconfig || undefined;
 var Bump = Bump || (function() {
     'use strict';
 
-    var version = '0.2.9',
-        lastUpdate = 1457503215,
-        schemaVersion = 0.3,
+    var version = '0.2.10',
+        lastUpdate = 1457563083,
+        schemaVersion = 0.4,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461',
 
@@ -106,9 +106,9 @@ var Bump = Bump || (function() {
 
 	checkGlobalConfig = function(){
 		var s=state.Bump,
-		g=globalConfig && globalConfig.bump,
+		g=globalconfig && globalconfig.bump,
 		parsedDots;
-		if(g && g.lastsaved && g.lastsaved > s.globalConfigCache.lastsaved
+		if(g && g.lastsaved && g.lastsaved > s.globalconfigCache.lastsaved
 		){
 			log('  > Updating from Global Config <  ['+(new Date(g.lastsaved*1000))+']');
 
@@ -122,7 +122,7 @@ var Bump = Bump || (function() {
 			s.config.autoPush = 'autoPush' === g['Auto Push'];
 			s.config.autoSlave = 'autoSlave' === g['Auto Slave'];
 
-			state.Bump.globalConfigCache=globalConfig.bump;
+			state.Bump.globalconfigCache=globalconfig.bump;
 		}
 	},
     checkInstall = function() {
@@ -131,12 +131,14 @@ var Bump = Bump || (function() {
         if( ! _.has(state,'Bump') || state.Bump.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.Bump && state.Bump.version) {
-				case 0.2:
-                  state.Bump.globalConfigCache = {lastsaved:0};
-
-                /* falls through */
                 case 0.1:
                     state.Bump.config.autoSlave = false;
+
+                /* falls through */
+				case 0.2:
+				case 0.3:
+                  delete state.Bump.globalConfigCache;
+                  state.Bump.globalconfigCache = {lastsaved:0};
 
                 /* falls through */
                 case 'UpdateSchemaVersion':
@@ -146,7 +148,7 @@ var Bump = Bump || (function() {
                 default:
                     state.Bump = {
                         version: schemaVersion,
-                        globalConfigCache: {lastsaved:0},
+                        globalconfigCache: {lastsaved:0},
                         config: {
                             layerColors: {
                                 'gmlayer' : '#008000',

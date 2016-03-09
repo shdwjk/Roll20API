@@ -2,13 +2,13 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var globalConfig = globalConfig || undefined;
+var globalconfig = globalconfig || undefined;
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.20',
-        lastUpdate = 1457501048,
-        schemaVersion = 0.2,
+    var version = '0.8.21',
+        lastUpdate = 1457563254,
+        schemaVersion = 0.3,
 
         fields = {
 			// booleans
@@ -135,15 +135,15 @@ var TokenMod = TokenMod || (function() {
                 }
 		},
     checkGlobalConfig = function(){
-        var s=state.TokenNameNumber,
-            g=globalConfig && globalConfig.tokennamenumber,
+        var s=state.TokenMod,
+            g=globalconfig && globalconfig.tokenmod,
             parsedDots;
-        if(g && g.lastsaved && g.lastsaved > s.globalConfigCache.lastsaved
+        if(g && g.lastsaved && g.lastsaved > s.globalconfigCache.lastsaved
         ){
           log('  > Updating from Global Config <  ['+(new Date(g.lastsaved*1000))+']');
 
           s.config.playersCanUse_ids = 'playersCanIDs' === g['Players can use --ids'];
-          state.TokenNameNumber.globalConfigCache=globalConfig.tokennamenumber;
+          state.TokenMod.globalconfigCache=globalconfig.tokenmod;
         }
     },
 	checkInstall = function() {
@@ -152,8 +152,12 @@ var TokenMod = TokenMod || (function() {
 		if( ! _.has(state,'TokenMod') || state.TokenMod.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.TokenMod && state.TokenMod.version) {
+
+                /* falls through */
                 case 0.1: 
-                  state.TokenMod.globalConfigCache = {lastsaved:0};
+                case 0.2: 
+				  delete state.TokenMod.globalConfigCache;
+                  state.TokenMod.globalconfigCache = {lastsaved:0};
 
                 /* falls through */
                 case 'UpdateSchemaVersion':
@@ -163,7 +167,7 @@ var TokenMod = TokenMod || (function() {
                 default:
                     state.TokenMod = {
                         version: schemaVersion,
-                        globalConfigCache: {lastsaved:0},
+                        globalconfigCache: {lastsaved:0},
                         playersCanUse_ids: false
                     };
                     break;
