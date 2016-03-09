@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.1',
-        lastUpdate = 1427602798,
+    var version = '0.3.2',
+        lastUpdate = 1457507907,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -31,9 +31,9 @@ var Ammo = Ammo || (function() {
 		return '';
 	},
 	sendMessage = function(message, who) {
-		sendChat('Ammo', (who ? ('/w '+who+' ') : '') + '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-			+message
-			+'</div>'
+		sendChat('Ammo', (who ? ('/w '+who+' ') : '') + '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+			message+
+			'</div>'
 		);
 	},
 
@@ -46,17 +46,17 @@ var Ammo = Ammo || (function() {
 
 		if(adj < 0 ) {
 			sendMessage(
-				'<b>'+chr.get('name') + '</b> does not have enough ammo.  Needs '+Math.abs(amount)+', but only has '
-				+'<span style="color: #ff0000;">'+val+'</span>.'
-				+'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
+				'<b>'+chr.get('name') + '</b> does not have enough ammo.  Needs '+Math.abs(amount)+', but only has '+
+				'<span style="color: #ff0000;">'+val+'</span>.'+
+				'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
 				(playerIsGM(playerid) ? 'gm' : false)
 			);
 			valid = false;
 		} else if( adj > max) {
 			sendMessage(
-				'<b>'+chr.get('name') + '</b> does not have enough storage space for ammo.  Needs '+adj+', but only has '
-				+'<span style="color: #ff0000;">'+max+'</span>.'
-				+'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
+				'<b>'+chr.get('name') + '</b> does not have enough storage space for ammo.  Needs '+adj+', but only has '+
+				'<span style="color: #ff0000;">'+max+'</span>.'+
+				'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
 				(playerIsGM(playerid) ? 'gm' : false)
 			);
 			valid = false;
@@ -78,56 +78,45 @@ var Ammo = Ammo || (function() {
 	},
 
 	showHelp = function(playerid) {
-		var who=getObj('player',playerid).get('_displayname').split(' ')[0];
+		var who=getObj('player',playerid).get('_displayname');
 
         sendChat('',
-            '/w '+who+' '
-+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
-		+'Ammo v'+version
-	+'</div>'
-	+'<div style="padding-left:10px;margin-bottom:3px;">'
-		+'<p>Ammo provides inventory management for ammunition stored in a character'
-		+'attribute.  If the adjustment would change the attribute to be below 0 or above'
-		+'it\'s maximum value, a warning will be issued and the attribute will not be'
-		+'changed.</p>'
+            '/w "'+who+'" '+
+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+		'Ammo v'+version+
+	'</div>'+
+	'<div style="padding-left:10px;margin-bottom:3px;">'+
+		'<p>Ammo provides inventory management for ammunition stored in a character'+
+		'attribute.  If the adjustment would change the attribute to be below 0 or above'+
+		'it\'s maximum value, a warning will be issued and the attribute will not be'+
+		'changed.</p>'+
 
-		+( (playerIsGM(playerid)) ? '<p><b>Note:</b> As the GM, bounds will not be '
-		+'enforced for you.  You will be whispered the warnings, but the operation '
-		+'will succeed.  You will also be told the previous and current state in case '
-		+'you want to revert the change.' : '')
+		( (playerIsGM(playerid)) ? '<p><b>Note:</b> As the GM, bounds will not be '+
+		'enforced for you.  You will be whispered the warnings, but the operation '+
+		'will succeed.  You will also be told the previous and current state in case '+
+		'you want to revert the change.' : '')+
 
-	+'</div>'
-	+'<b>Commands</b>'
-	+'<div style="padding-left:10px;">'
-		+'<b><span style="font-family: serif;">!ammo '+ch('<')+'id'+ch('>')+' '+ch('<')+'attribute'+ch('>')+' '+ch('<')+'amount'+ch('>')+' </span></b>'
-		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'This command requires 3 parameters:'
-			+'<ul>'
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">id</span></b> -- The id of the character which has the attribute.  You can pass this as '+ch('@')+ch('{')+'selected|token_id'+ch('}')+' and the character id will be pulled from represents field of the token.'
-				+'</li> '
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">attribute</span></b> -- The name of the attribute representing ammunition.'
-				+'</li> '
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">amount</span></b> -- The change to apply to the current quantity of ammo.  Use negative numbers to decrease the amount, and possitive numbers to increase it.'
-				+'</li> '
-			+'</ul>'
-		+'</div>'
-	+'</div>'
-	+'<div style="padding-left:10px;">'
-		+'<b><span style="font-family: serif;">!get-represents [token_id]</span></b>'
-		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'This command will show the character id for the supplied token id, or will list the character ids for all the selected tokens.'
-			+'<ul>'
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">token_id</span></b> -- The id of the token to lookup, usually supplied with: '+ch('@')+ch('{')+'selected|token_id'+ch('}')
-				+'</li> '
-			+'</ul>'
-		+'</div>'
-	+'</div>'
-+'</div>'
+	'</div>'+
+	'<b>Commands</b>'+
+	'<div style="padding-left:10px;">'+
+		'<b><span style="font-family: serif;">!ammo '+ch('<')+'id'+ch('>')+' '+ch('<')+'attribute'+ch('>')+' '+ch('<')+'amount'+ch('>')+' </span></b>'+
+		'<div style="padding-left: 10px;padding-right:20px">'+
+			'This command requires 3 parameters:'+
+			'<ul>'+
+				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+					'<b><span style="font-family: serif;">id</span></b> -- The id of the character which has the attribute.  You can pass this as '+ch('@')+ch('{')+'selected|token_id'+ch('}')+' and the character id will be pulled from represents field of the token.'+
+				'</li> '+
+				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+					'<b><span style="font-family: serif;">attribute</span></b> -- The name of the attribute representing ammunition.'+
+				'</li> '+
+				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+					'<b><span style="font-family: serif;">amount</span></b> -- The change to apply to the current quantity of ammo.  Use negative numbers to decrease the amount, and possitive numbers to increase it.'+
+				'</li> '+
+			'</ul>'+
+		'</div>'+
+	'</div>'+
+'</div>'
             );
     },
 
@@ -182,9 +171,9 @@ var Ammo = Ammo || (function() {
 						}
 					}
 					if(chr) {
-						if(! playerIsGM(msg.playerid) 
-							&& ! _.contains(chr.get('controlledby').split(','),msg.playerid) 
-							&& ! _.contains(chr.get('controlledby').split(','),'all') 
+						if(! playerIsGM(msg.playerid) &&
+							! _.contains(chr.get('controlledby').split(','),msg.playerid) &&
+							! _.contains(chr.get('controlledby').split(','),'all') 
 							)
 						{
 							sendMessage( 'You do not control the specified character: '+chr.id );
@@ -194,7 +183,6 @@ var Ammo = Ammo || (function() {
 							);
 							return;
 						}
-
 
 						attr = findObjs({_type: 'attribute', _characterid: chr.id, name: args[2]})[0];
 					}
@@ -216,8 +204,9 @@ var Ammo = Ammo || (function() {
 								);
 							} else {
 								sendMessage(
-									( (undefined !== token) ? ('Token id ['+args[1]+'] does not represent a character. ') : ('Character/Token id ['+args[1]+'] is not valid. ') )
-									+'Please be sure you are specifying it correctly, either with '+ch('@')+ch('{')+'selected|token_id'+ch('}')+' or copying the character id from: !get-represents '+ch('@')+ch('{')+'selected|token_id'+ch('}'),
+									( token ?  'Token id ['+args[1]+'] does not represent a character. ' : 'Character/Token id ['+args[1]+'] is not valid. ' ) +
+									'Please be sure you are specifying it correctly, either with '+ch('@')+ch('{')+'selected|token_id'+ch('}')+
+									' or '+ch('@')+ch('{')+'selected|character_id'+ch('}')+'.',
 									(playerIsGM(msg.playerid) ? 'gm' : false)
 								);
 							}
@@ -227,40 +216,6 @@ var Ammo = Ammo || (function() {
 					showHelp(msg.playerid);
 				}
                 break;
-
-			case '!get-represents':
-				if(args.length > 1) {
-					chr = getObj('character', args[1]);
-					if( ! chr ) {
-						token = getObj('graphic', args[1]);
-						if(token) {
-							sendMessage(
-									'The specified token represents the following character:'
-									+'<ul><li>'+ ( ('' !== token.get('name')) ? token.get('name') : 'BLANK' )+' -> '+ ( ('' !== token.get('represents')) ? token.get('represents') : 'NOTHING' ) + '</li></ul>',
-								(playerIsGM(msg.playerid) ? 'gm' : false)
-							);
-						} else {
-							sendMessage(
-								' Token id ['+args[1]+'] is not valid.',
-								(playerIsGM(msg.playerid) ? 'gm' : false)
-							);
-						}
-					}
-				} else if (msg.selected && msg.selected.length) {
-					_.each(msg.selected, function(s) {
-						token = getObj('graphic', s._id);
-						if(token) {
-							text += '<li>'+ ( ('' !== token.get('name')) ? token.get('name') : 'BLANK' )+' -> '+ ( ('' !== token.get('represents')) ? token.get('represents') : 'NOTHING' ) + '</li>';
-						}
-					});
-					sendMessage(
-						'The selected tokens represent the following characters:'+'<ul>' + text + '</ul>',
-						(playerIsGM(msg.playerid) ? 'gm' : false)
-					);
-				} else {
-					showHelp(msg.playerid);
-				}
-				break;
 		}
 
 	},
