@@ -1,12 +1,13 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/TokenNameNumber/TokenNameNumber.js // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
+var globalConfig = globalConfig || undefined;
 var TokenNameNumber = TokenNameNumber || (function() {
     'use strict';
 
-    var version = '0.5.7',
-        lastUpdate = 1457420266,
-        schemaVersion = 0.3,
+    var version = '0.5.8',
+        lastUpdate = 1457495062,
+        schemaVersion = 0.4,
         statuses = [
             'red', 'blue', 'green', 'brown', 'purple', 'pink', 'yellow', // 0-6
             'skull', 'sleepy', 'half-heart', 'half-haze', 'interdiction',
@@ -27,26 +28,49 @@ var TokenNameNumber = TokenNameNumber || (function() {
         },
         tokenIds = [],
 
+    checkGlobalConfig = function(){
+        var s=state.TokenNameNumber,
+            g=globalConfig && globalConfig.tokennamenumber,
+            parsedDots;
+        if(g && g.lastsaved && g.lastsaved > s.globalConfigCache.lastsaved
+        ){
+          log('  > Updating from Global Config <  ['+(new Date(g.lastsaved*1000))+']');
+
+          s.config.randomSpace = parseInt(g['Random Space'])||0;
+          s.config.useDots = 'useDots' === g['Use Dots'];
+          if(s.config.useDots){
+            parsedDots=_.chain(g.Dots.match(/[a-zA-Z-]+/g))
+              .map(function(s){ return s.toLowerCase();})
+              .uniq()
+              .filter(function(s){ return _.contains(statuses,s);})
+              ;
+            if(parsedDots.length){
+              s.config.dots = parsedDots;
+            }
+          }
+          state.TokenNameNumber.globalConfigCache=globalConfig.tokennamenumber;
+        }
+    },
     checkInstall = function() {    
         log('-=> TokenNameNumber v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'TokenNameNumber') || state.TokenNameNumber.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.TokenNameNumber && state.TokenNameNumber.version) {
-                case 0.2:
-                    state.TokenNameNumber = _.defaults({
-                        version: schemaVersion,
-                        config: {
-                            randomSpace: 0,
-                            useDots: false,
-                            dots: ['red','brown','yellow','green','blue','purple']
-                        }
-                    }, state.TokenNameNumber);
+                case 0.3: 
+                  state.TokenNameNumber.globalConfigCache = {lastsaved:0};
+
+                /* falls through */
+                case 'UpdateSchemaVersion':
+                    state.TokenNameNumber.version = schemaVersion;
                     break;
+
                 default:
                     state.TokenNameNumber = {
                         version: schemaVersion,
+                        globalConfigCache: {lastsaved:0},
                         config: {
+                            randomSpace: 0,
                             useDots: false,
                             dots: ['red','brown','yellow','green','blue','purple']
                         },
@@ -56,6 +80,7 @@ var TokenNameNumber = TokenNameNumber || (function() {
                     break;
             }
         }
+        checkGlobalConfig();
     },
     esRE = function (s) {
         return s.replace(regex.escape,"\\$1");
