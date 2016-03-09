@@ -2,17 +2,18 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
+var globalConfig = globalConfig || undefined;
 var Bump = Bump || (function() {
     'use strict';
 
-    var version = '0.2.8',
-        lastUpdate = 1455413324,
-        schemaVersion = 0.2,
+    var version = '0.2.9',
+        lastUpdate = 1457503215,
+        schemaVersion = 0.3,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461',
 
         regex = {
-    		colors: /^(transparent|(?:#?[0-9a-fA-F]{6}))$/
+    		colors: /(transparent|(?:#?[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?))/
         },
 
         mirroredProps = [
@@ -103,16 +104,41 @@ var Bump = Bump || (function() {
         });
     },
 
+	checkGlobalConfig = function(){
+		var s=state.Bump,
+		g=globalConfig && globalConfig.bump,
+		parsedDots;
+		if(g && g.lastsaved && g.lastsaved > s.globalConfigCache.lastsaved
+		){
+			log('  > Updating from Global Config <  ['+(new Date(g.lastsaved*1000))+']');
+
+			if(g['Visible Color'].match(regex.colors)) {
+                s.config.layerColors.gmlayer =g['Visible Color'].match(regex.colors)[1];
+			}
+			if(g['Invisible Color'].match(regex.colors)) {
+                s.config.layerColors.objects=g['Invisible Color'].match(regex.colors)[1];
+			}
+
+			s.config.autoPush = 'autoPush' === g['Auto Push'];
+			s.config.autoSlave = 'autoSlave' === g['Auto Slave'];
+
+			state.Bump.globalConfigCache=globalConfig.bump;
+		}
+	},
     checkInstall = function() {
         log('-=> Bump v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'Bump') || state.Bump.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.Bump && state.Bump.version) {
+				case 0.2:
+                  state.Bump.globalConfigCache = {lastsaved:0};
+
+                /* falls through */
                 case 0.1:
                     state.Bump.config.autoSlave = false;
-                    /* break; // intentional drop through */
 
+                /* falls through */
                 case 'UpdateSchemaVersion':
                     state.Bump.version = schemaVersion;
                     break;
@@ -120,6 +146,7 @@ var Bump = Bump || (function() {
                 default:
                     state.Bump = {
                         version: schemaVersion,
+                        globalConfigCache: {lastsaved:0},
                         config: {
                             layerColors: {
                                 'gmlayer' : '#008000',
@@ -219,10 +246,10 @@ var Bump = Bump || (function() {
             state.Bump.mirrored[master.id]=slave.id;
         } else {
             if(!slave) {
-                sendChat('','/w '+who+' '
-                    +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                        +'<b>Error:</b> Couldn'+ch("'")+'t find a token for id: '+id
-                    +'</div>'
+                sendChat('','/w "'+who+'" '+
+                    '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                        '<b>Error:</b> Couldn'+ch("'")+'t find a token for id: '+id+
+                    '</div>'
                 );
             }
         }
@@ -373,44 +400,44 @@ var Bump = Bump || (function() {
 
     showHelp = function(who) {
 
-        sendChat('','/w '+who+' '
-+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
-		+'Bump v'+version
-	+'</div>'
-	+'<div style="padding-left:10px;margin-bottom:3px;">'
-		+'<p>Bump provides a way to invisibly manipulate tokens on the GM Layer from the Objects Layer, and vice versa.</p>'
-        +'<p>When a token is added to Bump a slave token is created that mimics everything about to master token.  The slave token is only visible to the GM and has a color on it to show if the master token is on the GM Layer or the Objects layer.  Moving the slave token will move the master token and vice versa.  The slave token represents the same character as the master token and changes on the slave token will be reflected on the master token.</p>'
-	+'</div>'
-	+'<b>Commands</b>'
-	+'<div style="padding-left:10px;">'
-		+'<b><span style="font-family: serif;">!bump-slave [--push|--help]</span></b>'
-		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'<p>Adds the selected tokens to Bump, creating their slave tokens.</p>'
-			+'<ul>'
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">--push</span></b> '+ch('-')+' If the selected token is on the Objects Layer, it will be pushed to the GM Layer.'
-				+'</li> '
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'
-				+'</li> '
-			+'</ul>'
-		+'</div>'
-    +'</div>'
-	+'<div style="padding-left:10px;">'
-		+'<b><span style="font-family: serif;">!bump [--help]</span></b>'
-		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'<p>Using !bump on a token in Bump causes it to swap with it'+ch("'")+' counterpart on the other layer.</p>'
-			+'<ul>'
-				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-					+'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'
-				+'</li> '
-			+'</ul>'
-		+'</div>'
-    +'</div>'
-	+'<b>Configuration</b>'
-    +getAllConfigOptions()
-+'</div>'
+        sendChat('','/w "'+who+'" '+
+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+		'Bump v'+version+
+	'</div>'+
+	'<div style="padding-left:10px;margin-bottom:3px;">'+
+		'<p>Bump provides a way to invisibly manipulate tokens on the GM Layer from the Objects Layer, and vice versa.</p>'+
+        '<p>When a token is added to Bump a slave token is created that mimics everything about to master token.  The slave token is only visible to the GM and has a color on it to show if the master token is on the GM Layer or the Objects layer.  Moving the slave token will move the master token and vice versa.  The slave token represents the same character as the master token and changes on the slave token will be reflected on the master token.</p>'+
+	'</div>'+
+	'<b>Commands</b>'+
+	'<div style="padding-left:10px;">'+
+		'<b><span style="font-family: serif;">!bump-slave [--push|--help]</span></b>'+
+		'<div style="padding-left: 10px;padding-right:20px">'+
+			'<p>Adds the selected tokens to Bump, creating their slave tokens.</p>'+
+			'<ul>'+
+				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+					'<b><span style="font-family: serif;">--push</span></b> '+ch('-')+' If the selected token is on the Objects Layer, it will be pushed to the GM Layer.'+
+				'</li> '+
+				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+					'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'+
+				'</li> '+
+			'</ul>'+
+		'</div>'+
+    '</div>'+
+	'<div style="padding-left:10px;">'+
+		'<b><span style="font-family: serif;">!bump [--help]</span></b>'+
+		'<div style="padding-left: 10px;padding-right:20px">'+
+			'<p>Using !bump on a token in Bump causes it to swap with it'+ch("'")+' counterpart on the other layer.</p>'+
+			'<ul>'+
+				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+					'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'+
+				'</li> '+
+			'</ul>'+
+		'</div>'+
+    '</div>'+
+	'<b>Configuration</b>'+
+    getAllConfigOptions()+
+'</div>'
         );
     },
 
@@ -420,7 +447,7 @@ var Bump = Bump || (function() {
         if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
-        who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+        who=getObj('player',msg.playerid).get('_displayname');
 
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
@@ -451,13 +478,13 @@ var Bump = Bump || (function() {
                     return;
                 }
                 if(!args.length) {
-                    sendChat('','/w '+who+' '
-+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
-		+'Bump v'+version
-	+'</div>'
-    +getAllConfigOptions()
-+'</div>'
+                    sendChat('','/w "'+who+'" '+
+                        '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                            '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+                                'Bump v'+version+
+                            '</div>'+
+                            getAllConfigOptions()+
+                        '</div>'
                     );
                     return;
                 }
@@ -471,11 +498,11 @@ var Bump = Bump || (function() {
                             } else {
                                 omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w '+who+' '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_GMLayerColor()
-                                +'</div>'
+                            sendChat('','/w "'+who+'" '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_GMLayerColor()+
+                                '</div>'
                             );
                             break;
 
@@ -485,36 +512,35 @@ var Bump = Bump || (function() {
                             } else {
                                 omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w '+who+' '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_ObjectsLayerColor()
-                                +'</div>'
+                            sendChat('','/w "'+who+'" '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_ObjectsLayerColor()+
+                                '</div>'
                             );
                             break;
 
                         case '--toggle-auto-push':
                             state.Bump.config.autoPush=!state.Bump.config.autoPush;
-                            sendChat('','/w '+who+' '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +getConfigOption_AutoPush()
-                                +'</div>'
+                            sendChat('','/w "'+who+'" '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    getConfigOption_AutoPush()+
+                                '</div>'
                             );
                             break;
                         
                         case '--toggle-auto-slave':
                             state.Bump.config.autoSlave=!state.Bump.config.autoSlave;
-                            sendChat('','/w '+who+' '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +getConfigOption_AutoSlave()
-                                +'</div>'
+                            sendChat('','/w "'+who+'" '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    getConfigOption_AutoSlave()+
+                                '</div>'
                             );
                             break;
 
                         default:
-                            sendChat('','/w '+who+' '
-                                +'<div><b>Unsupported Option:</div> '+a+'</div>'
-                            );
+                            sendChat('','/w "'+who+'" '+
+                            '<div><b>Unsupported Option:</div> '+a+'</div>');
                     }
                             
                 });
