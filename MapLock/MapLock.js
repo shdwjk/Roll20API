@@ -5,8 +5,8 @@
 var MapLock = MapLock || (function() {
     'use strict';
 
-    var version = '0.4.1',
-        lastUpdate = 1456074072,
+    var version = '0.4.2',
+        lastUpdate = 1458040738,
         schemaVersion = 0.4,
 
     checkInstall = function() {
@@ -98,9 +98,6 @@ var MapLock = MapLock || (function() {
             .reject(_.isUndefined)
             .each(function(o){
                 var t = state.MapLock.locked[o.id];
-                $d(t);
-                $d([highlight,t]);
-
                 o.set({
                     tint_color: ( highlight ? '#ff0000' : t || 'transparent')
                 });
