@@ -5,7 +5,7 @@
 var MapLock = MapLock || (function() {
     'use strict';
 
-    var version = '0.4.2',
+    var version = '0.4.3',
         lastUpdate = 1458040738,
         schemaVersion = 0.4,
 
