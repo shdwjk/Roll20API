@@ -6,8 +6,8 @@ var globalconfig = globalconfig || undefined;
 var MonsterHitDice = MonsterHitDice || (function() {
     'use strict';
 
-    var version = '0.3.3',
-        lastUpdate = 1457563185,
+    var version = '0.3.4',
+        lastUpdate = 1460840330,
         schemaVersion = 0.2,
         tokenIds = [],
 
@@ -142,7 +142,7 @@ var MonsterHitDice = MonsterHitDice || (function() {
                             Math.round((conAttrib.get('current')-10)/2) :
                             conAttrib.get('current') ;
 
-                            bonus = conExpression * _.reduce(hdExpression.get('current').match(/(\d+)d\d+/g),function(m,die){
+                            bonus = conExpression * _.reduce(hdExpression.match(/(\d+)d\d+/g),function(m,die){
                                 m+=parseInt(die.match(/(\d+)d\d+/)[1],10);
                                 return m;
                             },0);
