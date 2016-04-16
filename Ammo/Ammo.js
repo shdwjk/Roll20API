@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.2',
-        lastUpdate = 1457507907,
+    var version = '0.3.3',
+        lastUpdate = 1460838597,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -87,9 +87,9 @@ var Ammo = Ammo || (function() {
 		'Ammo v'+version+
 	'</div>'+
 	'<div style="padding-left:10px;margin-bottom:3px;">'+
-		'<p>Ammo provides inventory management for ammunition stored in a character'+
-		'attribute.  If the adjustment would change the attribute to be below 0 or above'+
-		'it\'s maximum value, a warning will be issued and the attribute will not be'+
+		'<p>Ammo provides inventory management for ammunition stored in a character '+
+		'attribute.  If the adjustment would change the attribute to be below 0 or above '+
+		'it'+ch("'")+'s maximum value, a warning will be issued and the attribute will not be'+
 		'changed.</p>'+
 
 		( (playerIsGM(playerid)) ? '<p><b>Note:</b> As the GM, bounds will not be '+
@@ -111,7 +111,7 @@ var Ammo = Ammo || (function() {
 					'<b><span style="font-family: serif;">attribute</span></b> -- The name of the attribute representing ammunition.'+
 				'</li> '+
 				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-					'<b><span style="font-family: serif;">amount</span></b> -- The change to apply to the current quantity of ammo.  Use negative numbers to decrease the amount, and possitive numbers to increase it.'+
+					'<b><span style="font-family: serif;">amount</span></b> -- The change to apply to the current quantity of ammo.  Use negative numbers to decrease the amount, and positive numbers to increase it.  You can use inline rolls to determine the number.'+
 				'</li> '+
 			'</ul>'+
 		'</div>'+
@@ -187,29 +187,21 @@ var Ammo = Ammo || (function() {
 						attr = findObjs({_type: 'attribute', _characterid: chr.id, name: args[2]})[0];
 					}
 					amount=parseInt(args[3],10);
-					if(attr && amount) {
+					if(attr) {
 						adjustAmmo(msg.playerid,attr,amount);
 					} else {
-						if(attr) {
-							sendMessage(
-								'Amount ['+args[3]+'] is not correct.  Please specify a positive or negative integer value like -1 or 4.',
-								(playerIsGM(msg.playerid) ? 'gm' : false)
-							);
-
-						} else {
-							if(chr) {
-								sendMessage(
-									'Attribute ['+args[2]+'] was not found.  Please verify that you have the right name.',
-									(playerIsGM(msg.playerid) ? 'gm' : false)
-								);
-							} else {
-								sendMessage(
-									( token ?  'Token id ['+args[1]+'] does not represent a character. ' : 'Character/Token id ['+args[1]+'] is not valid. ' ) +
-									'Please be sure you are specifying it correctly, either with '+ch('@')+ch('{')+'selected|token_id'+ch('}')+
-									' or '+ch('@')+ch('{')+'selected|character_id'+ch('}')+'.',
-									(playerIsGM(msg.playerid) ? 'gm' : false)
-								);
-							}
+                        if(chr) {
+                            sendMessage(
+                                'Attribute ['+args[2]+'] was not found.  Please verify that you have the right name.',
+                                (playerIsGM(msg.playerid) ? 'gm' : false)
+                            );
+                        } else {
+                            sendMessage(
+                                ( token ?  'Token id ['+args[1]+'] does not represent a character. ' : 'Character/Token id ['+args[1]+'] is not valid. ' ) +
+                                'Please be sure you are specifying it correctly, either with '+ch('@')+ch('{')+'selected|token_id'+ch('}')+
+                                ' or '+ch('@')+ch('{')+'selected|character_id'+ch('}')+'.',
+                                (playerIsGM(msg.playerid) ? 'gm' : false)
+                            );
 						}
 					}
 				} else {
