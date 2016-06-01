@@ -5,7 +5,7 @@
 var Mark = Mark || (function() {
     'use strict';
 
-    var version = '0.3.2',
+    var version = '0.3.3',
         lastUpdate = 1427606528,
 		schemaVersion = 0.2,
 		markerURL = 'https://s3.amazonaws.com/files.d20.io/images/4994795/7MdfzjgXCkaESbRbxATFSw/thumb.png?1406949835',

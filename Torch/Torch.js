@@ -5,7 +5,7 @@
 var Torch = Torch || (function() {
     'use strict';
 
-    var version = '0.8.6',
+    var version = '0.8.7',
         lastUpdate = 1456519199,
         schemaVersion = 0.1,
 		flickerURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',

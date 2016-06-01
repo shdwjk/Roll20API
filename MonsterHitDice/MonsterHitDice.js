@@ -6,7 +6,7 @@ var globalconfig = globalconfig || undefined;
 var MonsterHitDice = MonsterHitDice || (function() {
     'use strict';
 
-    var version = '0.3.4',
+    var version = '0.3.5',
         lastUpdate = 1460840330,
         schemaVersion = 0.2,
         tokenIds = [],
