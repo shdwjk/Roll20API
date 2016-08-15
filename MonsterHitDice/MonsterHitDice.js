@@ -6,8 +6,8 @@ var globalconfig = globalconfig || undefined;
 var MonsterHitDice = MonsterHitDice || (function() {
     'use strict';
 
-    var version = '0.3.5',
-        lastUpdate = 1460840330,
+    var version = '0.3.6',
+        lastUpdate = 1471266501,
         schemaVersion = 0.2,
         tokenIds = [],
 
@@ -35,7 +35,7 @@ var MonsterHitDice = MonsterHitDice || (function() {
                     break;
 
                 case "DnD 5e - OGL by roll20":
-                    s.config.hitDiceAttribute = 'npc_hdformula';
+                    s.config.hitDiceAttribute = 'npc_hpformula';
                     s.config.useConBonus = false;
                     s.config.conBonusAttribute = '';
                     s.config.conBonusIsStat = false;
