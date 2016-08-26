@@ -81,7 +81,8 @@ var RecursiveTable = RecursiveTable || (function() {
                     var ti=_.reduce(v.results.rolls,function(m2,v2){
                         if(_.has(v2,'table')){
                             m2.push(_.reduce(v2.results,function(m3,v3){
-                                m3.push(v3.tableItem.name);
+                              var contentForward = roll3.tableItem.name.replace(/(\[\[)\s+(.+?)\s+(\]\])/g, '$1$2$3');
+                                m3.push(contentForward);
                                 return m3;
                             },[]).join(', '));
                         }
