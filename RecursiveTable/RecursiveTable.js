@@ -5,8 +5,8 @@
 var RecursiveTable = RecursiveTable || (function() {
     'use strict';
 
-    var version = '0.1.2',
-        lastUpdate = 1453302547,
+    var version = '0.1.3',
+        lastUpdate = 1472246717,
         schemaVersion = 0.1,
         maxParseDepth = 10,
 
