@@ -9,252 +9,91 @@
 var TurnMarker = TurnMarker || (function(){
     "use strict";
     
-    var version = '1.3.4',
-        lastUpdate = 1473729973,
-        schemaVersion = 1.16,
+    var version = '1.3.5',
+        lastUpdate = 1473813525,
+        schemaVersion = 1.17,
         active = false,
-        threadSync = 1;
+        threadSync = 1,
+        autoPullOptions = {
+            'none' : 'None',
+            'npcs' : 'NPCs',
+            'all'  : 'All'
+        },
 
+    fixedSendPing = (function(){
+        var last={};
+        return function(left,top,pageid,playerid,pull){
+            if( last.left   === left   &&
+                last.top    === top    &&
+                last.pageid === pageid ) {
+                sendPing(-100,-100,pageid,null,false);
+            }
+            sendPing(left,top,pageid,playerid,pull);
+            last.left=left;
+            last.top=top;
+            last.pageid=pageid;
+        };
+    }()),
 
-return {
-
-    CheckInstall: function() {    
+    checkInstall = function() {    
         log('-=> TurnMarker v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
-        if( ! state.hasOwnProperty('TurnMarker') || state.TurnMarker.version !== schemaVersion)
-        {
-            /* Default Settings stored in the state. */
-            state.TurnMarker = {
-                version: version,
-                announceRounds: true,
-                announceTurnChange: true,
-                announcePlayerInTurnAnnounce: true,
-                announcePlayerInTurnAnnounceSize: '100%',
-                autoskipHidden: true,
-                tokenName: 'Round',
-                tokenURL: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
-                playAnimations: false,
-                rotation: false,
-                animationSpeed: 5,
-                scale: 1.7,
-                aura1: {
-                    pulse: false,
-                    size: 5,
-                    color: '#ff00ff'
-                },
-                aura2: {
-                    pulse: false,
-                    size: 5,
-                    color: '#00ff00'
-                }
-            };
+        if( ! state.hasOwnProperty('TurnMarker') || state.TurnMarker.version !== schemaVersion) {
+            log('  > Updating Schema to v'+schemaVersion+' <');
+            switch(state.TurnMarker && state.TurnMarker.version) {
+                case 1.16:
+                    state.TurnMarker.autoPull = 'none';
+                    /* falls through */
+
+                case 'UpdateSchemaVersion':
+                    state.TurnMarker.version = schemaVersion;
+                    break;
+
+                default:
+                    state.TurnMarker = {
+                        version: schemaVersion,
+                        announceRounds: true,
+                        announceTurnChange: true,
+                        announcePlayerInTurnAnnounce: true,
+                        announcePlayerInTurnAnnounceSize: '100%',
+                        autoPull: 'none',
+                        autoskipHidden: true,
+                        tokenName: 'Round',
+                        tokenURL: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
+                        playAnimations: false,
+                        rotation: false,
+                        animationSpeed: 5,
+                        scale: 1.7,
+                        aura1: {
+                            pulse: false,
+                            size: 5,
+                            color: '#ff00ff'
+                        },
+                        aura2: {
+                            pulse: false,
+                            size: 5,
+                            color: '#00ff00'
+                        }
+                    };
+                    break;
+            }
         }
-        if(Campaign().get('turnorder') ==='')
-        {
+        if(Campaign().get('turnorder') ==='') {
             Campaign().set('turnorder','[]');
         }
-    },
-
-    GetMarker: function(){  
-        var marker = findObjs({
-            imgsrc: state.TurnMarker.tokenURL,
-            pageid: Campaign().get("playerpageid")    
-        })[0];
-
-        if (marker === undefined) {
-            marker = createObj('graphic', {
-                name: state.TurnMarker.tokenName+' 0',
-                pageid: Campaign().get("playerpageid"),
-                layer: 'gmlayer',
-                imgsrc: state.TurnMarker.tokenURL,
-                left: 0,
-                top: 0,
-                height: 70,
-                width: 70,
-                bar2_value: 0,
-                showplayers_name: true,
-                showplayers_aura1: true,
-                showplayers_aura2: true
-            });
-        }
-        if(!TurnOrder.HasTurn(marker.id))
-        {
-            TurnOrder.AddTurn({
-                id: marker.id,
-                pr: -1,
-                custom: "",
-                pageid: marker.get('pageid')
-            });
-        }
-        return marker;    
-    },
-
-    Step: function( sync ){
-        if (!state.TurnMarker.playAnimations || sync !== threadSync)
-        {
-            return;
-        }
-        var marker=TurnMarker.GetMarker();
-        if(active === true)
-        {
-            var rotation=(marker.get('bar1_value')+state.TurnMarker.animationSpeed)%360;
-            marker.set('bar1_value', rotation );
-            if(state.TurnMarker.rotation)
-            {
-                marker.set( 'rotation', rotation );
-            }
-            if( state.TurnMarker.aura1.pulse )
-            {
-                marker.set('aura1_radius', Math.abs(Math.sin(rotation * (Math.PI/180))) * state.TurnMarker.aura1.size );
-            }
-            else
-            {
-                marker.set('aura1_radius','');
-            }
-            if( state.TurnMarker.aura2.pulse  )
-            {
-                marker.set('aura2_radius', Math.abs(Math.cos(rotation * (Math.PI/180))) * state.TurnMarker.aura2.size );
-            }
-            else
-            {
-                marker.set('aura2_radius','');
-            }
-            setTimeout(_.bind(TurnMarker.Step,this,sync), 100);
+        if('undefined' !== typeof GroupInitiative && GroupInitiative.ObserveTurnOrderChange){
+            GroupInitiative.ObserveTurnOrderChange(handleExternalTurnOrderChange);
         }
     },
 
-    Reset: function() {
-        active=false;
-        threadSync++;
-
-        var marker = TurnMarker.GetMarker();
-        
-        marker.set({
-            layer: "gmlayer",
-            aura1_radius: '',
-            aura2_radius: '',
-            left: 35,
-            top: 35,
-            height: 70,
-            width: 70,
-            rotation: 0,
-            bar1_value: 0
-        });
-    },
-
-    Start: function() {
-        var marker = TurnMarker.GetMarker();
-     
-
-        if(state.TurnMarker.playAnimations && state.TurnMarker.aura1.pulse)
-        {
-            marker.set({
-                aura1_radius: state.TurnMarker.aura1.size,
-                aura1_color: state.TurnMarker.aura1.color
-            });   
-        }
-        if(state.TurnMarker.playAnimations && state.TurnMarker.aura2.pulse)
-        {
-            marker.set({
-                aura2_radius: state.TurnMarker.aura2.size,
-                aura2_color: state.TurnMarker.aura2.color
-            });   
-        }
-        active=true;
-        TurnMarker.Step(threadSync);
-        TurnMarker.TurnOrderChange(true);
-    },
-
-    HandleInput: function(tokens,who){
-        var marker;
-        switch (tokens[0])
-        {
-            case 'reset':
-                marker = TurnMarker.GetMarker();
-                marker.set({
-                    name: state.TurnMarker.tokenName+' 0',
-                    bar2_value: 0
-                });
-                sendChat('','/w "'+who+'" <b>Round</b> count is reset to <b>0</b>.');
-                break;
-                
-            case 'ping-target':
-                var obj=getObj('graphic',tokens[1]);
-                if(obj){
-                    sendPing(obj.get('left'),obj.get('top'),obj.get('pageid'),null,true);
-                }
-                break;
-                
-            case 'toggle-announce':
-                state.TurnMarker.announceRounds=!state.TurnMarker.announceRounds;
-                sendChat('','/w "'+who+'" <b>Announce Rounds</b> is now <b>'+(state.TurnMarker.announceRounds ? 'ON':'OFF' )+'</b>.');
-                break;
-
-            case 'toggle-announce-turn':
-                state.TurnMarker.announceTurnChange=!state.TurnMarker.announceTurnChange;
-                sendChat('','/w "'+who+'" <b>Announce Turn Changes</b> is now <b>'+(state.TurnMarker.announceTurnChange ? 'ON':'OFF' )+'</b>.');
-                break;
-
-            case 'toggle-announce-player':
-                state.TurnMarker.announcePlayerInTurnAnnounce=!state.TurnMarker.announcePlayerInTurnAnnounce;
-                sendChat('','/w "'+who+'" <b>Player Name in Announce</b> is now <b>'+(state.TurnMarker.announcePlayerInTurnAnnounce ? 'ON':'OFF' )+'</b>.');
-                break;
-
-            case 'toggle-skip-hidden':
-                state.TurnMarker.autoskipHidden=!state.TurnMarker.autoskipHidden;
-                sendChat('','/w "'+who+'" <b>Auto-skip Hidden</b> is now <b>'+(state.TurnMarker.autoskipHidden ? 'ON':'OFF' )+'</b>.');
-                break;
-
-            case 'toggle-animations':
-                state.TurnMarker.playAnimations=!state.TurnMarker.playAnimations;
-                if(state.TurnMarker.playAnimations)
-                {
-                    TurnMarker.Step(threadSync);
-                }
-                else
-                {
-                    marker = TurnMarker.GetMarker();
-                    marker.set({
-                        aura1_radius: '',
-                        aura2_radius: ''
-                    });
-                }
-
-                sendChat('','/w "'+who+'" <b>Animations</b> are now <b>'+(state.TurnMarker.playAnimations ? 'ON':'OFF' )+'</b>.');
-                break;
-
-            case 'toggle-rotate':
-                state.TurnMarker.rotation=!state.TurnMarker.rotation;
-                sendChat('','/w "'+who+'" <b>Rotation</b> is now <b>'+(state.TurnMarker.rotation ? 'ON':'OFF' )+'</b>.');
-                break;
-
-            case 'toggle-aura-1':
-                state.TurnMarker.aura1.pulse=!state.TurnMarker.aura1.pulse;
-                sendChat('','/w "'+who+'" <b>Aura 1</b> is now <b>'+(state.TurnMarker.aura1.pulse ? 'ON':'OFF' )+'</b>.');
-                break;
-
-            case 'toggle-aura-2':
-                state.TurnMarker.aura2.pulse=!state.TurnMarker.aura2.pulse;
-                sendChat('','/w "'+who+'" <b>Aura 2</b> is now <b>'+(state.TurnMarker.aura2.pulse ? 'ON':'OFF' )+'</b>.');
-                break;
-
-                
-            default:
-            case 'help':
-                TurnMarker.Help(who);
-                break;
-                
-        }
-    },
-    
-    Help: function(who){
-        var marker = TurnMarker.GetMarker();
+    showHelp = function(who) {
+        var marker = getMarker();
         var rounds =parseInt(marker.get('bar2_value'),10);
         sendChat('',
             '/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
     '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
-        'TurnMarker v'+TurnMarker.version+
+        'TurnMarker v'+version+
     '</div>'+
     '<b>Commands</b>'+
     '<div style="padding-left:10px;"><b><span style="font-family: serif;">!tm</span></b>'+
@@ -262,7 +101,9 @@ return {
             'The following arguments may be supplied in order to change the configuration.  All changes are persisted between script restarts.'+
             '<ul>'+
                     '<div style="float:right;width:40px;border:1px solid black;background-color:#ffc;text-align:center;"><span style="color: blue; font-weight:bold; padding: 0px 4px;">'+rounds+'</span></div>'+
-                '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;"><b><span style="font-family: serif;">reset</span></b> -- Sets the round counter back to 0.</li> '+
+                '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;"><b><span style="font-family: serif;">reset &lbrack;#&rbrack;</span></b> -- Sets the round counter back to 0 or the supplied #.</li> '+
+                    '<div style="float:right;width:40px;border:1px solid black;background-color:#ffc;text-align:center;"><span style="color: blue; font-weight:bold; padding: 0px 4px;">'+autoPullOptions[state.TurnMarker.autoPull]+'</span></div>'+
+                '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;"><b><span style="font-family: serif;">autopull &lt;mode&gt;</span></b> -- Sets auto pulling to the token whose turn it is.  Modes: '+_.keys(autoPullOptions)+'</li> '+
                     '<div style="float:right;width:40px;border:1px solid black;background-color:#ffc;text-align:center;">'+( state.TurnMarker.announceRounds ? '<span style="color: red; font-weight:bold; padding: 0px 4px;">ON</span>' : '<span style="color: #999999; font-weight:bold; padding: 0px 4px;">OFF</span>' )+'</div>'+
                 '<li style="border-bottom: 1px solid #ccc;"><b><span style="font-family: serif;">toggle-announce</span></b> -- When on, each round will be announced to chat.</li>'+
                     '<div style="float:right;width:40px;border:1px solid black;background-color:#ffc;text-align:center;">'+( state.TurnMarker.announceTurnChange ? '<span style="color: red; font-weight:bold; padding: 0px 4px;">ON</span>' : '<span style="color: #999999; font-weight:bold; padding: 0px 4px;">OFF</span>' )+'</div>'+
@@ -290,31 +131,194 @@ return {
 '</div>'
             );
     },
-    
-    CheckForTokenMove: function(obj){
-        if(active)
-        {
-            var turnOrder = TurnOrder.Get();
-            var current = _.first(turnOrder);
-            if( obj && current && current.id === obj.id)
-            {
+
+    handleInput = function(msg){
+        var who, tokenized, command;
+
+        if (msg.type !== "api") {
+            return;
+        }
+
+        who=getObj('player',msg.playerid).get('_displayname');
+        tokenized = msg.content.split(/\s+/);
+        command = tokenized[0];
+
+        switch(command) {
+            case "!tm":
+            case "!turnmarker":
+                if(!playerIsGM(msg.playerid)){
+                    return;
+                }
+                let tokens=_.rest(tokenized),marker,value;
+                switch (tokens[0]) {
+                    case 'reset':
+                        marker = getMarker();
+                        value = parseInt(tokens[1],10)||0;
+                        marker.set({
+                            name: state.TurnMarker.tokenName+' '+value,
+                            bar2_value: value
+                        });
+                        sendChat('','/w "'+who+'" <b>Round</b> count is reset to <b>'+value+'</b>.');
+                        break;
+
+                    case 'ping-target':
+                        var obj=getObj('graphic',tokens[1]);
+                        if(obj){
+                            fixedSendPing(obj.get('left'),obj.get('top'),obj.get('pageid'),null,true);
+                        }
+                        break;
+
+                    case 'autopull':
+                        if(_.contains(_.keys(autoPullOptions), tokens[1])){
+                            state.TurnMarker.autoPull=tokens[1];
+                            sendChat('','/w "'+who+'" <b>AutoPull</b> is now <b>'+(autoPullOptions[state.TurnMarker.autoPull])+'</b>.');
+                        } else {
+                            sendChat('','/w "'+who+'" "'+tokens[1]+'" is not a valid <b>AutoPull</b> options.  Please specify one of: '+_.keys(autoPullOptions).join(', ')+'</b>.');
+                        }
+                        break;
+
+                    case 'toggle-announce':
+                        state.TurnMarker.announceRounds=!state.TurnMarker.announceRounds;
+                        sendChat('','/w "'+who+'" <b>Announce Rounds</b> is now <b>'+(state.TurnMarker.announceRounds ? 'ON':'OFF' )+'</b>.');
+                        break;
+
+                    case 'toggle-announce-turn':
+                        state.TurnMarker.announceTurnChange=!state.TurnMarker.announceTurnChange;
+                        sendChat('','/w "'+who+'" <b>Announce Turn Changes</b> is now <b>'+(state.TurnMarker.announceTurnChange ? 'ON':'OFF' )+'</b>.');
+                        break;
+
+                    case 'toggle-announce-player':
+                        state.TurnMarker.announcePlayerInTurnAnnounce=!state.TurnMarker.announcePlayerInTurnAnnounce;
+                        sendChat('','/w "'+who+'" <b>Player Name in Announce</b> is now <b>'+(state.TurnMarker.announcePlayerInTurnAnnounce ? 'ON':'OFF' )+'</b>.');
+                        break;
+
+                    case 'toggle-skip-hidden':
+                        state.TurnMarker.autoskipHidden=!state.TurnMarker.autoskipHidden;
+                        sendChat('','/w "'+who+'" <b>Auto-skip Hidden</b> is now <b>'+(state.TurnMarker.autoskipHidden ? 'ON':'OFF' )+'</b>.');
+                        break;
+
+                    case 'toggle-animations':
+                        state.TurnMarker.playAnimations=!state.TurnMarker.playAnimations;
+                        if(state.TurnMarker.playAnimations) {
+                            stepAnimation(threadSync);
+                        } else {
+                            marker = getMarker();
+                            marker.set({
+                                aura1_radius: '',
+                                aura2_radius: ''
+                            });
+                        }
+
+                        sendChat('','/w "'+who+'" <b>Animations</b> are now <b>'+(state.TurnMarker.playAnimations ? 'ON':'OFF' )+'</b>.');
+                        break;
+
+                    case 'toggle-rotate':
+                        state.TurnMarker.rotation=!state.TurnMarker.rotation;
+                        sendChat('','/w "'+who+'" <b>Rotation</b> is now <b>'+(state.TurnMarker.rotation ? 'ON':'OFF' )+'</b>.');
+                        break;
+
+                    case 'toggle-aura-1':
+                        state.TurnMarker.aura1.pulse=!state.TurnMarker.aura1.pulse;
+                        sendChat('','/w "'+who+'" <b>Aura 1</b> is now <b>'+(state.TurnMarker.aura1.pulse ? 'ON':'OFF' )+'</b>.');
+                        break;
+
+                    case 'toggle-aura-2':
+                        state.TurnMarker.aura2.pulse=!state.TurnMarker.aura2.pulse;
+                        sendChat('','/w "'+who+'" <b>Aura 2</b> is now <b>'+(state.TurnMarker.aura2.pulse ? 'ON':'OFF' )+'</b>.');
+                        break;
+
+                    default:
+                    case 'help':
+                        showHelp(who);
+                        break;
+
+                }
+                break;
+
+            case "!eot":
+                requestTurnAdvancement(msg.playerid);   
+                break;
+        }
+    },
+
+    getMarker = function(){  
+        var marker = findObjs({
+            imgsrc: state.TurnMarker.tokenURL,
+            pageid: Campaign().get("playerpageid")    
+        })[0];
+
+        if (marker === undefined) {
+            marker = createObj('graphic', {
+                name: state.TurnMarker.tokenName+' 0',
+                pageid: Campaign().get("playerpageid"),
+                layer: 'gmlayer',
+                imgsrc: state.TurnMarker.tokenURL,
+                left: 0,
+                top: 0,
+                height: 70,
+                width: 70,
+                bar2_value: 0,
+                showplayers_name: true,
+                showplayers_aura1: true,
+                showplayers_aura2: true
+            });
+        }
+        if(!TurnOrder.HasTurn(marker.id)) {
+            TurnOrder.AddTurn({
+                id: marker.id,
+                pr: -1,
+                custom: "",
+                pageid: marker.get('pageid')
+            });
+        }
+        return marker;    
+    },
+
+    stepAnimation = function( sync ){
+        if (!state.TurnMarker.playAnimations || sync !== threadSync) {
+            return;
+        }
+        var marker=getMarker();
+        if(active === true) {
+            var rotation=(marker.get('bar1_value')+state.TurnMarker.animationSpeed)%360;
+            marker.set('bar1_value', rotation );
+            if(state.TurnMarker.rotation) {
+                marker.set( 'rotation', rotation );
+            }
+            if( state.TurnMarker.aura1.pulse ) {
+                marker.set('aura1_radius', Math.abs(Math.sin(rotation * (Math.PI/180))) * state.TurnMarker.aura1.size );
+            } else {
+                marker.set('aura1_radius','');
+            }
+            if( state.TurnMarker.aura2.pulse  ) {
+                marker.set('aura2_radius', Math.abs(Math.cos(rotation * (Math.PI/180))) * state.TurnMarker.aura2.size );
+            } else {
+                marker.set('aura2_radius','');
+            }
+            setTimeout(_.bind(stepAnimation,this,sync), 100);
+        }
+    },
+    checkForTokenMove = function(obj){
+        var turnOrder, current, marker;
+        if(active) {
+            turnOrder = TurnOrder.Get();
+            current = _.first(turnOrder);
+            if( obj && current && current.id === obj.id) {
                threadSync++;
                 
-                var marker = TurnMarker.GetMarker();
+                marker = getMarker();
                 marker.set({
                     "top": obj.get("top"),
                     "left": obj.get("left")
                 });
                 
-               setTimeout(_.bind(TurnMarker.Step,this,threadSync), 300);
+               setTimeout(_.bind(stepAnimation,this,threadSync), 300);
             }
         }
     },
-    
-    RequestTurnAdvancement: function(playerid){
-        if(active)
-        {
-            var turnOrder = TurnOrder.Get(),
+    requestTurnAdvancement = function(playerid){
+        if(active) {
+            let turnOrder = TurnOrder.Get(),
                 current = getObj('graphic',_.first(turnOrder).id),
                 character = getObj('character',(current && current.get('represents')));
             if(playerIsGM(playerid) ||
@@ -329,14 +333,12 @@ return {
                 )
             {
                 TurnOrder.Next();
-                TurnMarker.TurnOrderChange(true);
+                turnOrderChange(true);
             }
         }
     },
-
-    _AnnounceRound: function(round){
-        if(state.TurnMarker.announceRounds)
-        {
+    announceRound = function(round){
+        if(state.TurnMarker.announceRounds) {
             sendChat(
                 '', 
                 "/direct "+
@@ -353,12 +355,111 @@ return {
                     "<img src='"+state.TurnMarker.tokenURL+"' style='width:20px; height:20px; padding: 0px 5px;' />"+
                     "Round "+ round +
                     "<img src='"+state.TurnMarker.tokenURL+"' style='width:20px; height:20px; padding: 0px 5px;' />"+
-                "</div>"
+                "</div>"+
+                '<a style="position:relative;z-index:10000; top:-1em; float: right;font-size: .6em; color: white; border: 1px solid #cccccc; border-radius: 1em; margin: 0 .1em; font-weight: bold; padding: .1em .4em;" href="!tm reset ?{Round number|0}">Reset &'+'#x21ba;</a>'
             );
         }
     },
-    HandleTurnOrderChange: function() {
-        var marker = TurnMarker.GetMarker(),
+
+    turnOrderChange = function(FirstTurnChanged){
+        var marker = getMarker();
+                    
+        if( !Campaign().get('initiativepage') ) {
+            return;
+        }
+        
+        var turnOrder = TurnOrder.Get();
+        
+        if (!turnOrder.length) {
+            return;
+        }
+
+        var current = _.first(turnOrder);
+
+        if(state.TurnMarker.playAnimations) {
+            threadSync++;
+            setTimeout(_.bind(stepAnimation,this,threadSync), 300);
+        }
+        
+        if (current.id === "-1") {
+            return;
+        }
+      
+        handleMarkerTurn();
+
+        if(state.TurnMarker.autoskipHidden) {
+            TurnOrder.NextVisible();
+            handleMarkerTurn();
+        }
+
+        turnOrder=TurnOrder.Get();
+
+        if(turnOrder[0].id === marker.id) {
+            return;
+        }
+
+        current = _.first(TurnOrder.Get());
+        
+        var currentToken = getObj("graphic", turnOrder[0].id),
+            currentChar = getObj('character', (currentToken||{get:_.noop}).get('represents'));
+        if(currentToken) {
+
+            if(FirstTurnChanged) {
+                handleAnnounceTurnChange();
+            }
+            
+            var size = Math.max(currentToken.get("height"),currentToken.get("width")) * state.TurnMarker.scale;
+              
+            if (marker.get("layer") === "gmlayer" && currentToken.get("layer") !== "gmlayer") {
+                marker.set({
+                    "top": currentToken.get("top"),
+                    "left": currentToken.get("left"),
+                    "height": size,
+                    "width": size
+                });
+                setTimeout(function() {
+                    marker.set({
+                        "layer": currentToken.get("layer")
+                    });    
+                }, 500);
+            } else {
+                marker.set({
+                    "layer": currentToken.get("layer"),
+                    "top": currentToken.get("top"),
+                    "left": currentToken.get("left"),
+                    "height": size,
+                    "width": size
+                });   
+            }
+            toFront(currentToken);
+
+            if( 'all' === state.TurnMarker.autoPull ||
+                ('npcs' === state.TurnMarker.autoPull && (
+                    '' === currentToken.get('controlledby') &&
+                    ( !currentChar || '' === currentChar.get('controlledby'))
+                ))
+            ){
+                fixedSendPing(currentToken.get('left'),currentToken.get('top'),currentToken.get('pageid'),null,true);
+            }
+        }
+    },
+
+    handleTurnOrderChange = function(obj, prev) {
+        var prevOrder=JSON.parse(prev.turnorder);
+        var objOrder=JSON.parse(obj.get('turnorder'));
+
+        if( _.isArray(prevOrder) &&
+            _.isArray(objOrder) &&
+            prevOrder.length &&
+            objOrder.length &&
+            objOrder[0].id !== prevOrder[0].id
+          ) {
+            turnOrderChange(true);
+        }
+    },
+
+    handleExternalTurnOrderChange = function() {
+        var marker = getMarker(),
     		turnorder = Campaign().get('turnorder'),
 			markerTurn;
 
@@ -376,38 +477,36 @@ return {
 		}
         _.defer(_.bind(TurnMarker.DispatchInitiativePage,TurnMarker));
     },
-    _HandleMarkerTurn: function(){
-        var marker = TurnMarker.GetMarker();
-        var turnOrder = TurnOrder.Get();
 
+    handleMarkerTurn = function(){
+        var marker = getMarker(),
+            turnOrder = TurnOrder.Get(),
+            round;
 
-        if(turnOrder[0].id === marker.id)
-        {
-            var round=parseInt(marker.get('bar2_value'))+1;
+        if(turnOrder[0].id === marker.id) {
+            round=parseInt(marker.get('bar2_value'))+1;
             marker.set({
                 name: state.TurnMarker.tokenName+' '+round,
                 bar2_value: round
             });
-            TurnMarker._AnnounceRound(round);
+            announceRound(round);
             TurnOrder.Next();
         }
     },
-    _HandleAnnounceTurnChange: function(){
+    handleAnnounceTurnChange = function(){
 
-        if(state.TurnMarker.announceTurnChange )
-        {
-            var marker = TurnMarker.GetMarker();
+        if(state.TurnMarker.announceTurnChange ) {
+            var marker = getMarker();
             var turnOrder = TurnOrder.Get();
             var currentToken = getObj("graphic", turnOrder[0].id);
-            if('gmlayer' === currentToken.get('layer'))
-            {
+            if('gmlayer' === currentToken.get('layer')) {
                 return;
             }
             var previousTurn=_.last(_.filter(turnOrder,function(element){
                 var token=getObj("graphic", element.id);
-                return ((undefined !== token) &&
-                    (token.get('layer')!=='gmlayer') &&
-                    (element.id !== marker.id));
+                return token &&
+                    token.get('layer') !== 'gmlayer' &&
+                    element.id !== marker.id;
             }));
             
             /* find previous token. */
@@ -418,8 +517,7 @@ return {
             var cRatio=currentToken.get('width')/currentToken.get('height');
             
             var pNameString="The Previous turn is done.";
-            if(previousToken && previousToken.get('showplayers_name'))
-            {
+            if(previousToken && previousToken.get('showplayers_name')) {
                 pNameString='<span style=\''+
                         'font-family: Baskerville, "Baskerville Old Face", "Goudy Old Style", Garamond, "Times New Roman", serif;'+
                         'text-decoration: underline;'+
@@ -430,8 +528,7 @@ return {
             }
             
             var cNameString='The next turn has begun!';
-            if(currentToken && currentToken.get('showplayers_name'))
-            {
+            if(currentToken && currentToken.get('showplayers_name')) {
                 cNameString='<span style=\''+
                     'font-family: Baskerville, "Baskerville Old Face", "Goudy Old Style", Garamond, "Times New Roman", serif;'+
                     'text-decoration: underline;'+
@@ -442,19 +539,15 @@ return {
             }
  
             
-            var PlayerAnnounceExtra='';
-            if(state.TurnMarker.announcePlayerInTurnAnnounce)
-            {
+            var PlayerAnnounceExtra='<a style="position:relative;z-index:10000; top:-1em;float: right;font-size: .6em; color: white; border: 1px solid #cccccc; border-radius: 1em; margin: 0 .1em; font-weight: bold; padding: .1em .4em;" href="!eot">EOT &'+'#x21e8;</a>';
+            if(state.TurnMarker.announcePlayerInTurnAnnounce) {
                 var Char=currentToken.get('represents');
-                if('' !== Char)
-                {
+                if(Char) {
                     Char=getObj('character',Char);
-                    if(Char && _.isFunction(Char.get))
-                    {
+                    if(Char && _.isFunction(Char.get)) {
                         var Controllers=Char.get('controlledby').split(',');
                         _.each(Controllers,function(c){
-                            switch(c)
-                            {
+                            switch(c) {
                                 case 'all':
                                     PlayerAnnounceExtra+='<div style="'+
                                             'padding: 0px 5px;'+
@@ -520,175 +613,77 @@ return {
                         '<div style="clear:both;"></div>'+
                     '</div>'+
                      PlayerAnnounceExtra+
+                    '<div style="clear:both;"></div>'+
                 "</div>"
             );
         }
     },
+    resetMarker = function() {
+        active=false;
+        threadSync++;
 
-    TurnOrderChange: function(FirstTurnChanged){
-        var marker = TurnMarker.GetMarker();
-                    
-        if(Campaign().get('initiativepage') === false)
-        {
-            return;
-        }
+        var marker = getMarker();
         
-        var turnOrder = TurnOrder.Get();
-        
-        if (!turnOrder.length) {
-            return;
+        marker.set({
+            layer: "gmlayer",
+            aura1_radius: '',
+            aura2_radius: '',
+            left: 35,
+            top: 35,
+            height: 70,
+            width: 70,
+            rotation: 0,
+            bar1_value: 0
+        });
+    },
+    startMarker = function() {
+        var marker = getMarker();
+
+        if(state.TurnMarker.playAnimations && state.TurnMarker.aura1.pulse) {
+            marker.set({
+                aura1_radius: state.TurnMarker.aura1.size,
+                aura1_color: state.TurnMarker.aura1.color
+            });   
         }
-
-        var current = _.first(turnOrder);
-
-        if(state.TurnMarker.playAnimations)
-        {
-            threadSync++;
-            setTimeout(_.bind(TurnMarker.Step,this,threadSync), 300);
+        if(state.TurnMarker.playAnimations && state.TurnMarker.aura2.pulse) {
+            marker.set({
+                aura2_radius: state.TurnMarker.aura2.size,
+                aura2_color: state.TurnMarker.aura2.color
+            });   
         }
-        
-        if (current.id === "-1") {
-            return;
-        }
-      
-        TurnMarker._HandleMarkerTurn();
-
-        if(state.TurnMarker.autoskipHidden)
-        {
-            TurnOrder.NextVisible();
-            TurnMarker._HandleMarkerTurn();
-        }
-
-        turnOrder=TurnOrder.Get();
-
-        if(turnOrder[0].id === marker.id)
-        {
-            return;
-        }
-
-        current = _.first(TurnOrder.Get());
-        
-        var currentToken = getObj("graphic", turnOrder[0].id);
-        if(undefined !== currentToken)
-        {
-
-            if(FirstTurnChanged)
-            {
-                TurnMarker._HandleAnnounceTurnChange();
-            }
-            
-            var size = Math.max(currentToken.get("height"),currentToken.get("width")) * state.TurnMarker.scale;
-              
-            if (marker.get("layer") === "gmlayer" && currentToken.get("layer") !== "gmlayer") {
-                marker.set({
-                    "top": currentToken.get("top"),
-                    "left": currentToken.get("left"),
-                    "height": size,
-                    "width": size
-                });
-                setTimeout(function() {
-                    marker.set({
-                        "layer": currentToken.get("layer")
-                    });    
-                }, 500);
-            } else {
-                marker.set({
-                    "layer": currentToken.get("layer"),
-                    "top": currentToken.get("top"),
-                    "left": currentToken.get("left"),
-                    "height": size,
-                    "width": size
-                });   
-            }
-            toFront(currentToken);
+        active=true;
+        stepAnimation(threadSync);
+        turnOrderChange(true);
+    },
+    dispatchInitiativePage = function(){
+        if( !Campaign().get('initiativepage') ) {
+            resetMarker();
+        } else {
+            startMarker();
         }
     },
-    
-    DispatchInitiativePage: function(){
-        if(Campaign().get('initiativepage') === false)
-        {
-            this.Reset();
-        }
-        else
-        {
-            this.Start();
-        }
-    },
+    registerEventHandlers = function(){        
+        on("change:campaign:initiativepage", dispatchInitiativePage );
+        on("change:campaign:turnorder", handleTurnOrderChange );
+        on("change:graphic", checkForTokenMove );
+        on("chat:message", handleInput );
 
-    RegisterEventHandlers: function(){        
-        on("change:campaign:initiativepage", function(obj, prev) {
-            TurnMarker.DispatchInitiativePage();
-        });
-
-        on("change:campaign:turnorder", function(obj, prev) {
-            var prevOrder=JSON.parse(prev.turnorder);
-            var objOrder=JSON.parse(obj.get('turnorder'));
-
-            if( undefined !==prevOrder &&
-                undefined !==objOrder &&
-                _.isArray(prevOrder) &&
-                _.isArray(objOrder) &&
-                0 !== prevOrder.length &&
-                0 !== objOrder.length &&
-                objOrder[0].id !== prevOrder[0].id
-              )
-            {
-                TurnMarker.TurnOrderChange(true);
-            }
-        });
-        
-        on("change:graphic", function(obj,prev) {
-            TurnMarker.CheckForTokenMove(obj);
-        });
-
-        on("chat:message", function (msg) {
-            /* Exit if not an api command */
-            if (msg.type !== "api") {
-                return;
-            }
-            
-            // get minimal player name (hopefully unique!)
-            var who=getObj('player',msg.playerid).get('_displayname');
-
-            var tokenized = msg.content.split(" ");
-            var command = tokenized[0];
-
-            switch(command)
-            {
-                case "!tm":
-                case "!turnmarker":
-                    {
-                        TurnMarker.HandleInput(_.rest(tokenized),who);
-                    }
-                    break;
-                
-                case "!eot":
-                    {
-                        TurnMarker.RequestTurnAdvancement(msg.playerid);   
-                    }
-                    break;
-            }
-        });
-
-        if('undefined' !== typeof GroupInitiative && GroupInitiative.ObserveTurnOrderChange){
-            GroupInitiative.ObserveTurnOrderChange(TurnMarker.HandleTurnOrderChange);
-        }
+        dispatchInitiativePage();
     }
+    ;
 
-};
+    return {
+        CheckInstall: checkInstall,
+        RegisterEventHandlers: registerEventHandlers
+    };
+
 }());
-
-
-
-
-
 
 on("ready",function(){
     'use strict';
 
 	TurnMarker.CheckInstall(); 
 	TurnMarker.RegisterEventHandlers();
-	TurnMarker.DispatchInitiativePage();
 });
 
 var TurnOrder = TurnOrder || (function() {
