@@ -9,8 +9,8 @@
 var TurnMarker = TurnMarker || (function(){
     "use strict";
     
-    var version = '1.3.5',
-        lastUpdate = 1473813525,
+    var version = '1.3.6',
+        lastUpdate = 1473856811,
         schemaVersion = 1.17,
         active = false,
         threadSync = 1,
@@ -475,7 +475,7 @@ var TurnMarker = TurnMarker || (function(){
 			}));
 			Campaign().set('turnorder',JSON.stringify(turnorder));
 		}
-        _.defer(_.bind(TurnMarker.DispatchInitiativePage,TurnMarker));
+        _.defer(dispatchInitiativePage);
     },
 
     handleMarkerTurn = function(){
