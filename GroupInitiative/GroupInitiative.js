@@ -5,8 +5,8 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.18',
-        lastUpdate = 1455059736,
+    var version = '0.9.19',
+        lastUpdate = 1473946107,
         schemaVersion = 1.0,
         bonusCache = {},
         observers = {
@@ -70,23 +70,23 @@ var GroupInitiative = GroupInitiative || (function() {
                 critSuccess = _.reduce(rollData.rolls,function(m,r){
                         return m || _.contains(r.rolls,r.sides);
                     },false),
-                highlight = ( (critFail && critSuccess)
-                    ? '#4A57ED'
-                    : ( critFail
-                        ? '#B31515' 
-                        : ( critSuccess
-                            ? '#3FB315'
-                            : '#FEF68E'
+                highlight = ( (critFail && critSuccess) ?
+                    '#4A57ED' :
+                    ( critFail ?
+                        '#B31515' :
+                        ( critSuccess ?
+                            '#3FB315' :
+                            '#FEF68E'
                         )
                     )
                 ),
                 dicePart = _.reduce(rollData.rolls, function(m,r){
                     _.reduce(r.rolls,function(dm,dr){
-                        var dielight=( 1 === dr
-                                ? '#ff0000' 
-                                : ( r.sides === dr
-                                    ? '#00ff00'
-                                    : 'white'
+                        var dielight=( 1 === dr ?
+                            '#ff0000' :
+                                ( r.sides === dr ?
+                                    '#00ff00' :
+                                    'white'
                                 )
                             );
                         dm.push('<span style="font-weight:bold;color:'+dielight+';">'+dr+'</span>');
@@ -116,13 +116,13 @@ var GroupInitiative = GroupInitiative || (function() {
                 gmlayer: '#aaa'
             };
             return _.reduce(l,function(m,s){
-                var type= ('gmlayer' === s.token.get('layer') 
-                    ? 'gmlayer' 
-                    : ( (s.character && _.filter(s.character.get('controlledby').split(/,/),function(c){ 
+                var type= ('gmlayer' === s.token.get('layer') ?
+                    'gmlayer' : (
+                        (s.character && _.filter(s.character.get('controlledby').split(/,/),function(c){ 
                             return 'all' === c || ('' !== c && !playerIsGM(c) );
-                        }).length>0) || false 
-                        ? 'character'
-                        : 'npc'
+                        }).length>0) || false ?
+                            'character' :
+                            'npc'
                     ));
                 if('graphic'!==s.token.get('type') || 'token' !==s.token.get('subtype')) {
                     return m;
@@ -293,7 +293,7 @@ var GroupInitiative = GroupInitiative || (function() {
             switch(state.GroupInitiative && state.GroupInitiative.version) {
                 case 0.5:
                     state.GroupInitiative.replaceRoll = false;
-                    /* break; // intentional dropthrough */
+                    /* break; // intentional dropthrough */ /* falls through */
 
                 case 0.6:
                     state.GroupInitiative.config = {
@@ -305,20 +305,20 @@ var GroupInitiative = GroupInitiative || (function() {
                     };
                     delete state.GroupInitiative.replaceRoll;
                     delete state.GroupInitiative.rollType;
-                    /* break; // intentional dropthrough */
+                    /* break; // intentional dropthrough */ /* falls through */
 
                 case 0.7:
                     state.GroupInitiative.config.announcer = 'Partial';
-                    /* break; // intentional dropthrough */
+                    /* break; // intentional dropthrough */ /* falls through */
 
                 case 0.8:
                     state.GroupInitiative.config.diceCount = 1;
                     state.GroupInitiative.config.maxDecimal = 2;
-                    /* break; // intentional dropthrough */
+                    /* break; // intentional dropthrough */ /* falls through */
                     
                 case 0.9:
                     state.GroupInitiative.config.diceCountAttribute = '';
-                    /* break; // intentional dropthrough */
+                    /* break; // intentional dropthrough */ /* falls through */
 
                 case 0.10:
                     if(_.has(state.GroupInitiative.config,'dieCountAttribute')){
@@ -329,7 +329,7 @@ var GroupInitiative = GroupInitiative || (function() {
                         delete state.GroupInitiative.config.dieCount;
                         state.GroupInitiative.config.diceCount = 1;
                     }
-                    /* break; // intentional dropthrough */
+                    /* break; // intentional dropthrough */ /* falls through */
 
                 case 'UpdateSchemaVersion':
                     state.GroupInitiative.version = schemaVersion;
@@ -398,8 +398,8 @@ var GroupInitiative = GroupInitiative || (function() {
                 return attr;
             })
             .value()
-            .join('</span> + <span style="border: 1px solid #999;background-color:#eee;padding: 0px 3px;">')
-            +'</span></li>';
+            .join('</span> + <span style="border: 1px solid #999;background-color:#eee;padding: 0px 3px;">') +
+            '</span></li>';
         },"");
     },
 
@@ -425,74 +425,74 @@ var GroupInitiative = GroupInitiative || (function() {
         '</div>';
     },
     getConfigOption_DieSize = function() {
-        return '<div>'
-            +'Initiative Die size is currently <b>'
-                +state.GroupInitiative.config.dieSize
-            +'</b> '
-            +'<a href="!group-init-config --set-die-size|?{Number of sides the initiative die has:|'+state.GroupInitiative.config.dieSize+'}">'
-                +'Set Die Size'
-            +'</a>'
-        +'</div>';
+        return '<div>'+
+            'Initiative Die size is currently <b>'+
+                state.GroupInitiative.config.dieSize+
+            '</b> '+
+            '<a href="!group-init-config --set-die-size|?{Number of sides the initiative die has:|'+state.GroupInitiative.config.dieSize+'}">'+
+                'Set Die Size'+
+            '</a>'+
+        '</div>';
     },
 
     getConfigOption_DiceCount = function() {
-        return '<div>'
-            +'Initiative Dice Count is currently <b>'
-                +state.GroupInitiative.config.diceCount
-            +'</b> '
-            +'<a href="!group-init-config --set-dice-count|?{Number of initiative dice to roll:|'+state.GroupInitiative.config.diceCount+'}">'
-                +'Set Dice Count'
-            +'</a>'
-        +'</div>';
+        return '<div>'+
+            'Initiative Dice Count is currently <b>'+
+                state.GroupInitiative.config.diceCount+
+            '</b> '+
+            '<a href="!group-init-config --set-dice-count|?{Number of initiative dice to roll:|'+state.GroupInitiative.config.diceCount+'}">'+
+                'Set Dice Count'+
+            '</a>'+
+        '</div>';
     },
 
     getConfigOption_MaxDecimal = function() {
-        return '<div>'
-            +'Max decimal places <b>'
-                +state.GroupInitiative.config.maxDecimal
-            +'</b> '
-            +'<a href="!group-init-config --set-max-decimal|?{Maximum number of decimal places:|'+state.GroupInitiative.config.maxDecimal+'}">'
-                +'Set Max Decimal'
-            +'</a>'
-        +'</div>';
+        return '<div>'+
+            'Max decimal places <b>'+
+                state.GroupInitiative.config.maxDecimal+
+            '</b> '+
+            '<a href="!group-init-config --set-max-decimal|?{Maximum number of decimal places:|'+state.GroupInitiative.config.maxDecimal+'}">'+
+                'Set Max Decimal'+
+            '</a>'+
+        '</div>';
     },
 
     getConfigOption_DiceCountAttribute = function() {
         var text = (state.GroupInitiative.config.diceCountAttribute.length ? state.GroupInitiative.config.diceCountAttribute : 'DISABLED');
-        return '<div>'
-            +'Dice Count Attribute: <b>'
-                +text
-            +'</b> '
-            +'<a href="!group-init-config --set-dice-count-attribute|?{Attribute to use for number of initiative dice to roll (Blank to disable):|'+state.GroupInitiative.config.diceCountAttribute+'}">'
-                +'Set Attribute'
-            +'</a>'
-        +'</div>';
+        return '<div>'+
+            'Dice Count Attribute: <b>'+
+                text+
+            '</b> '+
+            '<a href="!group-init-config --set-dice-count-attribute|?{Attribute to use for number of initiative dice to roll (Blank to disable):|'+state.GroupInitiative.config.diceCountAttribute+'}">'+
+                'Set Attribute'+
+            '</a>'+
+        '</div>';
     },
 
     getConfigOption_AutoOpenInit = function() {
         var text = (state.GroupInitiative.config.autoOpenInit ? 'On' : 'Off' );
-        return '<div>'
-            +'Auto Open Init is currently <b>'
-                +text
-            +'</b> '
-            +'<a href="!group-init-config --toggle-auto-open-init">'
-                +'Toggle'
-            +'</a>'
-        +'</div>';
+        return '<div>'+
+            'Auto Open Init is currently <b>'+
+                text+
+            '</b> '+
+            '<a href="!group-init-config --toggle-auto-open-init">'+
+                'Toggle'+
+            '</a>'+
+        '</div>';
         
     },
 
     getConfigOption_ReplaceRoll = function() {
         var text = (state.GroupInitiative.config.replaceRoll ? 'On' : 'Off' );
-        return '<div>'
-            +'Replace Roll is currently <b>'
-                +text
-            +'</b> '
-            +'<a href="!group-init-config --toggle-replace-roll">'
-                +'Toggle'
-            +'</a>'
-            +'<p>Sets whether initative scores for selected tokens replace their current scores.</p>'
-        +'</div>';
+        return '<div>'+
+            'Replace Roll is currently <b>'+
+                text+
+            '</b> '+
+            '<a href="!group-init-config --toggle-replace-roll">'+
+                'Toggle'+
+            '</a>'+
+            '<p>Sets whether initative scores for selected tokens replace their current scores.</p>'+
+        '</div>';
         
     },
     getConfigOption_RollerOptions = function() {
@@ -551,123 +551,160 @@ var GroupInitiative = GroupInitiative || (function() {
         bonusStatGroupRows = buildBonusStatGroupRows();            
 
         sendChat('',
-            '/w gm '
-            +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-            +'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
-            +'GroupInitiative v'+version
-            +'</div>'
-            +'<div style="padding-left:10px;margin-bottom:3px;">'
-            +'<p>Rolls initiative for the selected tokens and adds them '
-            +'to the turn order if they don'+ch("'")+'t have a turn yet.</p>'
+            '/w gm '+
+            '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+                    'GroupInitiative v'+version+
+                '</div>'+
+                '<div style="padding-left:10px;margin-bottom:3px;">'+
+                    '<p>Rolls initiative for the selected tokens and adds them '+
+                    'to the turn order if they don'+ch("'")+'t have a turn yet.</p>'+
 
-            +'<p>The calculation of initiative is handled by the '
-            +'combination of Roller (See <b>Roller Options</b> below) and '
-            +'a Bonus.  The Bonus is determined based on an ordered list '
-            +'of Stat Groups (See <b>Bonus Stat Groups</b> below).  Stat '
-            +'Groups are evaluated in order.  The bonus computed by the first '
-            +'Stat Group for which all attributes exist and have a '
-            +'numeric value is used.  This allows you to have several '
-            +'Stat Groups that apply to different types of characters. '
-            +'In practice you will probably only have one, but more are '
-            +'there if you need them.</p>'
-            +'</div>'
-            +'<b>Commands</b>'
-            +'<div style="padding-left:10px;">'
-            +'<b><span style="font-family: serif;">!group-init</span></b>'
-            +'<div style="padding-left: 10px;padding-right:20px">'
-            +'<p>This command uses the configured Roller to '
-            +'determine the initiative order for all selected '
-            +'tokens.</p>'
-            +'</div>'
-            +'</div>'
+                    '<p>The calculation of initiative is handled by the '+
+                    'combination of Roller (See <b>Roller Options</b> below) and '+
+                    'a Bonus.  The Bonus is determined based on an ordered list '+
+                    'of Stat Groups (See <b>Bonus Stat Groups</b> below).  Stat '+
+                    'Groups are evaluated in order.  The bonus computed by the first '+
+                    'Stat Group for which all attributes exist and have a '+
+                    'numeric value is used.  This allows you to have several '+
+                    'Stat Groups that apply to different types of characters. '+
+                    'In practice you will probably only have one, but more are '+
+                    'there if you need them.</p>'+
+                '</div>'+
 
-            +'<div style="padding-left:10px;">'
-            +'<b><span style="font-family: serif;">!group-init <i>--help</i></span></b>'
-            +'<div style="padding-left: 10px;padding-right:20px">'
-            +'<p>This command displays the help.</p>'
-            +'</div>'
-            +'</div>'
+                '<b>Commands</b>'+
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init</span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>This command uses the configured Roller to '+
+                        'determine the initiative order for all selected '+
+                        'tokens.</p>'+
+                    '</div>'+
+                '</div>'+
 
-            +'<div style="padding-left:10px;">'
-            +'<b><span style="font-family: serif;">!group-init <i>--promote</i> '+ch('<')+'index'+ch('>')+'</span></b>'
-            +'<div style="padding-left: 10px;padding-right:20px">'
-            +'<p>Increases the importance the specified Bonus Stat Group.</p>'
-            +'This command requires 1 parameter:'
-            +'<ul>'
-            +'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-            +'<b><span style="font-family: serif;">index</span></b> -- The numeric index of the Bonus Stat Group to promote.  See <b>Bonus Stat Groups</b> below.'
-            +'</li> '
-            +'</ul>'
-            +'</div>'
-            +'</div>'
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--help</i></span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>This command displays the help.</p>'+
+                    '</div>'+
+                '</div>'+
 
-            +'<div style="padding-left:10px;">'
-            +'<b><span style="font-family: serif;">!group-init <i>--del-group</i> '+ch('<')+'index'+ch('>')+'</span></b>'
-            +'<div style="padding-left: 10px;padding-right:20px">'
-            +'<p>Deletes the specified Bonus Stat Group.</p>'
-            +'This command requires 1 parameter:'
-            +'<ul>'
-            +'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-            +'<b><span style="font-family: serif;">index</span></b> -- The numeric index of the Bonus Stat Group to delete.  See <b>Bonus Stat Groups</b> below.'
-            +'</li> '
-            +'</ul>'
-            +'</div>'
-            +'</div>'
-            +'<div style="padding-left:10px;">'
-            +'<b><span style="font-family: serif;">!group-init <i>--add-group</i> --'+ch('<')+'adjustment'+ch('>')+' [--'+ch('<')+'adjustment'+ch('>')+'] '+ch('<')+'attribute name[|'+ch('<')+'max|current'+ch('>')+']'+ch('>')+' [--'+ch('<')+'adjustment'+ch('>')+' [--'+ch('<')+'adjustment'+ch('>')+'] '+ch('<')+'attribute name[|'+ch('<')+'max|current'+ch('>')+']'+ch('>')+' ...]  </span></b>'
-            +'<div style="padding-left: 10px;padding-right:20px">'
-            +'<p>Adds a new Bonus Stat Group to the end of the list.  Each adjustment operation can be followed by another adjustment operation, but eventually must end in an attriute name.  Adjustment operations are applied to the result of the adjustment operations that follow them.</p>'
-            +'<p>For example: <span style="border:1px solid #ccc; background-color: #eec; padding: 0px 3px;">--Bounded:-2:2 --Stat-DnD wisdom|max</span> would first computer the DnD Stat bonus for the max field of the wisdom attribute, then bound it between -2 and +2.</p>'
-            +'This command takes multiple parameters:'
-            +'<ul>'
-            +'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-            +'<b><span style="font-family: serif;">adjustment</span></b> -- One of the Stat Adjustment Options. See <b>Stat Adjustment Options</b> below.'
-            +'</li> '
-            +'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
-            +'<b><span style="font-family: serif;">attribute name</span></b> -- The name of an attribute.  You can specify |max or |current on the end to target those specific fields (defaults to |current).'
-            +'</li> '
-            +'</ul>'
-            +'</div>'
-            +'</div>'
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--promote</i> '+ch('<')+'index'+ch('>')+'</span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Increases the importance the specified Bonus Stat Group.</p>'+
+                        'This command requires 1 parameter:'+
+                        '<ul>'+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">index</span></b> -- The numeric index of the Bonus Stat Group to promote.  See <b>Bonus Stat Groups</b> below.'+
+                            '</li> '+
+                        '</ul>'+
+                    '</div>'+
+                '</div>'+
+    
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--del-group</i> '+ch('<')+'index'+ch('>')+'</span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Deletes the specified Bonus Stat Group.</p>'+
+                        'This command requires 1 parameter:'+
+                        '<ul>'+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">index</span></b> -- The numeric index of the Bonus Stat Group to delete.  See <b>Bonus Stat Groups</b> below.'+
+                            '</li> '+
+                        '</ul>'+
+                    '</div>'+
+                '</div>'+
 
-            +'<div style="padding-left:10px;">'
-            +'<b><span style="font-family: serif;">!group-init <i>--reroll</i></span></b>'
-            +'<div style="padding-left: 10px;padding-right:20px">'
-            +'<p>Rerolls all the tokens in the turn order as if they were selected when you executed the bare <b>!group-init</b> command.</p>'
-            +'</div>'
-            +'</div>'
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--add-group</i> --'+ch('<')+'adjustment'+ch('>')+' [--'+ch('<')+'adjustment'+ch('>')+'] '+ch('<')+'attribute name[|'+ch('<')+'max|current'+ch('>')+']'+ch('>')+' [--'+ch('<')+'adjustment'+ch('>')+' [--'+ch('<')+'adjustment'+ch('>')+'] '+ch('<')+'attribute name[|'+ch('<')+'max|current'+ch('>')+']'+ch('>')+' ...]  </span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Adds a new Bonus Stat Group to the end of the list.  Each adjustment operation can be followed by another adjustment operation, but eventually must end in an attriute name.  Adjustment operations are applied to the result of the adjustment operations that follow them.</p>'+
+                        '<p>For example: <span style="border:1px solid #ccc; background-color: #eec; padding: 0px 3px;">--Bounded:-2:2 --Stat-DnD wisdom|max</span> would first computer the DnD Stat bonus for the max field of the wisdom attribute, then bound it between -2 and +2.</p>'+
+                        'This command takes multiple parameters:'+
+                        '<ul>'+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">adjustment</span></b> -- One of the Stat Adjustment Options. See <b>Stat Adjustment Options</b> below.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">attribute name</span></b> -- The name of an attribute.  You can specify |max or |current on the end to target those specific fields (defaults to |current).'+
+                            '</li> '+
+                        '</ul>'+
+                    '</div>'+
+                '</div>'+
+   
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--reroll</i> '+ch('[')+'bonus'+ch(']')+'</span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Rerolls all the tokens in the turn order as if they were selected when you executed the bare <b>!group-init</b> command.</p>'+
+                        'This command has 1 optional parameter:'+
+                        '<ul>'+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">bonus</span></b> -- The value to be added to all the rolls.  This can be positive or negative and can have decimal places.'+
+                            '</li> '+
+                        '</ul>'+
+                    '</div>'+
+                '</div>'+
 
-            +'<div style="padding-left:10px;">'
-            +'<b><span style="font-family: serif;">!group-init <i>--clear</i></span></b>'
-            +'<div style="padding-left: 10px;padding-right:20px">'
-            +'<p>Removes all tokens from the turn order.  If Auto Open Init is enabled it will also close the turn order box.</p>'
-            +'</div>'
-            +'</div>'
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--bonus</i> '+ch('<')+'number'+ch('>')+'</span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Rolls the selected tokens and adds a bonus to the roll.</p>'+
+                        'This command requires 1 parameter:'+
+                        '<ul>'+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">number</span></b> -- The value to be added to all the rolls.  This can be positive or negative and can have decimal places.'+
+                            '</li> '+
+                        '</ul>'+
+                    '</div>'+
+                '</div>'+
 
-            +'<b>Roller Options</b>'
-            +'<div style="padding-left:10px;">'
-            +'<ul>'
-            +rollerRows
-            +'</ul>'
-            +'</div>'
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--adjust</i> '+ch('<')+'adjustment'+ch('>')+' '+ch('[')+'minimum'+ch(']')+'</span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Applies an adjustment to all the current turnorder tokens (Custom entries ignored)</p>'+
+                        'This command requires 1 parameter and has 1 optional parameter:'+
+                        '<ul>'+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">adjustment</span></b> -- The value to be added to all the current initiative values.  This can be positive or negative and can have decimal places.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">minimum</span></b> -- (optional) The minimum value for all initiative scores.  This can be positive or negative and can have decimal places.  <br><b>Note</b>: this can raise initiative scores if it is higher than their current score.'+
+                            '</li> '+
+                        '</ul>'+
+                    '</div>'+
+                '</div>'+
+    
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--clear</i></span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Removes all tokens from the turn order.  If Auto Open Init is enabled it will also close the turn order box.</p>'+
+                    '</div>'+
+                '</div>'+
+    
+                '<b>Roller Options</b>'+
+                '<div style="padding-left:10px;">'+
+                    '<ul>'+
+                        rollerRows+
+                    '</ul>'+
+                '</div>'+
+    
+                '<b>Stat Adjustment Options</b>'+
+                '<div style="padding-left:10px;">'+
+                    '<ul>'+
+                        statAdjustmentRows+
+                    '</ul>'+
+                '</div>'+
+   
+                '<b>Bonus Stat Groups</b>'+
+                '<div style="padding-left:10px;">'+
+                    '<ol>'+
+                        bonusStatGroupRows+
+                    '</ol>'+
+                '</div>'+
+    
+                getAllConfigOptions()+
 
-            +'<b>Stat Adjustment Options</b>'
-            +'<div style="padding-left:10px;">'
-            +'<ul>'
-            +statAdjustmentRows
-            +'</ul>'
-            +'</div>'
-
-            +'<b>Bonus Stat Groups</b>'
-            +'<div style="padding-left:10px;">'
-            +'<ol>'
-            +bonusStatGroupRows
-            +'</ol>'
-            +'</div>'
-
-            +getAllConfigOptions()
-
-            +'</div>'
+            '</div>'
         );
     },
 
@@ -727,6 +764,7 @@ var GroupInitiative = GroupInitiative || (function() {
             initRolls,
             cont=false,
             manualBonus=0,
+            manualBonusMin=0,
             turnEntries,
             finalize,
             isReroll=false
@@ -791,14 +829,14 @@ var GroupInitiative = GroupInitiative || (function() {
                                         workvar={};
                                     }
                                 } else {
-                                    sendChat('!group-init --add-group', '/w gm ' 
-                                        +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                        +'Unknown Stat Adjustment: '+c[0]+'<br>'
-                                        +'Use one of the following:'
-                                        +'<ul>'
-                                        +buildStatAdjustmentRows()
-                                        +'</ul>'
-                                        +'</div>'
+                                    sendChat('!group-init --add-group', '/w gm ' +
+                                        '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                            'Unknown Stat Adjustment: '+c[0]+'<br>'+
+                                            'Use one of the following:'+
+                                            '<ul>'+
+                                                buildStatAdjustmentRows()+
+                                            '</ul>'+
+                                        '</div>'
                                     );
                                     error=true;
                                 }
@@ -806,19 +844,19 @@ var GroupInitiative = GroupInitiative || (function() {
                             if(!error) {
                                 if(!_.has(workvar,'adjustments')){
                                     state.GroupInitiative.bonusStatGroups.push(workgroup);
-                                    sendChat('GroupInitiative', '/w gm ' 
-                                        +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                        +'Updated Bonus Stat Group Ordering:'
-                                        +'<ol>'
-                                        +buildBonusStatGroupRows()
-                                        +'</ol>'
-                                        +'</div>'
+                                    sendChat('GroupInitiative', '/w gm ' +
+                                        '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                            'Updated Bonus Stat Group Ordering:'+
+                                            '<ol>'+
+                                                buildBonusStatGroupRows()+
+                                            '</ol>'+
+                                        '</div>'
                                     );
                                 } else {
-                                    sendChat('!group-init --add-group', '/w gm ' 
-                                        +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                        +'All Stat Adjustments must have a final attribute name as an argument.  Please add an attribute name after --'+args.pop()
-                                        +'</div>'
+                                    sendChat('!group-init --add-group', '/w gm ' +
+                                        '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                            'All Stat Adjustments must have a final attribute name as an argument.  Please add an attribute name after --'+args.pop()+
+                                        '</div>'
                                     );
                                 }
                             }
@@ -837,22 +875,22 @@ var GroupInitiative = GroupInitiative || (function() {
                                     state.GroupInitiative.bonusStatGroups[cmds[1]-2] = workvar;
                                 }
 
-                                sendChat('GroupInitiative', '/w gm ' 
-                                    +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                    +'Updated Bonus Stat Group Ordering:'
-                                    +'<ol>'
-                                    +buildBonusStatGroupRows()
-                                    +'</ol>'
-                                    +'</div>'
+                                sendChat('GroupInitiative', '/w gm ' +
+                                    '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                        'Updated Bonus Stat Group Ordering:'+
+                                        '<ol>'+
+                                            buildBonusStatGroupRows()+
+                                        '</ol>'+
+                                    '</div>'
                                 );
                             } else {
-                                sendChat('!group-init --promote', '/w gm ' 
-                                    +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                    +'Please specify one of the following by number:'
-                                    +'<ol>'
-                                    +buildBonusStatGroupRows()
-                                    +'</ol>'
-                                    +'</div>'
+                                sendChat('!group-init --promote', '/w gm ' +
+                                    '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                        'Please specify one of the following by number:'+
+                                        '<ol>'+
+                                            buildBonusStatGroupRows()+
+                                        '</ol>'+
+                                    '</div>'
                                 );
                             }
                             break;
@@ -867,28 +905,31 @@ var GroupInitiative = GroupInitiative || (function() {
                                     return (k !== (cmds[1]-1));
                                 });
 
-                                sendChat('GroupInitiative', '/w gm ' 
-                                    +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                    +'Updated Bonus Stat Group Ordering:'
-                                    +'<ol>'
-                                    +buildBonusStatGroupRows()
-                                    +'</ol>'
-                                    +'</div>'
+                                sendChat('GroupInitiative', '/w gm ' +
+                                    '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                        'Updated Bonus Stat Group Ordering:'+
+                                        '<ol>'+
+                                            buildBonusStatGroupRows()+
+                                        '</ol>'+
+                                    '</div>'
                                 );
                             } else {
-                                sendChat('!group-init --del-group', '/w gm ' 
-                                    +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                    +'Please specify one of the following by number:'
-                                    +'<ol>'
-                                    +buildBonusStatGroupRows()
-                                    +'</ol>'
-                                    +'</div>'
+                                sendChat('!group-init --del-group', '/w gm ' +
+                                    '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                        'Please specify one of the following by number:'+
+                                        '<ol>'+
+                                            buildBonusStatGroupRows()+
+                                        '</ol>'+
+                                    '</div>'
                                 );
                             }
                             break;
 
 						case 'reroll':
                             isReroll=true;
+                            if(cmds[1] && cmds[1].match(/^[\-\+]?\d+(\.\d+)?$/)){
+                                manualBonus=parseFloat(cmds[1])||0;
+                            }
 							msg.selected= _.chain(JSON.parse(Campaign().get('turnorder'))||[])
 								.filter(function(e){
 									return '-1' !== e.id;
@@ -899,6 +940,33 @@ var GroupInitiative = GroupInitiative || (function() {
 								.value();
                             cont=true;
 							break;
+
+						case 'adjust':
+                            if(cmds[1] && cmds[1].match(/^[\-\+]?\d+(\.\d+)?$/)){
+                                manualBonus=parseFloat(cmds[1]);
+                                manualBonusMin=parseFloat(cmds[2]);
+                                manualBonusMin=_.isNaN(manualBonusMin)?-10000:manualBonusMin;
+                                
+                                Campaign().set({
+                                    turnorder: JSON.stringify(
+                                        _.map(JSON.parse(Campaign().get('turnorder'))||[], function(e){
+                                            if('-1' !== e.id){
+                                                e.pr=Math.max(e.pr+manualBonus,manualBonusMin);
+                                            }
+                                            return e;
+                                        })
+                                    )
+                                });
+                                notifyObservers('turnOrderChange');
+                            } else {
+                                sendChat('GroupInitiative', '/w gm ' +
+                                    '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                        'Not a valid adjustment: <b>'+cmds[1]+'</b>'+
+                                    '</div>'
+                                );
+                            }
+							break;
+
 
 						case 'clear':
                             Campaign().set({
@@ -913,10 +981,10 @@ var GroupInitiative = GroupInitiative || (function() {
                                 manualBonus=parseFloat(cmds[1]);
                                 cont=true;
                             } else {
-                                sendChat('GroupInitiative', '/w gm ' 
-                                    +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                    +'Not a valid bonus: <b>'+cmds[1]+'</b>'
-                                    +'</div>'
+                                sendChat('GroupInitiative', '/w gm ' +
+                                    '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                        'Not a valid bonus: <b>'+cmds[1]+'</b>'+
+                                    '</div>'
                                 );
                             }
                             break;
@@ -925,10 +993,10 @@ var GroupInitiative = GroupInitiative || (function() {
 							if(!playerIsGM(msg.playerid)){
 								return;
 							}
-                            sendChat('GroupInitiative', '/w gm ' 
-                                +'<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'
-                                +'Not a valid command: <b>'+cmds[0]+'</b>'
-                                +'</div>'
+                            sendChat('GroupInitiative', '/w gm ' +
+                                '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                    'Not a valid command: <b>'+cmds[0]+'</b>'+
+                                '</div>'
                             );
                             break;
                     }
@@ -1031,19 +1099,20 @@ var GroupInitiative = GroupInitiative || (function() {
                 ird = msg[0].inlinerolls[parts[1].match(/\d+/)],
                 rdata = {
                     order: parseInt(parts[0],10),
-                    total: (ird.results.total%1===0
-                        ? ird.results.total 
-                        : parseFloat(ird.results.total.toFixed(state.GroupInitiative.config.maxDecimal))),
-                        rolls: _.reduce(ird.results.rolls,function(m,rs){
-                            if('R' === rs.type) {
-                                m.push({
-                                    sides: rs.sides,
-                                    rolls: _.pluck(rs.results,'v')
-                                });
-                            }
-                            return m;
-                        },[])
-            };
+                    total: (ird.results.total%1===0 ?
+                        ird.results.total :
+                            parseFloat(ird.results.total.toFixed(state.GroupInitiative.config.maxDecimal))),
+                    rolls: _.reduce(ird.results.rolls,function(m,rs){
+                        if('R' === rs.type) {
+                            m.push({
+                                sides: rs.sides,
+                                rolls: _.pluck(rs.results,'v')
+                            });
+                        }
+                        return m;
+                    },[])
+                };
+
             rdata.bonus = (ird.results.total - (_.reduce(rdata.rolls,function(m,r){
                 m+=_.reduce(r.rolls,function(s,dieroll){
                     return s+dieroll;
@@ -1051,9 +1120,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 return m;
             },0)));
 
-            rdata.bonus = (rdata.bonus%1===0
-                ? rdata.bonus
-                : parseFloat(rdata.bonus.toFixed(state.GroupInitiative.config.maxDecimal)));
+            rdata.bonus = (rdata.bonus%1===0 ?
+                rdata.bonus :
+                parseFloat(rdata.bonus.toFixed(state.GroupInitiative.config.maxDecimal)));
 
             turnEntries.push(rdata);
 
@@ -1074,13 +1143,13 @@ var GroupInitiative = GroupInitiative || (function() {
                     return;
                 }
                 if(!args.length) {
-                    sendChat('','/w gm '
-                        +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                            +'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
-                                +'GroupInitiative v'+version
-                            +'</div>'
-                            +getAllConfigOptions()
-                        +'</div>'
+                    sendChat('','/w gm '+
+                        '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                            '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+                                'GroupInitiative v'+version+
+                            '</div>'+
+                            getAllConfigOptions()+
+                        '</div>'
                     );
                     return;
                 }
@@ -1094,11 +1163,11 @@ var GroupInitiative = GroupInitiative || (function() {
                             } else {
                                 omsg='<div><b>Error:</b> Not a valid sort method: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_SortOptions()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_SortOptions()+
+                                '</div>'
                             );
                             break;
                         case 'set-die-size':
@@ -1107,11 +1176,11 @@ var GroupInitiative = GroupInitiative || (function() {
                             } else {
                                 omsg='<div><b>Error:</b> Not a die size: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_DieSize()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_DieSize()+
+                                '</div>'
                             );
                             break;
 
@@ -1121,11 +1190,11 @@ var GroupInitiative = GroupInitiative || (function() {
                             } else {
                                 omsg='<div><b>Error:</b> Not a valid decimal count: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_MaxDecimal()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_MaxDecimal()+
+                                '</div>'
                             );
                             break;
 
@@ -1136,11 +1205,11 @@ var GroupInitiative = GroupInitiative || (function() {
                             } else {
                                 omsg='<div><b>Error:</b> Not a valid dice count: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_DiceCount()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_DiceCount()+
+                                '</div>'
                             );
                             break;
 
@@ -1151,29 +1220,29 @@ var GroupInitiative = GroupInitiative || (function() {
                                 state.GroupInitiative.config.diceCountAttribute='';
                                 omsg='<div>Cleared Dice Count Attribute.</div>';
                             }
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_DiceCountAttribute()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_DiceCountAttribute()+
+                                '</div>'
                             );
                             break;
 
                         case 'toggle-auto-open-init':
                             state.GroupInitiative.config.autoOpenInit = !state.GroupInitiative.config.autoOpenInit;
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +getConfigOption_AutoOpenInit()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    getConfigOption_AutoOpenInit()+
+                                '</div>'
                             );
                             break;
 
                         case 'toggle-replace-roll':
                             state.GroupInitiative.config.replaceRoll = !state.GroupInitiative.config.replaceRoll;
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +getConfigOption_ReplaceRoll()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    getConfigOption_ReplaceRoll()+
+                                '</div>'
                             );
                             break;
 
@@ -1183,11 +1252,11 @@ var GroupInitiative = GroupInitiative || (function() {
                             } else {
                                 omsg='<div><b>Error:</b> Not a valid announcer: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_AnnounceOptions()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_AnnounceOptions()+
+                                '</div>'
                             );
                             break;
 
@@ -1197,17 +1266,17 @@ var GroupInitiative = GroupInitiative || (function() {
                             } else {
                                 omsg='<div><b>Error:</b> Not a valid roller: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w gm '
-                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
-                                    +omsg
-                                    +getConfigOption_RollerOptions()
-                                +'</div>'
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_RollerOptions()+
+                                '</div>'
                             );
                             break;
 
                         default:
-                            sendChat('','/w gm '
-                                +'<div><b>Unsupported Option:</div> '+a+'</div>'
+                            sendChat('','/w gm '+
+                                '<div><b>Unsupported Option:</div> '+a+'</div>'
                             );
                     }
                             
