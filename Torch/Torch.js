@@ -5,8 +5,8 @@
 var Torch = Torch || (function() {
     'use strict';
 
-    var version = '0.8.7',
-        lastUpdate = 1456519199,
+    var version = '0.8.8',
+        lastUpdate = 1476099723,
         schemaVersion = 0.1,
 		flickerURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
 		flickerPeriod = 400,
@@ -202,40 +202,34 @@ var Torch = Torch || (function() {
                 dim_radius = parseInt(args[2],10) || (radius/2);
 				other_players = _.contains([1,'1','on','yes','true','sure','yup','-'], args[3] || 1 );
 
-				if(playerIsGM(msg.playerid)) {
-					_.chain(args)
-						.rest(4)
-						.uniq()
-                        .filter(function(a){
-                            var angle=a.match(/^--(\d+)$/);
-                            if(angle){
-                                arc_angle=(Math.min(360,Math.max(0,angle[1])));
-                                return false;
-                            }
-                            return true;
-                        })
-						.map(function(t){
-							return getObj('graphic',t);
-						})
-						.reject(_.isUndefined)
-						.each(function(t) {
-							t.set({
-								light_radius: radius,
-								light_dimradius: dim_radius,
-								light_otherplayers: other_players,
-                                light_angle: arc_angle
-							});
-						});
-				}
+                objs = _.chain(args)
+                    .rest(4)
+                    .uniq()
+                    .filter(function(a){
+                        var angle=a.match(/^--(\d+)$/);
+                        if(angle){
+                            arc_angle=(Math.min(360,Math.max(0,angle[1])));
+                            return false;
+                        }
+                        return true;
+                    })
+                    .map(function(t){
+                        return getObj('graphic',t);
+                    })
+                    .reject(()=>playerIsGM(msg.playerid))
+                    .reject(_.isUndefined)
+                    .value();
 
-                _.each(msg.selected,function (o) {
-                    getObj(o._type,o._id).set({
+                _.each(_.union(objs,_.map(msg.selected,function (o) {
+                    return getObj(o._type,o._id);
+                })), function(o){
+                    o.set({
                         light_radius: radius,
                         light_dimradius: dim_radius,
                         light_otherplayers: other_players,
                         light_angle: arc_angle
                     });
-                });
+				});
 				break;
 
             case '!snuff':
@@ -346,24 +340,23 @@ var Torch = Torch || (function() {
                 dim_radius = parseInt(args[2],10) || (radius/2);
 				other_players = _.contains([1,'1','on','yes','true','sure','yup','-'], args[3] || 1 );
 
-				if(playerIsGM(msg.playerid)) {
-					objs=_.chain(args)
-						.rest(4)
-						.uniq()
-                        .filter(function(a){
-                            var angle=a.match(/^--(\d+)$/);
-                            if(angle){
-                                arc_angle=(Math.min(360,Math.max(0,angle[1])));
-                                return false;
-                            }
-                            return true;
-                        })
-						.map(function(t){
-							return getObj('graphic',t);
-						})
-						.reject(_.isUndefined)
-						.value();
-				}
+                objs=_.chain(args)
+                    .rest(4)
+                    .uniq()
+                    .filter(function(a){
+                        var angle=a.match(/^--(\d+)$/);
+                        if(angle){
+                            arc_angle=(Math.min(360,Math.max(0,angle[1])));
+                            return false;
+                        }
+                        return true;
+                    })
+                    .reject(()=>playerIsGM(msg.playerid))
+                    .map(function(t){
+                        return getObj('graphic',t);
+                    })
+                    .reject(_.isUndefined)
+                    .value();
 
                 _.each(_.union(objs,_.map(msg.selected,function (o) {
                     return getObj(o._type,o._id);
