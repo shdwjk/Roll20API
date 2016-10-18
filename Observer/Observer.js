@@ -5,8 +5,8 @@
 var Observer = Observer || (function() {
     'use strict';
 
-    var version = '0.1.0',
-        lastUpdate = 1476765929,
+    var version = '0.1.1',
+        lastUpdate = 1476768359,
         schemaVersion = 0.1,
         defaults = {
             css: {
@@ -205,7 +205,7 @@ var Observer = Observer || (function() {
     handleInput = function(msg) {
         var args, who;
 
-        if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
+        if (msg.type !== "api") {
             return;
         }
         who=getObj('player',msg.playerid).get('_displayname');
@@ -213,6 +213,9 @@ var Observer = Observer || (function() {
         args = msg.content.split(/\s+--/);
         switch(args.shift()) {
             case '!observer':
+                if(!playerIsGM(msg.playerid)){
+                    return;
+                }
                 if(_.contains(args,'help') || !args.length) {
                     showHelp(who);
                     return;
@@ -259,8 +262,10 @@ var Observer = Observer || (function() {
                     }
                 });
                 break;
-
             case '!observer-config':
+                if(!playerIsGM(msg.playerid)){
+                    return;
+                }
                 if(_.contains(args,'help')) {
                     showHelp(who);
                     return;
@@ -313,6 +318,11 @@ var Observer = Observer || (function() {
                             
                 });
                 break;
+            case '!eot':
+                /* catch popular turn changing commands */
+                _.defer(handleChangeTurnOrder);
+                break;
+
         }
     },
 
@@ -343,6 +353,7 @@ var Observer = Observer || (function() {
     },
 
     handleChangeTurnOrder = function(c){
+        c=c||Campaign();
         let initp=c.get('initiativepage'),
             to=JSON.parse(c.get('turnorder')||'[]');
         if(state.Observer.config.initRestrict && initp && to.length){
@@ -376,7 +387,11 @@ var Observer = Observer || (function() {
         on('change:campaign:turnorder', handleChangeTurnOrder);
         on('change:campaign:initiativepage', handleChangeTurnOrder);
 
-        handleChangeTurnOrder(Campaign());
+        if('undefined' !== typeof GroupInitiative && GroupInitiative.ObserveTurnOrderChange){
+            GroupInitiative.ObserveTurnOrderChange(handleChangeTurnOrder);
+        }
+
+        handleChangeTurnOrder();
     };
 
     return {
