@@ -5,9 +5,12 @@
 var Walls = Walls || (function() {
     'use strict';
 
-	var version = '0.3.1',
-        lastUpdate = 1439851789,
-        schemaVersion = 0.2,
+	var version = '0.3.2',
+        lastUpdate = 1477523761,
+        schemaVersion = 0.4,
+		regex = {
+			colors: /^(?:#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?|transparent)$/
+		},
 
 	resetWork = function() {
 		state.Walls.work={
@@ -23,6 +26,11 @@ var Walls = Walls || (function() {
 				x: 1.0,
 				y: 1.0
 			},
+			color: {
+				stroke: '#ff0000',
+				fill: 'transparent'
+			},
+			strokeWidth: 5,
 			completedPaths: [],
 			workPath: []
 		};
@@ -133,12 +141,13 @@ var Walls = Walls || (function() {
 
 							createObj('path',{
 								pageid: map.get('pageid'),
-								stroke: '#ff0000',
+								stroke: state.Walls.work.color.stroke,
+								fill: state.Walls.work.color.fill,
 								left: centerX,
 								top: centerY,
 								width: width,
 								height: height,
-								stroke_width: 5,
+								stroke_width: state.Walls.work.strokeWidth,
 								layer: 'walls',
 								path: pathstring
 							});
@@ -152,6 +161,26 @@ var Walls = Walls || (function() {
 			case 'viewbox':
 				state.Walls.work.scale.x=state.Walls.work.mapGraphic.width/tokens[1];
 				state.Walls.work.scale.y=state.Walls.work.mapGraphic.height/tokens[2];
+				break;
+
+			case 'strokewidth': {
+					let w = parseFloat(tokens[1]);
+					if(_.isNumber(w) && ( 0<w && w<100)){
+						state.Walls.work.strokeWidth = w;
+					}
+				}
+				break;
+
+			case 'strokecolor':
+				if(tokens[1].match(regex.colors)){
+					state.Walls.work.color.stroke = tokens[1];
+				}
+				break;
+
+			case 'fillcolor':
+				if(tokens[1].match(regex.colors)){
+					state.Walls.work.color.fill = tokens[1];
+				}
 				break;
 
 			case 'moveto':
