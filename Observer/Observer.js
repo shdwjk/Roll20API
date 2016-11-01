@@ -5,9 +5,11 @@
 var Observer = Observer || (function() {
     'use strict';
 
-    var version = '0.1.1',
-        lastUpdate = 1476768359,
+    var version = '0.1.2',
+        lastUpdate = 1476799960,
         schemaVersion = 0.1,
+        clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
+        updateTokenName = 'Observer Update Token',
         defaults = {
             css: {
                 button: {
@@ -128,7 +130,7 @@ var Observer = Observer || (function() {
         return makeConfigOption(
             state.Observer.config.initRestrict,
             '!observer-config --toggle-init-restrict',
-            '<b>Initiative Restriction</b> causes the visibility of obsevers to be restricted to just the Token whose turn it is.'
+            '<b>Initiative Restriction</b> causes the visibility of observers to be restricted to just the Token whose turn it is.'
         );
     },
     getConfigOption_InitNPCs = function() {
@@ -326,23 +328,47 @@ var Observer = Observer || (function() {
         }
     },
 
+    getOrCreateUpdateToken = function(pageid){
+        return findObjs({
+            type:'graphic',
+            name:updateTokenName,
+            imgsrc: clearURL,
+            pageid: pageid
+        })[0] || createObj('graphic',{
+			imgsrc: clearURL,
+			layer: 'map',
+			pageid: pageid,
+			width: 70,
+			height: 70,
+			left: -1000,
+			top: -1000,
+			name: updateTokenName,
+			showname: false
+        });
+    },
+
     removeObservers = function(){
         _.each(
             filterObjs((o)=>(_.contains(['character','graphic'],o.get('type')) && o.get('controlledby')!=='') ),
             (c)=>c.set('controlledby', _.difference(c.get('controlledby').split(/,/),state.Observer.observers).join())
         );
     },
+
+    forceUpdateOfVision = function(){
+        var pages = _.union(
+                [Campaign().get('playerpageid')],
+                _.values(_.filter(Campaign().get('playerspecificpages'),(v,k)=>_.contains(state.Observer.observers,k)) )
+            ),
+            updateTokens = _.map(pages,getOrCreateUpdateToken);
+        _.each(updateTokens,(t)=>t.set({left:(-1000+randomInteger(800)),top:(-1000+randomInteger(800))}));
+    },
+    
     assureObservers = function(){
-        var ids=[];
         _.each(
             filterObjs((o)=>(o.get('type')==='character' && o.get('controlledby')!=='') ),
-            (c)=>{ids.push(c.id);c.set('controlledby', _.union(c.get('controlledby').split(/,/),state.Observer.observers).join());}
+            (c)=>{c.set('controlledby', _.union(c.get('controlledby').split(/,/),state.Observer.observers).join());}
         );
-        filterObjs((o)=>{
-            if(o.get('type')==='graphic' && _.contains(ids,o.id)){
-                o.set('controlledby', _.union(o.get('controlledby').split(/,/),state.Observer.observers).join());
-            }
-        });
+        forceUpdateOfVision();
     },
 
     handleChangeCharacterControlledBy = function(obj){
@@ -364,13 +390,14 @@ var Observer = Observer || (function() {
                 if(c){
                     if(state.Observer.config.initNPCs || c.get('controlledby')!==''){
                         c.set('controlledby', _.union(c.get('controlledby').split(/,/),state.Observer.observers).join());
-                        t.set('controlledby', _.union(t.get('controlledby').split(/,/),state.Observer.observers).join());
+                        forceUpdateOfVision();
                     } else {
                         assureObservers();
                     }
                 } else {
                     if(state.Observer.config.initTokens){
                         t.set('controlledby', _.union(t.get('controlledby').split(/,/),state.Observer.observers).join());
+                        forceUpdateOfVision();
                     } else {
                         assureObservers();
                     }
