@@ -5,7 +5,7 @@
 var Walls = Walls || (function() {
     'use strict';
 
-	var version = '0.3.3',
+	var version = '0.3.4',
         lastUpdate = 1477523761,
         schemaVersion = 0.4,
 		regex = {

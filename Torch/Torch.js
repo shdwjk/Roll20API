@@ -5,8 +5,8 @@
 var Torch = Torch || (function() {
     'use strict';
 
-    var version = '0.8.8',
-        lastUpdate = 1476099723,
+    var version = '0.8.9',
+        lastUpdate = 1478016891,
         schemaVersion = 0.1,
 		flickerURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
 		flickerPeriod = 400,
@@ -216,7 +216,7 @@ var Torch = Torch || (function() {
                     .map(function(t){
                         return getObj('graphic',t);
                     })
-                    .reject(()=>playerIsGM(msg.playerid))
+                    .filter(()=>playerIsGM(msg.playerid))
                     .reject(_.isUndefined)
                     .value();
 
@@ -351,7 +351,7 @@ var Torch = Torch || (function() {
                         }
                         return true;
                     })
-                    .reject(()=>playerIsGM(msg.playerid))
+                    .filter(()=>playerIsGM(msg.playerid))
                     .map(function(t){
                         return getObj('graphic',t);
                     })
