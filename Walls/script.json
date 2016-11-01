@@ -1,6 +1,6 @@
 {
   "name": "Walls",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Builds dynamic lighting walls with an exported SVG path file.",
   "authors": "The Aaron",
   "roll20userid": "104025",
