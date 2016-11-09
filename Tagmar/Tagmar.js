@@ -5,11 +5,12 @@
 var Tagmar = Tagmar || (function() {
     'use strict';
 
-    var version = '0.1.0',
-        lastUpdate = 1476837075,
+    var version = '0.1.1',
+        lastUpdate = 1478701973,
         schemaVersion = 0.1,
         colorNameLookup = ['green','white','yellow','orange','red','blue','indigo','grey'],
         colorValueLookup = ['#009933','#ffffff','#FFFB00','#FE9901','#FF2500','#3399FF','#014586','#014586'],
+		resultNameLookup = ['F','E','25%','50%','75%','100%','125%','C'],
         skillLookup = {
             "-7":[0,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,3,4,5,7],
             "-6":[0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,3,4,5,7],
@@ -139,7 +140,7 @@ var Tagmar = Tagmar || (function() {
 
     formatRoll=function(result,color,formulae,desc){
         return '<div style="border:1px solid #aaa; border-radius: 1em; padding:.25em; background-color: white;padding-left:2em;">'+
-            `<div class="inlinerollresult showtip tipsy" title="${formulae}" style="display:inline-block;min-width:1em;width: 2em; text-align:center;border: 3px solid black; border-radius: 1em; margin: .2em;margin-left: -2em; margin-top: -.25em; font-weight: bold; padding: .2em; color:black;text-shadow:-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; font-size: 1.5em; background-color:${color};">${result}</div>`+
+            `<div class="inlinerollresult showtip tipsy" title="${formulae}" style="display:inline-block;min-width:1em;width: 3em; text-align:center;border: 3px solid black; border-radius: 1em; margin: .2em;margin-left: -2em; margin-top: -.25em; font-weight: bold; padding: .2em; color:black;text-shadow:-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; font-size: 1.5em; background-color:${color};">${result}</div>`+
             desc+
         '</div>';
     },
@@ -208,10 +209,11 @@ var Tagmar = Tagmar || (function() {
                     result=skillLookup[skill||0][(roll||1)-1],
                     colorName=colorNameLookup[result],
                     colorValue=colorValueLookup[result],
+					resultName=resultNameLookup[result],
                     desc = args.join(' '),
                     formulae = `Skill: ${formula1?formula1+' = ':''}${skill} &lt;br&gt; Roll: ${formula2?formula2+' = ':''}${roll} &lt;br&gt; Result: ${result} [${colorName}]`,
                     blindFormulae = `Skill: ${formula1?formula1+' = ':''}${skill}`,
-                    formattedRoll = formatRoll(result, colorValue, formulae, desc),
+                    formattedRoll = formatRoll(resultName, colorValue, formulae, desc),
                     blindRoll = formatRoll('???', '#000000', blindFormulae, desc);
 
                 if(_.isNaN(skill) || _.isNaN(roll)){
