@@ -5,9 +5,13 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.21',
-        lastUpdate = 1460077744,
+    var version = '0.8.22',
+        lastUpdate = 1478725753,
         schemaVersion = 0.3,
+
+        observers = {
+                tokenChange: []
+    		},
 
         fields = {
 			// booleans
@@ -77,8 +81,9 @@ var TokenMod = TokenMod || (function() {
 			represents: {type: 'character_id'},
 			bar1_link: {type: 'attribute'},
 			bar2_link: {type: 'attribute'},
-			bar3_link: {type: 'attribute'}
-		//	controlledby: {type: 'player_id'}
+			bar3_link: {type: 'attribute'},
+            imgsrc: {type: 'image'},
+			controlledby: {type: 'player'}
 		},
 
 		regex = {
@@ -87,7 +92,8 @@ var TokenMod = TokenMod || (function() {
 			stripDoubleQuotes: /"([^"]+(?="))"/g,
 			layers: /^(?:gmlayer|objects|map|walls)$/,
 			statuses: /^(?:red|blue|green|brown|purple|pink|yellow|dead|skull|sleepy|half-heart|half-haze|interdiction|snail|lightning-helix|spanner|chained-heart|chemical-bolt|death-zone|drink-me|edge-crack|ninja-mask|stopwatch|fishing-net|overdrive|strong|fist|padlock|three-leaves|fluffy-wing|pummeled|tread|arrowed|aura|back-pain|black-flag|bleeding-eye|bolt-shield|broken-heart|cobweb|broken-shield|flying-flag|radioactive|trophy|broken-skull|frozen-orb|rolling-bomb|white-tower|grab|screaming|grenade|sentry-gun|all-for-one|angel-outfit|archery-target)$/,
-			colors: /^(transparent|(?:#?[0-9a-fA-F]{6}))$/
+			colors: /^(transparent|(?:#?[0-9a-fA-F]{6}))$/,
+            imgsrc: /(.*\/images\/.*)(thumb|med|original|max)(.*)$/
 		},
 		filters = {
 			hasArgument: function(a) {
@@ -131,8 +137,12 @@ var TokenMod = TokenMod || (function() {
                         default:
                             return;
                     }
+                },
+            keyHash: function(t){
+                    return (t && t.toLowerCase().replace(/\s+/,'_')) || undefined;
                 }
 		},
+
     checkGlobalConfig = function(){
         var s=state.TokenMod,
             g=globalconfig && globalconfig.tokenmod,
@@ -145,6 +155,7 @@ var TokenMod = TokenMod || (function() {
           state.TokenMod.globalconfigCache=globalconfig.tokenmod;
         }
     },
+
 	checkInstall = function() {
 		log('-=> TokenMod v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
@@ -174,6 +185,47 @@ var TokenMod = TokenMod || (function() {
 		}
         checkGlobalConfig();
 	},
+
+    observeTokenChange = function(handler){
+        if(handler && _.isFunction(handler)){
+            observers.tokenChange.push(handler);
+        }
+    },
+    notifyObservers = function(event,obj,prev){
+        _.each(observers[event],function(handler){
+            handler(obj,prev);
+        });
+    },
+
+    getPlayerIDs = (function(){
+        let age=0,
+            cache=[],
+        checkCache=function(){
+            if(_.now()-60000>age){
+                cache=_.chain(findObjs({type:'player'}))
+                    .map((p)=>({
+                        id: p.id,
+                        userid: p.get('d20userid'),
+                        keyHash: transforms.keyHash(p.get('displayname'))
+                    }))
+                    .value();
+            }
+        },
+        findPlayer = function(data){
+            checkCache();
+            return _.reduce(cache,(m,p)=>{
+                if(p.id===data || p.userid===data || (-1 !== p.keyHash.indexOf(transforms.keyHash(data)))){
+                    m.push(p.id);
+                }
+                return m;
+            },[]);
+        };
+
+        return function(datum){
+            return 'all'===datum ? ['all'] : findPlayer(datum);
+        };
+    }()),
+
     ch = function (c) {
         var entities = {
             '<' : 'lt',
@@ -229,6 +281,21 @@ var TokenMod = TokenMod || (function() {
 			'<p>This command takes a list of modifications and applies them to the selected tokens (or tokens specified with --ids by a GM or Player depending on configuration).  Note that each --option can be specified multiple times and in any order.</p>'+
 			'<p><b>Note:</b> If you are using multiple '+ch('@')+ch('{')+'target'+ch('|')+'token_id'+ch('}')+' calls in a macro, and need to adjust fewer than the supplied number of token ids, simply select the same token several times.  The duplicates will be removed.</p>'+
 			'<p><b>Note:</b> Anywhere you use |, you can use # instead.  Sometimes this make macros easier.</p>'+
+			'<p><b>Note:</b> You can use the {{ and }} to span multiple lines with your command for easier clarity and editing:'+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+				'!token-mod {{<br>'+
+				ch(' ')+ch(' ')+'--on<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'flipv<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'fliph<br>'+
+				ch(' ')+ch(' ')+'--set<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'rotation|180<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'bar1|'+ch('[')+ch('[')+'8d8+8'+ch(']')+ch(']')+'<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'light_radius|60<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'light_dimradius|30<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'name|"My bright token"<br>'+
+				'}}<br>'+
+			'</pre></div></p>'+
 			'<ul>'+
 				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
 					'<b><span style="font-family: serif;">'+ch('<')+'--help'+ch('>')+'</span></b> '+ch('-')+' Displays this help.'+
@@ -321,9 +388,10 @@ var TokenMod = TokenMod || (function() {
 				'!token-mod --set key|value key|value key|value'+
 			'</pre>'+
 
-		'<p><b>Note:</b> You can now use inline rolls wherever you like:</p>'+
+		'<p><b>Note:</b> You can now use inline rolls wherever you like, including rollable tables:</p>'+
 			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-				'!token-mod --set bar'+ch('[')+ch('[')+'1d3'+ch(']')+ch(']')+'_value|X statusmarkers|blue:'+ch('[')+ch('[')+'1d9'+ch(']')+ch(']')+'|green:'+ch('[')+ch('[')+'1d9'+ch(']')+ch(']')+
+				'!token-mod --set bar'+ch('[')+ch('[')+'1d3'+ch(']')+ch(']')+'_value|X statusmarkers|blue:'+ch('[')+ch('[')+'1d9'+ch(']')+ch(']')+'|green:'+ch('[')+ch('[')+'1d9'+ch(']')+ch(']')+' name:'+ch('"')+ch('[')+ch('[')+'1'+ch('[')+'randomName'+ch(']')+ch(']')+ch(']')+
+
 			'</pre>'+
 
 		'<p><b>Note:</b> You can now use + or - before any number to make an adjustment to the current value:</p>'+
@@ -541,6 +609,31 @@ var TokenMod = TokenMod || (function() {
 				'</pre>'+
 			'</div>'+
 
+			'<p>You can set multiple of the same status marker with a bracket syntax. Copies of a status are indexed starting at 1 from left to right. Leaving brackets off will be the same as specifying index 1. Using empty brackets is the same as specifying an index 1 greater than the highest index in use. When setting a status at an index that doesn'+ch("'")+'t exist (say, 8 when you only have 2 of that status) it will be appended to the right as the next index. When removing a status that doesn'+ch("'")+'t exist, it will be ignored. Removing the empty bracket status will remove all statues of that type.</p>'+
+			'<p>Adding the blue status marker with the numbers 7 and 5 in a few different ways:</p>'+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set statusmarkers|blue:7|blue[]:5<br>'+
+					'!token-mod --set statusmarkers|blue[]:7|blue[]:5<br>'+
+					'!token-mod --set statusmarkers|blue[1]:7|blue[2]:5<br>'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>Removing the second blue status marker:</p>'+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set statusmarkers|-blue[2]'+
+				'</pre>'+
+			'</div>'+
+
+
+			'<p>Removing all blue status markers:</p>'+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set statusmarkers|-blue[]'+
+				'</pre>'+
+			'</div>'+
+
 			'<p><u>Available Status Markers:</u></p>'+
 			'<div style="width: 130px; padding: 0px 3px;float: left;">red</div>'+
 			'<div style="width: 130px; padding: 0px 3px;float: left;">blue</div>'+
@@ -608,6 +701,21 @@ var TokenMod = TokenMod || (function() {
 		'</div>'+
 
 		'<div style="padding-left: 10px;padding-right:20px">'+
+			'<b>Image</b>'+
+			'<p>You can provide an image to use for the token source image. Images must be in a user library or will be ignored. The full path must be provided.</p>'+
+
+			'<p><u>Available Image Properties:</u></p>'+
+			'<div style="width: 130px; padding: 0px 3px;float: left;">imagesrc</div>'+
+			'<div style="clear:both;">'+ch(' ')+'</div>'+
+			'<p>Setting the image source to a library image (in this case, the orange ring I use for <i>TurnMarker</i>):</p>'+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set imgsrc|https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/max.png?1400535580'+
+				'</pre>'+
+			'</div>'+
+		'</div>'+
+
+		'<div style="padding-left: 10px;padding-right:20px">'+
 			'<b>Character ID</b>'+
 			'<p>You can use the '+ch('@')+ch('{')+ch('<')+'character name'+ch('>')+ch('|')+'character_id'+ch('}')+' syntax to specify a character_id directly or use the name of a character (quoted if it contains spaces) or just the shortest part of the name that is unique ('+ch("'")+'Sir Maximus Strongbow'+ch("'")+' could just be '+ch("'")+'max'+ch("'")+'.).  Not case sensitive: Max = max = MaX = MAX</p>'+
 			'<p><u>Available Character ID Properties:</u></p>'+
@@ -620,6 +728,129 @@ var TokenMod = TokenMod || (function() {
 				'</pre>'+
 			'</div>'+
 			'<p>Note that setting the represents will clear the links for the bars, so you will probably want to set those again.</p>'+
+		'</div>'+
+
+		'<div style="padding-left: 10px;padding-right:20px">'+
+			'<b>Player</b>'+
+			'<p>You can specify Players using one of three methods: Player ID, Roll20 ID Number, Player Name Matching</p>'+
+			'<ul>'+
+				'<li>Player ID is a unique identifier assigned that player in a specific game.  You can only find this id from the API, so this is likely the least useful method.</li>'+
+				'<li>Roll20 ID Number is a unique identifier assigned to a specific player.  You can find it in the URL of their profile page as the number preceeding their name.  This is really useful if you play with the same people all the time, or are cloning the same game with the same players, etc.</li>'+
+				'<li>Player Name Matching is a string that will be matched to the current name of the player in game.  Just like with Characters above, it can be quoted if it has spaces and is case insensitive.  All players that match a given string will be used.</li>'+
+			'</ul>'+
+			'<p>Note that you can use the special string all to denote the All Players special player.</p>'+
+
+			'<p><u>Available Player Properties:</u></p>'+
+			'<div style="width: 130px; padding: 0px 3px;float: left;">controlledby</div>'+
+			'<div style="clear:both;">'+ch(' ')+'</div>'+
+
+			'<p>Controlled by supports multiple values, all separated by | as seen below.</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|aaron|+stephen|+russ'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>There are 3 operations that can be specified with leading characters: +,-, = (default)</p>'+
+			'<ul>'+
+				'<li>+ will add the player(s) to the controlledby list.</li>'+
+				'<li>- will remove the player(s) from the controlledby list.</li>'+
+				'<li>= will set the controlledby list to only the player(s).  (Default)</li>'+
+			'</ul>'+
+
+			'<p>Adding control for roll20 player number 123456:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|+123456'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>Setting control for all players:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|all'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>Adding all the players with k in their name but removing karen:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|+k|-karen'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>Adding the player with player id -JsABCabc123-12:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|+-JsABCabc123-12'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>In the case of a leading character on the name that would be interpreted as an operation, you can use quotes:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|"-JsABCabc123-12"'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>Quotes will also help with names that have spaces, or with nested other quotes:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|+'+ch("'")+'Bob "tiny" Slayer'+ch("'")+
+				'</pre>'+
+			'</div>'+
+
+			'<p>You can remove all controlling players by using a blank list or explicitly setting equal to nothing:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|<br>'+
+					'!token-mod --set controlledby|='+
+				'</pre>'+
+			'</div>'+
+
+			'<p>A specified action that doesn'+ch("'")+'t match any player(s) will be ignored.  If there are no players named Tim, this won'+ch("'")+'t change the list:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby|tim'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>If you wanted to force an empty list and set tim if tim is available, you can chain this with blanking the list:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set controlledby||tim'+
+				'</pre>'+
+			'</div>'+
+
+			'<p><u>Using controlledby with represents</u></p>'+
+
+			'<p>When a token represents a character, the controlledby property that is adjusted is the one on the character. This works as you would want it to,so if you are changing the represents as part of the same command, it will adjust the location that will be correct after all commands are run.</p>'+
+
+			'<p>Set the token to represent the character with rook in the name and assign control to players matching bob:</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set represents|rook controlledby|bob'+
+				'</pre>'+
+			'</div>'+
+
+			'<p>Remove the represent setting for the token and then give bob controll of that token (useful for one-offs from npcs or monsters):</p>'+
+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set represents| controlledby|bob'+
+				'</pre>'+
+			'</div>'+
 		'</div>'+
 
 		'<div style="padding-left: 10px;padding-right:20px">'+
@@ -663,7 +894,28 @@ var TokenMod = TokenMod || (function() {
         getConfigOption_PlayersCanIDs()+
 	'</div>'+
 
+	'<b>API Notifications</b>'+
+	'<div style="padding-left:10px;">'+
+		'<p>API Scripts can register for the following notifications:</p>'+
+		'<p><b>Token Changes</b> -- Register your function by passing it to <span style="font:monospace">TokenMod.ObserveTokenChange()</span>.  When TokenMod changes a token, it will call your function with the Token as the first argument and the previous properties as the second argument.</p>'+
+
+		'<p>Example script that notifies when a token'+ch("'")+'s status markers are changed by TokenMod:</p>'+
+
+		'<div style="padding-left: 10px;padding-right:20px">'+
+			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+				'on('+ch("'")+'ready'+ch("'")+',function(){<br>'+
+				ch(' ')+ch(' ')+'if('+ch("'")+'undefined'+ch("'")+' !== typeof TokenMod && TokenMod.ObserveTokenChange){<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'TokenMod.ObserveTokenChange(function(obj,prev){<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+ch(' ')+ch(' ')+'if(obj.get('+ch("'")+'statusmarkers'+ch("'")+') !== prev.statusmarkers){<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+ch(' ')+ch(' ')+ch(' ')+ch(' ')+'sendChat('+ch("'")+'Observer Token Change'+ch("'")+','+ch("'")+'Token: '+ch("'")+'+obj.get('+ch("'")+'name'+ch("'")+')+'+ch("'")+' has changed status markers!'+ch("'")+');<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+ch(' ')+ch(' ')+'}<br>'+
+				ch(' ')+ch(' ')+ch(' ')+ch(' ')+'});<br>'+
+				ch(' ')+ch(' ')+'}<br>'+
+				'});'+
+			'</pre>'+
+		'</div>'+
 	'</div>'+
+
 '</div>'
 			);
 	},
@@ -775,6 +1027,15 @@ var TokenMod = TokenMod || (function() {
 					}
 					break;
 
+				case 'image':
+                    t=args.shift().match(regex.imgsrc);
+                    if(t){
+                        retr[cmd].push(t[1]+'thumb'+t[3]);
+                    } else {
+                        retr = undefined;
+                    }
+					break;
+
 				case 'color':
 					retr[cmd].push((args.shift().match(regex.colors)||[]).shift());
 					if(0 === (retr[cmd][0]||'').length) {
@@ -818,7 +1079,25 @@ var TokenMod = TokenMod || (function() {
 					retr[cmd].push(args.shift().replace(regex.stripSingleQuotes,'$1').replace(regex.stripDoubleQuotes,'$1'));
 					break;
 
-				case 'player_id':
+				case 'player':
+                    _.each(args, function(p){
+                        let parts = p.match(/^([\+-=]?)(.*)$/),
+                            pids = (parts ? getPlayerIDs(parts[2].replace(regex.stripSingleQuotes,'$1').replace(regex.stripDoubleQuotes,'$1')):[]);
+                        if(pids.length){
+                            _.each(pids,(pid)=>{
+                                retr[cmd].push({
+                                    pid: pid,
+                                    operation: parts[1] || '='
+                                });
+                                parts[1]='+';
+                            });
+                        } else if(_.contains(['','='],p)){
+                            retr[cmd].push({
+                                pid:'',
+                                operation:'='
+                            });
+                        }
+                    });
 					break;
 
 				case 'status':
@@ -942,7 +1221,15 @@ var TokenMod = TokenMod || (function() {
     
 	applyModListToToken = function(modlist, token) {
 		var mods={},
-			delta, cid,
+			delta, cid,prev,
+            repChar, 
+            controlList = (modlist.set && modlist.set.controlledby) ? (function(){
+                let list;
+                repChar = getObj('character', modlist.set.represents || token.get('represents'));
+                
+                list = (repChar ? repChar.get('controlledby') : token.get('controlledby'));
+                return (list ? list.split(/,/) : []);
+            }()) : [],
 			current=decomposeStatuses(token.get('statusmarkers')||''),
             statusCount=(token.get('statusmarkers')||'').split(/,/).length;
 
@@ -968,6 +1255,20 @@ var TokenMod = TokenMod || (function() {
 		});
 		_.each(modlist.set,function(f,k){
 			switch(k) {
+                case 'controlledby':
+                    _.each(f, function(cb){
+                        switch(cb.operation){
+                            case '=': controlList=[cb.pid]; break;
+                            case '+': controlList=_.union(controlList,[cb.pid]); break;
+                            case '-': controlList=_.without(controlList,cb.pid); break;
+                        }
+                    });
+                    if(repChar){
+                        repChar.set('controlledby',controlList.join(','));
+                    } else {
+                        mods[k]=controlList.join(',');
+                    }
+                    break;
 				case 'statusmarkers':
 					_.each(f, function (sm){
 						switch(sm.operation){
@@ -1121,7 +1422,9 @@ var TokenMod = TokenMod || (function() {
 			}
 		});
 		mods.statusmarkers=composeStatuses(current);
+        prev=JSON.parse(JSON.stringify(token));
 		token.set(mods);
+        notifyObservers('tokenChange',token,prev);
 	},
 
 
@@ -1256,8 +1559,15 @@ var TokenMod = TokenMod || (function() {
 				}
 				modlist.off=_.difference(modlist.off,modlist.on);
 				modlist.flip=_.difference(modlist.flip,modlist.on,modlist.off);
+                if( !playerIsGM(msg.playerid) && !state.TokenMod.playersCanUse_ids ) {
+                    ids=[];
+                }
 
-				if(playerIsGM(msg.playerid) || state.TokenMod.playersCanUse_ids ) {
+                if(!ignoreSelected) {
+                    ids=_.union(ids,_.pluck(msg.selected,'_id'));
+                }
+
+                if(ids.length){
 					_.chain(ids)
 						.uniq()
 						.map(function(t){
@@ -1268,17 +1578,6 @@ var TokenMod = TokenMod || (function() {
 							applyModListToToken(modlist,t);
 						});
 				}
-
-                if(!ignoreSelected) {
-                    _.chain(msg.selected)
-                        .map(function(o){
-                            return getObj('graphic',o._id);
-                        })
-                        .reject(_.isUndefined)
-                        .each(function (o) {
-                            applyModListToToken(modlist,o);
-                        });
-                }
 				break;
 
 		}
@@ -1291,6 +1590,7 @@ var TokenMod = TokenMod || (function() {
 
 	return {
 		CheckInstall: checkInstall,
+        ObserveTokenChange: observeTokenChange,
 		RegisterEventHandlers: registerEventHandlers
 	};
 }());
@@ -1301,3 +1601,6 @@ on("ready",function(){
 	TokenMod.CheckInstall();
 	TokenMod.RegisterEventHandlers();
 });
+
+
+
