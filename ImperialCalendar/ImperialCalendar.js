@@ -5,8 +5,8 @@
 var ImperialCalendar = ImperialCalendar || (function() {
     'use strict';
 
-    var version = '0.1.0',
-        lastUpdate = 1485017292,
+    var version = '0.1.1',
+        lastUpdate = 1485142047,
         schemaVersion = 0.2,
         Uw = (w)=>`&${w};`,
         Un = (n)=>`&#${n};`,
@@ -75,8 +75,6 @@ var ImperialCalendar = ImperialCalendar || (function() {
         return '';
     },
     outputChat = function(msg){
-        log(`ImperialCalendar: Message size: ${(msg.length/1024).toFixed(2)}kb`);
-        //sendChat('',msg,null,{noarchive:true});
         sendChat('',msg);
     },
 
