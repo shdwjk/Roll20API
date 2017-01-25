@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.3',
-        lastUpdate = 1460838597,
+    var version = '0.3.4',
+        lastUpdate = 1485319486,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -37,16 +37,17 @@ var Ammo = Ammo || (function() {
 		);
 	},
 
-	adjustAmmo = function (playerid,attr,amount) {
+	adjustAmmo = function (playerid,attr,amount, label) {
 		var val = parseInt(attr.get('current'),10)||0,
 			max = parseInt(attr.get('max'),10)||10000,
 			adj = (val+amount),
 			chr = getObj('character',attr.get('characterid')),
 			valid = true;
+        label=label||'ammo';
 
 		if(adj < 0 ) {
 			sendMessage(
-				'<b>'+chr.get('name') + '</b> does not have enough ammo.  Needs '+Math.abs(amount)+', but only has '+
+				'<b>'+chr.get('name') + '</b> does not have enough '+label+'.  Needs '+Math.abs(amount)+', but only has '+
 				'<span style="color: #ff0000;">'+val+'</span>.'+
 				'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
 				(playerIsGM(playerid) ? 'gm' : false)
@@ -54,7 +55,7 @@ var Ammo = Ammo || (function() {
 			valid = false;
 		} else if( adj > max) {
 			sendMessage(
-				'<b>'+chr.get('name') + '</b> does not have enough storage space for ammo.  Needs '+adj+', but only has '+
+				'<b>'+chr.get('name') + '</b> does not have enough storage space for '+label+'.  Needs '+adj+', but only has '+
 				'<span style="color: #ff0000;">'+max+'</span>.'+
 				'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
 				(playerIsGM(playerid) ? 'gm' : false)
@@ -65,7 +66,7 @@ var Ammo = Ammo || (function() {
 		if( playerIsGM(playerid) || valid ) {
 			attr.set({current: adj});
 			sendMessage(
-				'<b>'+chr.get('name') + '</b> '+( (adj<val) ? 'uses' : 'gains' )+' '+Math.abs(amount)+' ammo and has '+adj+' remaining.',
+				'<b>'+chr.get('name') + '</b> '+( (adj<val) ? 'uses' : 'gains' )+' '+Math.abs(amount)+' '+label+' and has '+adj+' remaining.',
 				(playerIsGM(playerid) ? 'gm' : false)
 			);
 			if(!valid) {
@@ -100,7 +101,7 @@ var Ammo = Ammo || (function() {
 	'</div>'+
 	'<b>Commands</b>'+
 	'<div style="padding-left:10px;">'+
-		'<b><span style="font-family: serif;">!ammo '+ch('<')+'id'+ch('>')+' '+ch('<')+'attribute'+ch('>')+' '+ch('<')+'amount'+ch('>')+' </span></b>'+
+		'<b><span style="font-family: serif;">!ammo '+ch('<')+'id'+ch('>')+' '+ch('<')+'attribute'+ch('>')+' '+ch('<')+'amount'+ch('>')+' '+ch('[')+'resource name'+ch(']')+'</span></b>'+
 		'<div style="padding-left: 10px;padding-right:20px">'+
 			'This command requires 3 parameters:'+
 			'<ul>'+
@@ -113,6 +114,9 @@ var Ammo = Ammo || (function() {
 				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
 					'<b><span style="font-family: serif;">amount</span></b> -- The change to apply to the current quantity of ammo.  Use negative numbers to decrease the amount, and positive numbers to increase it.  You can use inline rolls to determine the number.'+
 				'</li> '+
+				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+					'<b><span style="font-family: serif;">resource name</span></b> -- anything you put after the amount to adjust by will be used as the resource name (default: "ammo").'+
+				'</li> '+
 			'</ul>'+
 		'</div>'+
 	'</div>'+
@@ -120,9 +124,39 @@ var Ammo = Ammo || (function() {
             );
     },
 
+    attrLookup = function(character,name){
+        let match=name.match(/^(repeating_.*)_\$(\d+)_.*$/);
+        if(match){
+            let index=match[2],
+                attrMatcher=new RegExp(`^${name.replace(/_\$\d+_/,'_([-\\da-zA-Z]+)_')}$`),
+                createOrderKeys=[],
+                attrs=_.chain(findObjs({type:'attribute', characterid:character.id}))
+                    .map((a)=>{
+                        return {attr:a,match:a.get('name').match(attrMatcher)};
+                    })
+                    .filter((o)=>o.match)
+                    .each((o)=>createOrderKeys.push(o.match[1]))
+                    .reduce((m,o)=>{ m[o.match[1]]=o.attr; return m;},{})
+                    .value(),
+                sortOrderKeys = _.chain( ((findObjs({
+                        type:'attribute',
+                        characterid:character.id,
+                        name: `_reporder_${match[1]}`
+                    })[0]||{get:_.noop}).get('current') || '' ).split(/\s*,\s*/))
+                    .intersection(createOrderKeys)
+                    .union(createOrderKeys)
+                    .value();
+            if(index<sortOrderKeys.length && _.has(attrs,sortOrderKeys[index])){
+                return attrs[sortOrderKeys[index]];
+            }
+            return;
+        } 
+        return findObjs({ type:'attribute', characterid:character.id, name: name})[0];
+    },
+
 	HandleInput = function(msg_orig) {
 		var msg = _.clone(msg_orig),
-			args,attr,amount,chr,token,text='';
+			args,attr,amount,chr,token,text='',label;
 
 		if (msg.type !== "api") {
 			return;
@@ -146,6 +180,9 @@ var Ammo = Ammo || (function() {
 				if(args.length > 1) {
 
 					switch(args[1]) {
+                        case '--help':
+                            return showHelp(msg.playerid);
+
 						case 'recover': // <character/token_id> <attribute_name>
 							// apply policy to put amounts back in
 						case 'check': // <character/token_id> <attribute_name>
@@ -184,11 +221,12 @@ var Ammo = Ammo || (function() {
 							return;
 						}
 
-						attr = findObjs({_type: 'attribute', _characterid: chr.id, name: args[2]})[0];
+						attr = attrLookup(chr,args[2]);
 					}
 					amount=parseInt(args[3],10);
+                    label=_.rest(args,4).join(' ');
 					if(attr) {
-						adjustAmmo(msg.playerid,attr,amount);
+						adjustAmmo(msg.playerid,attr,amount,label);
 					} else {
                         if(chr) {
                             sendMessage(

@@ -5,25 +5,31 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.20',
-        lastUpdate = 1473946693,
-        schemaVersion = 1.0,
+    var version = '0.9.21',
+        lastUpdate = 1485154866,
+        schemaVersion = 1.1,
         bonusCache = {},
         observers = {
                 turnOrderChange: []
-			},
+    		},
         sorters = {
             'None': function(to) {
                 return to;
             },
             'Ascending': function(to){
+                var last=0;
                 return _.sortBy(to,function(i){
-                    return (i.pr);
+                    let val=parseFloat(i.pr)||last;
+                    last=val;
+                    return val;
                 });
             },
             'Descending': function(to){
+                var last=100000;
                 return _.sortBy(to,function(i){
-                    return (-i.pr);
+                    let val=(-(parseFloat(i.pr)))||last;
+                    last=val;
+                    return val;
                 });
             }
         },
@@ -185,37 +191,43 @@ var GroupInitiative = GroupInitiative || (function() {
         },
 
         statAdjustments = {
-            'Stat-DnD': {
+            'stat-dnd': {
                 func: function(v) {
                     return 'floor((('+v+')-10)/2)';
                 },
                 desc: 'Calculates the bonus as if the value were a DnD Stat.'
             },
-            'Bare': {
+            'negative': {
+                func: function(v) {
+                    return '(-1*('+v+'))';
+                },
+                desc: 'Returns the negative version of the stat'
+            },
+            'bare': {
                 func: function(v) {
                     return v;
                 },
                 desc: 'No Adjustment.'
             },
-            'Floor': {
+            'floor': {
                 func: function(v) {
                     return 'floor('+v+')';
                 },
                 desc: 'Rounds down to the nearest integer.'
             },
-            'Tie-Breaker': {
+            'tie-breaker': {
                 func: function(v) {
                     return '(0.01*('+v+'))';
                 },
                 desc: 'Adds the accompanying attribute as a decimal (0.01)'
             },
-            'Ceiling': {
+            'ceiling': {
                 func: function(v) {
                     return 'ceil('+v+')';
                 },
                 desc: 'Rounds up to the nearest integer.'
             },
-            'Bounded': {
+            'bounded': {
                 func: function(v) {
                     return v;
                 },
@@ -331,6 +343,10 @@ var GroupInitiative = GroupInitiative || (function() {
                     }
                     /* break; // intentional dropthrough */ /* falls through */
 
+                case 1.0:
+                    state.GroupInitiative.savedTurnOrders =[];
+                    /* break; // intentional dropthrough */ /* falls through */
+
                 case 'UpdateSchemaVersion':
                     state.GroupInitiative.version = schemaVersion;
                     break;
@@ -345,6 +361,8 @@ var GroupInitiative = GroupInitiative || (function() {
                                 }
                             ]
                         ],
+                        savedTurnOrders: {
+                        },
                         config: {
                             rollType: 'Individual-Roll',
                             replaceRoll: false,
@@ -644,6 +662,20 @@ var GroupInitiative = GroupInitiative || (function() {
                         '</ul>'+
                     '</div>'+
                 '</div>'+
+   
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--sort</i></span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Applies the configured sort operation to the current turn order.</p>'+
+                    '</div>'+
+                '</div>'+
+    
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--clear</i></span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Removes all tokens from the turn order.  If Auto Open Init is enabled it will also close the turn order box.</p>'+
+                    '</div>'+
+                '</div>'+
 
                 '<div style="padding-left:10px;">'+
                     '<b><span style="font-family: serif;">!group-init <i>--bonus</i> '+ch('<')+'number'+ch('>')+'</span></b>'+
@@ -673,13 +705,71 @@ var GroupInitiative = GroupInitiative || (function() {
                         '</ul>'+
                     '</div>'+
                 '</div>'+
-    
+
                 '<div style="padding-left:10px;">'+
-                    '<b><span style="font-family: serif;">!group-init <i>--clear</i></span></b>'+
+                    '<b><span style="font-family: serif;">!group-init <i>--adjust-current</i> '+ch('<')+'adjustment'+ch('>')+' '+ch('[')+'minimum'+ch(']')+'</span></b>'+
                     '<div style="padding-left: 10px;padding-right:20px">'+
-                        '<p>Removes all tokens from the turn order.  If Auto Open Init is enabled it will also close the turn order box.</p>'+
+                        '<p>Applies an adjustment to the current token'+ch("'")+'s turn (Custom entries ignored)</p>'+
+                        'This command requires 1 parameter and has 1 optional parameter:'+
+                        '<ul>'+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">adjustment</span></b> -- The value to be added to the current initiative value.  This can be positive or negative and can have decimal places.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">minimum</span></b> -- (optional) The minimum value for the initiative score.  This can be positive or negative and can have decimal places.  <br><b>Note</b>: this can raise initiative scores if it is higher than their current score.'+
+                            '</li> '+
+                        '</ul>'+
                     '</div>'+
                 '</div>'+
+
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--stack</i> '+ch('[')+'operation'+ch(']')+' '+ch('[')+'label'+ch(']')+'</span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Manages the saved turn orders.</p>'+
+                        'Operations'+
+                        '<ul>'+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">list</span></b> -- Displays the stack of saved turn orders. (default)'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">clear</span></b> -- Clears the stack of saved turn orders.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">copy'+ch('|')+'dup</span></b> -- Adds a copy of the current turn order to the stack.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">push '+ch('[')+'label'+ch(']')+'</span></b> -- Adds a copy of the current turn order to the stack and clears the turn order.  Anything after the command will be used as a label for the entry.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">pop</span></b> -- Replaces the current turn order with the last entry in the stack removing it from the stack.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">apply</span></b> -- Replaces the current turn order with the last entry in the stack leaving it on the stack.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">swap '+ch('[')+'label'+ch(']')+'</span></b> -- Swaps the current turn order with the last entry in the stack.  Anything after the command will be used as a label for the entry placed in the stack.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">tswap'+ch('|')+'tail-swap '+ch('[')+'label'+ch(']')+'</span></b> -- Swaps the current turn order with the first entry in the stack.  Anything after the command will be used as a label for the entry placed in the stack.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">merge</span></b> -- Removes the last entry in the stack and adds it to the current turn order and sorts the new turn order with the configured sort method.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">apply-merge'+ch('|')+'amerge</span></b> -- Merges the last entry in the stack with the current turn order and sorts the new turn order with the configured sort method, leaving the stack unchanged.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">rotate'+ch('|')+'rot '+ch('[')+'label'+ch(']')+'</span></b> -- Pushes the current turn order onto the end of the stack and restores the first entry from the stack to the turn order.  Anything after the command will be used as a label for the entry placed in the stack.'+
+                            '</li> '+
+                            '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                                '<b><span style="font-family: serif;">reverse-rotate'+ch('|')+'rrot '+ch('[')+'label'+ch(']')+'</span></b> -- Pushes the current turn order onto the beginning of the stack and restores the last entry from the stack to the turn order.  Anything after the command will be used as a label for the entry placed in the stack.'+
+                            '</li> '+
+
+                        '</ul>'+
+                    '</div>'+
+                '</div>'+
+
+
     
                 '<b>Roller Options</b>'+
                 '<div style="padding-left:10px;">'+
@@ -724,7 +814,7 @@ var GroupInitiative = GroupInitiative || (function() {
                             var args,adjustment,func;
                             if(memo) {
                                 args=a.split(':');
-                                adjustment=args.shift();
+                                adjustment=args.shift().toLowerCase();
                                 args.unshift(memo);
                                 func=statAdjustments[adjustment].func;
                                 if(_.isFunction(func)) {
@@ -808,21 +898,22 @@ var GroupInitiative = GroupInitiative || (function() {
                             workvar={};
 
                             _.each(args,function(arg){
-                                var a=arg.split(/\s+(.+)/),
-                                b,
-                                c=a[0].split(/:/);
+                                var argParts=arg.split(/\s+(.+)/),
+                                adjustmentName,
+                                parameter=argParts[0].split(/:/);
+                                parameter[0]=parameter[0].toLowerCase();
 
-                                if(_.has(statAdjustments,c[0])) {
-                                    if('Bare' !== c[0]) {
+                                if(_.has(statAdjustments,parameter[0])) {
+                                    if('bare' !== parameter[0]) {
                                         if(!_.has(workvar,'adjustments')) {
                                             workvar.adjustments=[];
                                         }
-                                        workvar.adjustments.unshift(a[0]);
+                                        workvar.adjustments.unshift(argParts[0]);
                                     }
-                                    if(a.length > 1){
-                                        b=a[1].split(/\|/);
-                                        workvar.attribute=b[0];
-                                        if('max'===b[1]) {
+                                    if(argParts.length > 1){
+                                        adjustmentName=argParts[1].split(/\|/);
+                                        workvar.attribute=adjustmentName[0];
+                                        if('max'===adjustmentName[1]) {
                                             workvar.type = 'max';
                                         }
                                         workgroup.push(workvar);
@@ -831,7 +922,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                 } else {
                                     sendChat('!group-init --add-group', '/w gm ' +
                                         '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
-                                            'Unknown Stat Adjustment: '+c[0]+'<br>'+
+                                            'Unknown Stat Adjustment: '+parameter[0]+'<br>'+
                                             'Use one of the following:'+
                                             '<ul>'+
                                                 buildStatAdjustmentRows()+
@@ -862,6 +953,199 @@ var GroupInitiative = GroupInitiative || (function() {
                             }
                             break;
 
+                        case 'stack':
+                            cmds.shift();
+                            let operation=cmds.shift(),
+                                showdate=function(ms){
+                                    let ds=Math.round((_.now()-ms)/1000),
+                                        str=[];
+
+                                    if(ds>86400){
+                                        str.push(`${Math.round(ds/86400)}d`);
+                                        ds%=86400;
+                                    }
+                                    if(ds>3600){
+                                        str.push(`${Math.round(ds/3600)}h`);
+                                        ds%=3600;
+                                    }
+
+                                    if(ds>60){
+                                        str.push(`${Math.round(ds/60)}m`);
+                                        ds%=60;
+                                    }
+                                    str.push(`${Math.round(ds)}s`);
+                                    
+                                    return str.join(' ');
+                                },
+                                stackrecord=function(label){
+                                    let toRaw=Campaign().get('turnorder'),
+                                        to=JSON.parse(toRaw)||[],
+                                        summary=_.chain(to)
+                                            .map((o)=>{
+                                                return {
+                                                    entry: o,
+                                                    token: getObj('graphic',o.id)
+                                                };
+                                            })
+                                            .map((o)=>{
+                                                return {
+                                                    img: (o.token ? o.token.get('imgsrc') : ''), 
+                                                    name: (o.token ? o.token.get('name') : o.entry.custom), 
+                                                    pr: o.entry.pr
+                                                };
+                                            })
+                                            .value();
+
+                                    return {
+                                        label: label || (to.length ? `{${to.length} records}`: '{empty}'),
+                                        date: _.now(),
+                                        summary: summary,
+                                        turnorder: toRaw
+                                    };
+                                },
+                                toMiniDisplay=function(summary){
+                                    return '<div style="border: 1px solid #ccc;border-radius:.5em;padding:.5em;background-color:#eee;">'+
+                                        _.map(summary,(sume)=>{
+                                            return `<div style="border-bottom: 1px solid #ccc;clear:both;"><div style="float:right;font-weight:bold;">${sume.pr}</div><img style="max-height:1.5em;float:left;" src="${sume.img}">${sume.name||'&'+'nbsp;'}</div>`;
+                                        }).join('')+
+                                        '</div>';
+                                },
+                                stacklist=function(){
+                                    sendChat('', '/w gm ' +
+                                        '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;"><ol>'+
+                                            _.map(state.GroupInitiative.savedTurnOrders,(o)=>`<li>${o.label} [${showdate(o.date)}]${toMiniDisplay(o.summary)}</li>`).join('')+
+                                        '</ol></div>'
+                                    );
+
+                                };
+                            switch(operation){
+                                case 'dup':
+                                case 'copy':
+                                    // take current turn order and put it on top.
+                                    state.GroupInitiative.savedTurnOrders.push(stackrecord(cmds.join(' ')));
+                                    stacklist();
+                                    break;
+                                case 'push':
+                                    // take current turn order and put it on top.
+                                    state.GroupInitiative.savedTurnOrders.push(stackrecord(cmds.join(' ')));
+                                    Campaign().set('turnorder','[]');
+                                    notifyObservers('turnOrderChange');
+                                    stacklist();
+                                    break;
+                                case 'pop':
+                                    if(state.GroupInitiative.savedTurnOrders.length){
+                                        let sto=state.GroupInitiative.savedTurnOrders.pop();
+                                        Campaign().set('turnorder',sto.turnorder);
+                                        notifyObservers('turnOrderChange');
+                                        stacklist();
+                                    } else {
+                                        sendChat('!group-init --stack pop', '/w gm ' +
+                                            '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                                'No Saved Turn Orders to restore!'+
+                                            '</div>'
+                                        );
+                                    }
+                                    break;
+                                case 'apply':
+                                    if(state.GroupInitiative.savedTurnOrders.length){
+                                        let sto=state.GroupInitiative.savedTurnOrders[0];
+                                        Campaign().set('turnorder',sto.turnorder);
+                                        notifyObservers('turnOrderChange');
+                                        stacklist();
+                                    } else {
+                                        sendChat('!group-init --stack pop', '/w gm ' +
+                                            '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                                'No Saved Turn Orders to apply!'+
+                                            '</div>'
+                                        );
+                                    }
+                                    break;
+                                case 'rot':
+                                case 'rotate':
+                                    if(state.GroupInitiative.savedTurnOrders.length){
+                                        let sto=state.GroupInitiative.savedTurnOrders.shift();
+                                        state.GroupInitiative.savedTurnOrders.push(stackrecord(cmds.join(' ')));
+                                        Campaign().set('turnorder',sto.turnorder);
+                                        notifyObservers('turnOrderChange');
+                                        stacklist();
+                                    }
+                                    break;
+                                case 'rrot':
+                                case 'reverse-rotate':
+                                    if(state.GroupInitiative.savedTurnOrders.length){
+                                        let sto=state.GroupInitiative.savedTurnOrders.pop();
+                                        state.GroupInitiative.savedTurnOrders.unshift(stackrecord(cmds.join(' ')));
+                                        Campaign().set('turnorder',sto.turnorder);
+                                        notifyObservers('turnOrderChange');
+                                        stacklist();
+                                    }
+                                    break;
+                                case 'swap':
+                                    
+                                    if(state.GroupInitiative.savedTurnOrders.length){
+                                        let sto=state.GroupInitiative.savedTurnOrders.shift();
+                                        state.GroupInitiative.savedTurnOrders.unshift(stackrecord(cmds.join(' ')));
+                                        Campaign().set('turnorder',sto.turnorder);
+                                        notifyObservers('turnOrderChange');
+                                        stacklist();
+                                    }
+                                    break;
+                                case 'tswap':
+                                case 'tail-swap':
+                                    if(state.GroupInitiative.savedTurnOrders.length){
+                                        let sto=state.GroupInitiative.savedTurnOrders.pop();
+                                        state.GroupInitiative.savedTurnOrders.push(stackrecord(cmds.join(' ')));
+                                        Campaign().set('turnorder',sto.turnorder);
+                                        notifyObservers('turnOrderChange');
+                                        stacklist();
+                                    }
+                                    break;
+                                case 'amerge':
+                                case 'apply-merge':
+                                    if(state.GroupInitiative.savedTurnOrders.length){
+                                        let sto=state.GroupInitiative.savedTurnOrders[0];
+                                        
+                                        Campaign().set('turnorder', JSON.stringify(
+                                            sorters[state.GroupInitiative.config.sortOption](
+                                                _.union(
+                                                    JSON.parse(Campaign().get('turnorder'))||[],
+                                                    JSON.parse(sto.turnorder)||[]
+                                                )
+                                            )
+                                        ));
+
+                                        notifyObservers('turnOrderChange');
+                                        stacklist();
+                                    }
+                                    break;
+                                case 'merge':
+                                    if(state.GroupInitiative.savedTurnOrders.length){
+                                        let sto=state.GroupInitiative.savedTurnOrders.pop();
+                                        
+                                        Campaign().set('turnorder', JSON.stringify(
+                                            sorters[state.GroupInitiative.config.sortOption](
+                                                _.union(
+                                                    JSON.parse(Campaign().get('turnorder'))||[],
+                                                    JSON.parse(sto.turnorder)||[]
+                                                )
+                                            )
+                                        ));
+
+                                        notifyObservers('turnOrderChange');
+                                        stacklist();
+                                    }
+                                    break;
+
+                                case 'clear':
+                                    state.GroupInitiative.savedTurnOrders=[];
+                                    break;
+
+                                default:
+                                case 'list':
+                                    stacklist();
+                                    break;
+                            }
+                            break;
 
                         case 'promote':
 							if(!playerIsGM(msg.playerid)){
@@ -941,6 +1225,14 @@ var GroupInitiative = GroupInitiative || (function() {
                             cont=true;
 							break;
 
+                        case 'sort':
+                            Campaign().set('turnorder', JSON.stringify(
+                                sorters[state.GroupInitiative.config.sortOption](
+                                    JSON.parse(Campaign().get('turnorder'))||[]
+                                )
+                            ));
+                            break;
+
 						case 'adjust':
                             if(cmds[1] && cmds[1].match(/^[\-\+]?\d+(\.\d+)?$/)){
                                 manualBonus=parseFloat(cmds[1]);
@@ -951,6 +1243,32 @@ var GroupInitiative = GroupInitiative || (function() {
                                     turnorder: JSON.stringify(
                                         _.map(JSON.parse(Campaign().get('turnorder'))||[], function(e){
                                             if('-1' !== e.id){
+                                                e.pr=Math.max((_.isNaN(parseFloat(e.pr))?0:parseFloat(e.pr))+manualBonus,manualBonusMin).toFixed(state.GroupInitiative.config.maxDecimal);
+                                            }
+                                            return e;
+                                        })
+                                    )
+                                });
+                                notifyObservers('turnOrderChange');
+                            } else {
+                                sendChat('GroupInitiative', '/w gm ' +
+                                    '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                        'Not a valid adjustment: <b>'+cmds[1]+'</b>'+
+                                    '</div>'
+                                );
+                            }
+							break;
+
+						case 'adjust-current':
+                            if(cmds[1] && cmds[1].match(/^[\-\+]?\d+(\.\d+)?$/)){
+                                manualBonus=parseFloat(cmds[1]);
+                                manualBonusMin=parseFloat(cmds[2]);
+                                manualBonusMin=_.isNaN(manualBonusMin)?-10000:manualBonusMin;
+                                
+                                Campaign().set({
+                                    turnorder: JSON.stringify(
+                                        _.map(JSON.parse(Campaign().get('turnorder'))||[], function(e,idx){
+                                            if(0===idx && '-1' !== e.id){
                                                 e.pr=Math.max((_.isNaN(parseFloat(e.pr))?0:parseFloat(e.pr))+manualBonus,manualBonusMin).toFixed(state.GroupInitiative.config.maxDecimal);
                                             }
                                             return e;
