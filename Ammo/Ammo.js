@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.4',
-        lastUpdate = 1485319486,
+    var version = '0.3.5',
+        lastUpdate = 1485388225,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -37,7 +37,7 @@ var Ammo = Ammo || (function() {
 		);
 	},
 
-	adjustAmmo = function (playerid,attr,amount, label) {
+	adjustAmmo = function (who,attr,amount,label,playerid) {
 		var val = parseInt(attr.get('current'),10)||0,
 			max = parseInt(attr.get('max'),10)||10000,
 			adj = (val+amount),
@@ -50,7 +50,7 @@ var Ammo = Ammo || (function() {
 				'<b>'+chr.get('name') + '</b> does not have enough '+label+'.  Needs '+Math.abs(amount)+', but only has '+
 				'<span style="color: #ff0000;">'+val+'</span>.'+
 				'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
-				(playerIsGM(playerid) ? 'gm' : false)
+                who
 			);
 			valid = false;
 		} else if( adj > max) {
@@ -58,7 +58,7 @@ var Ammo = Ammo || (function() {
 				'<b>'+chr.get('name') + '</b> does not have enough storage space for '+label+'.  Needs '+adj+', but only has '+
 				'<span style="color: #ff0000;">'+max+'</span>.'+
 				'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
-				(playerIsGM(playerid) ? 'gm' : false)
+                who
 			);
 			valid = false;
 		}
@@ -67,19 +67,18 @@ var Ammo = Ammo || (function() {
 			attr.set({current: adj});
 			sendMessage(
 				'<b>'+chr.get('name') + '</b> '+( (adj<val) ? 'uses' : 'gains' )+' '+Math.abs(amount)+' '+label+' and has '+adj+' remaining.',
-				(playerIsGM(playerid) ? 'gm' : false)
+                who
 			);
 			if(!valid) {
 				sendMessage(
 					'Ignoring warnings and applying adjustment anyway.  Was: '+val+'/'+max+' Now: '+adj+'/'+max,
-					(playerIsGM(playerid) ? 'gm' : false)
+                    who
 				);
 			}
 		}
 	},
 
-	showHelp = function(playerid) {
-		var who=getObj('player',playerid).get('_displayname');
+	showHelp = function(who,playerid) {
 
         sendChat('',
             '/w "'+who+'" '+
@@ -115,20 +114,24 @@ var Ammo = Ammo || (function() {
 					'<b><span style="font-family: serif;">amount</span></b> -- The change to apply to the current quantity of ammo.  Use negative numbers to decrease the amount, and positive numbers to increase it.  You can use inline rolls to determine the number.'+
 				'</li> '+
 				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-					'<b><span style="font-family: serif;">resource name</span></b> -- anything you put after the amount to adjust by will be used as the resource name (default: "ammo").'+
+					'<b><span style="font-family: serif;">resource name</span></b> -- Anything you put after the amount to adjust by will be used as the resource name (default: "ammo").'+
 				'</li> '+
 			'</ul>'+
+		'</div>'+
+		'<b><span style="font-family: serif;">!wammo '+ch('<')+'id'+ch('>')+' '+ch('<')+'attribute'+ch('>')+' '+ch('<')+'amount'+ch('>')+' '+ch('[')+'resource name'+ch(']')+'</span></b>'+
+		'<div style="padding-left: 10px;padding-right:20px">'+
+			'This command is identical to !ammo but will whisper all output.'+
 		'</div>'+
 	'</div>'+
 '</div>'
             );
     },
 
-    attrLookup = function(character,name){
+    attrLookup = function(character,name,caseSensitive){
         let match=name.match(/^(repeating_.*)_\$(\d+)_.*$/);
         if(match){
             let index=match[2],
-                attrMatcher=new RegExp(`^${name.replace(/_\$\d+_/,'_([-\\da-zA-Z]+)_')}$`),
+                attrMatcher=new RegExp(`^${name.replace(/_\$\d+_/,'_([-\\da-zA-Z]+)_')}$`,(caseSensitive?'i':'')),
                 createOrderKeys=[],
                 attrs=_.chain(findObjs({type:'attribute', characterid:character.id}))
                     .map((a)=>{
@@ -156,11 +159,13 @@ var Ammo = Ammo || (function() {
 
 	HandleInput = function(msg_orig) {
 		var msg = _.clone(msg_orig),
-			args,attr,amount,chr,token,text='',label;
+			args,attr,amount,chr,token,text='',label, whisper=false,
+            who;
 
 		if (msg.type !== "api") {
 			return;
 		}
+        who=getObj('player',msg.playerid).get('_displayname');
 
 		if(_.has(msg,'inlinerolls')){
 			msg.content = _.chain(msg.inlinerolls)
@@ -176,12 +181,16 @@ var Ammo = Ammo || (function() {
 
 		args = msg.content.split(/\s+/);
 		switch(args[0]) {
+            case '!wammo':
+                whisper = true;
+                /* break; // intentional dropthrough */ /* falls through */
+
             case '!ammo':
 				if(args.length > 1) {
 
 					switch(args[1]) {
                         case '--help':
-                            return showHelp(msg.playerid);
+                            return showHelp(who,msg.playerid);
 
 						case 'recover': // <character/token_id> <attribute_name>
 							// apply policy to put amounts back in
@@ -213,7 +222,10 @@ var Ammo = Ammo || (function() {
 							! _.contains(chr.get('controlledby').split(','),'all') 
 							)
 						{
-							sendMessage( 'You do not control the specified character: '+chr.id );
+							sendMessage(
+                                'You do not control the specified character: '+chr.id ,
+                                (playerIsGM(msg.playerid) ? 'gm' : (whisper ? who :false))
+                            );
 							sendMessage(
 								'<b>'+getObj('player',msg.playerid).get('_displayname')+'</b> attempted to adjust attribute <b>'+args[2]+'</b> on character <b>'+chr.get('name')+'</b>.',
 								'gm'
@@ -221,29 +233,32 @@ var Ammo = Ammo || (function() {
 							return;
 						}
 
-						attr = attrLookup(chr,args[2]);
+						attr = attrLookup(chr,args[2],true);
 					}
 					amount=parseInt(args[3],10);
                     label=_.rest(args,4).join(' ');
 					if(attr) {
-						adjustAmmo(msg.playerid,attr,amount,label);
+						adjustAmmo(
+                            (playerIsGM(msg.playerid) ? 'gm' : (whisper ? who :false)),
+                            attr,amount,label,msg.playerid
+                        );
 					} else {
                         if(chr) {
                             sendMessage(
                                 'Attribute ['+args[2]+'] was not found.  Please verify that you have the right name.',
-                                (playerIsGM(msg.playerid) ? 'gm' : false)
+                                (playerIsGM(msg.playerid) ? 'gm' : (whisper ? who :false))
                             );
                         } else {
                             sendMessage(
                                 ( token ?  'Token id ['+args[1]+'] does not represent a character. ' : 'Character/Token id ['+args[1]+'] is not valid. ' ) +
                                 'Please be sure you are specifying it correctly, either with '+ch('@')+ch('{')+'selected|token_id'+ch('}')+
                                 ' or '+ch('@')+ch('{')+'selected|character_id'+ch('}')+'.',
-                                (playerIsGM(msg.playerid) ? 'gm' : false)
+                                (playerIsGM(msg.playerid) ? 'gm' : (whisper ? who :false))
                             );
 						}
 					}
 				} else {
-					showHelp(msg.playerid);
+					showHelp(who,msg.playerid);
 				}
                 break;
 		}
