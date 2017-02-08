@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.23',
-        lastUpdate = 1478805717,
+    var version = '0.8.24',
+        lastUpdate = 1486530281,
         schemaVersion = 0.3,
 
         observers = {
@@ -83,7 +83,10 @@ var TokenMod = TokenMod || (function() {
 			bar2_link: {type: 'attribute'},
 			bar3_link: {type: 'attribute'},
             imgsrc: {type: 'image'},
-			controlledby: {type: 'player'}
+			controlledby: {type: 'player'},
+
+            // <Blank> : special
+            defaulttoken: {type: 'defaulttoken'}
 		},
 
 		regex = {
@@ -97,7 +100,7 @@ var TokenMod = TokenMod || (function() {
 		},
 		filters = {
 			hasArgument: function(a) {
-				return a.match(/.+[\|#]/);
+				return a.match(/.+[\|#]/) || 'defaulttoken'===a ;
 			},
 			isBoolean: function(a) {
 				return _.has(fields,a) && 'boolean' === fields[a].type;
@@ -873,6 +876,24 @@ var TokenMod = TokenMod || (function() {
 		'</div>'+
 
 		'<div style="padding-left: 10px;padding-right:20px">'+
+            '<b>DefaultToken</b>'+
+			'<p>You can set the default token by specifying defaulttoken in your set list.  There is on argument for defaulttoken, and this relies on the token representing a character.</p>'+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+                    '!token-mod --set defaulttoken'+
+				'</pre>'+
+			'</div>'+
+            '<p>Setting defaulttoken along with represents works as expected:</p>'+
+			'<div style="padding-left: 10px;padding-right:20px">'+
+				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+					'!token-mod --set represents|'+ch('@')+ch('{')+'Bob'+ch('|')+'character_id'+ch('}')+' defaulttoken'+
+				'</pre>'+
+			'</div>'+
+            '<p>Be sure that defaulttoken is after all changes to the token you want store are made.  For example, if you set the defaulttoken, then set the bar links, the bars won'+ch("'")+'t be linked when you pull out the token.</p>'+
+        '</div>'+
+
+
+		'<div style="padding-left: 10px;padding-right:20px">'+
 			'<b>Attribute Name</b>'+
 			'<p>These are resolved from the represented character id.  If the token doesn'+ch("'")+'t represent a character, these will be ignored.  If the Attribute Name specified doesn'+ch("'")+'t exist for the represented character, the link is unchanged. You can clear a link by passing a blank Attribute Name.</p>'+
 			'<p><u>Available Attribute Name Properties:</u></p>'+
@@ -1045,6 +1066,10 @@ var TokenMod = TokenMod || (function() {
 						retr = undefined;
 					}
 					break;
+
+                case 'defaulttoken': // blank
+                    retr[cmd].push('');
+                    break;
 
 				case 'image':
                     t=args.shift().match(regex.imgsrc);
@@ -1242,7 +1267,7 @@ var TokenMod = TokenMod || (function() {
 		var mods={},
 			delta, cid,prev,
             repChar, 
-            controlList = (modlist.set && modlist.set.controlledby) ? (function(){
+            controlList = (modlist.set && (modlist.set.controlledby || modlist.set.defaulttoken)) ? (function(){
                 let list;
                 repChar = getObj('character', modlist.set.represents || token.get('represents'));
                 
@@ -1286,6 +1311,11 @@ var TokenMod = TokenMod || (function() {
                         repChar.set('controlledby',controlList.join(','));
                     } else {
                         mods[k]=controlList.join(',');
+                    }
+                    break;
+                case 'defaulttoken':
+                    if(repChar){
+                        setDefaultTokenForCharacter(repChar,token);
                     }
                     break;
 				case 'statusmarkers':
@@ -1377,6 +1407,7 @@ var TokenMod = TokenMod || (function() {
                         }
                     }
 					break;
+
 
 				case 'left':
 				case 'top':
