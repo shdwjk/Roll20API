@@ -5,8 +5,8 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.21',
-        lastUpdate = 1485326513,
+    var version = '0.9.22',
+        lastUpdate = 1486749637,
         schemaVersion = 1.1,
         bonusCache = {},
         observers = {
@@ -808,7 +808,7 @@ var GroupInitiative = GroupInitiative || (function() {
                 .map(function(details){
                     
                     var stat=getAttrByName(charObj.id,details.attribute, details.type||'current');
-                    if( ! _.isUndefined(stat) && !_.isNull(stat) ) {
+                    if( ! _.isUndefined(stat) && !_.isNull(stat) && stat.length) {
                         stat = (stat+'').replace(/@\{([^\|]*?|[^\|]*?\|max|[^\|]*?\|current)\}/g, '@{'+(charObj.get('name'))+'|$1}');
                         stat = _.reduce(details.adjustments || [],function(memo,a){
                             var args,adjustment,func;
@@ -1353,7 +1353,9 @@ var GroupInitiative = GroupInitiative || (function() {
                             .map(function(s){
                                 s.roll=[];
                                 if(s.character) {
-                                    s.roll.push( findInitiativeBonus(s.character,s.token) );
+                                    let bonus=findInitiativeBonus(s.character,s.token);
+                                    bonus = (_.isString(bonus) ? (bonus.trim().length ? bonus : '0') : bonus);
+                                    s.roll.push( bonus );
                                 }
                                 if(manualBonus) {
                                     s.roll.push( manualBonus );
