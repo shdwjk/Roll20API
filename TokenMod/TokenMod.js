@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.24',
-        lastUpdate = 1486530281,
+    var version = '0.8.25',
+        lastUpdate = 1486786944,
         schemaVersion = 0.3,
 
         observers = {
@@ -1315,7 +1315,9 @@ var TokenMod = TokenMod || (function() {
                     break;
                 case 'defaulttoken':
                     if(repChar){
-                        setDefaultTokenForCharacter(repChar,token);
+                        _.defer(()=>{
+                            setDefaultTokenForCharacter(repChar,token);
+                        });
                     }
                     break;
 				case 'statusmarkers':
