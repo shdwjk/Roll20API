@@ -5,8 +5,8 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.22',
-        lastUpdate = 1486850785,
+    var version = '0.9.23',
+        lastUpdate = 1488459846,
         schemaVersion = 1.1,
         bonusCache = {},
         observers = {
@@ -63,9 +63,9 @@ var GroupInitiative = GroupInitiative || (function() {
 				observers.turnOrderChange.push(handler);
 			}
 		},
-		notifyObservers = function(event){
+		notifyObservers = function(event,obj,prev){
 			_.each(observers[event],function(handler){
-				handler();
+				handler(obj,prev);
 			});
 		},
 
@@ -854,6 +854,8 @@ var GroupInitiative = GroupInitiative || (function() {
 
     handleInput = function(msg_orig) {
         var msg = _.clone(msg_orig),
+            obj,
+            prev=Campaign().get('turnorder'),
             args,
             cmds,
             workgroup,
@@ -1041,14 +1043,14 @@ var GroupInitiative = GroupInitiative || (function() {
                                     // take current turn order and put it on top.
                                     state.GroupInitiative.savedTurnOrders.push(stackrecord(cmds.join(' ')));
                                     Campaign().set('turnorder','[]');
-                                    notifyObservers('turnOrderChange');
+                                    notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                     stacklist();
                                     break;
                                 case 'pop':
                                     if(state.GroupInitiative.savedTurnOrders.length){
                                         let sto=state.GroupInitiative.savedTurnOrders.pop();
                                         Campaign().set('turnorder',sto.turnorder);
-                                        notifyObservers('turnOrderChange');
+                                        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                         stacklist();
                                     } else {
                                         sendChat('!group-init --stack pop', '/w gm ' +
@@ -1062,7 +1064,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                     if(state.GroupInitiative.savedTurnOrders.length){
                                         let sto=state.GroupInitiative.savedTurnOrders[0];
                                         Campaign().set('turnorder',sto.turnorder);
-                                        notifyObservers('turnOrderChange');
+                                        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                         stacklist();
                                     } else {
                                         sendChat('!group-init --stack pop', '/w gm ' +
@@ -1078,7 +1080,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                         let sto=state.GroupInitiative.savedTurnOrders.shift();
                                         state.GroupInitiative.savedTurnOrders.push(stackrecord(cmds.join(' ')));
                                         Campaign().set('turnorder',sto.turnorder);
-                                        notifyObservers('turnOrderChange');
+                                        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                         stacklist();
                                     }
                                     break;
@@ -1088,7 +1090,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                         let sto=state.GroupInitiative.savedTurnOrders.pop();
                                         state.GroupInitiative.savedTurnOrders.unshift(stackrecord(cmds.join(' ')));
                                         Campaign().set('turnorder',sto.turnorder);
-                                        notifyObservers('turnOrderChange');
+                                        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                         stacklist();
                                     }
                                     break;
@@ -1098,7 +1100,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                         let sto=state.GroupInitiative.savedTurnOrders.shift();
                                         state.GroupInitiative.savedTurnOrders.unshift(stackrecord(cmds.join(' ')));
                                         Campaign().set('turnorder',sto.turnorder);
-                                        notifyObservers('turnOrderChange');
+                                        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                         stacklist();
                                     }
                                     break;
@@ -1108,7 +1110,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                         let sto=state.GroupInitiative.savedTurnOrders.pop();
                                         state.GroupInitiative.savedTurnOrders.push(stackrecord(cmds.join(' ')));
                                         Campaign().set('turnorder',sto.turnorder);
-                                        notifyObservers('turnOrderChange');
+                                        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                         stacklist();
                                     }
                                     break;
@@ -1126,7 +1128,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                             )
                                         ));
 
-                                        notifyObservers('turnOrderChange');
+                                        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                         stacklist();
                                     }
                                     break;
@@ -1143,7 +1145,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                             )
                                         ));
 
-                                        notifyObservers('turnOrderChange');
+                                        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                         stacklist();
                                     }
                                     break;
@@ -1235,6 +1237,7 @@ var GroupInitiative = GroupInitiative || (function() {
 								})
 								.value();
                             cont=true;
+                            notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
 							break;
 
                         case 'sort':
@@ -1243,6 +1246,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                     JSON.parse(Campaign().get('turnorder'))||[]
                                 )
                             ));
+                            notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                             break;
 
 						case 'adjust':
@@ -1261,7 +1265,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                         })
                                     )
                                 });
-                                notifyObservers('turnOrderChange');
+                                notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                             } else {
                                 sendChat('GroupInitiative', '/w gm ' +
                                     '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
@@ -1287,7 +1291,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                         })
                                     )
                                 });
-                                notifyObservers('turnOrderChange');
+                                notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                             } else {
                                 sendChat('GroupInitiative', '/w gm ' +
                                     '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
@@ -1303,7 +1307,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                 turnorder: '[]',
                                 initiativepage: (state.GroupInitiative.config.autoOpenInit ? false : Campaign().get('initiativepage'))
                             });
-                            notifyObservers('turnOrderChange');
+                            notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
 							break;
 
                         case 'bonus':
@@ -1416,7 +1420,7 @@ var GroupInitiative = GroupInitiative || (function() {
                 )
             )
         });
-        notifyObservers('turnOrderChange');
+        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
 
         if(state.GroupInitiative.config.autoOpenInit && !Campaign().get('initativepage')) {
             Campaign().set({
