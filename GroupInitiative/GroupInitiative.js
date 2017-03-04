@@ -5,8 +5,8 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.23',
-        lastUpdate = 1488459846,
+    var version = '0.9.24',
+        lastUpdate = 1488643422,
         schemaVersion = 1.1,
         bonusCache = {},
         observers = {
@@ -808,6 +808,33 @@ var GroupInitiative = GroupInitiative || (function() {
         );
     },
 
+    parseEmbeddedStatReferences = function(stat,charObj){
+        let charName=charObj.get('name'),
+            stext=(stat||'').replace(/@{[^}]*}/g,(s)=>{
+                let parts=_.rest(s.match(/@{([^|}]*)\|?([^|}]*)\|?([^|}]*)}/)),
+                    whoName,statName,modName;
+                if(parts[2].length){
+                    whoName=parts[0];
+                    statName=parts[1];
+                    modName=parts[2];
+                } else if(parts[1].length){
+                    if(_.contains(['max','current'],parts[1])){
+                        statName=parts[0];
+                        modName=parts[1];
+                    } else {
+                        whoName=parts[0];
+                        statName=parts[1];
+                    }
+                } else {
+                    statName=parts[0];
+                }
+                
+                return `@{${charName}|${statName}${modName?`|${modName}`:''}}`;
+            })
+            .replace(/&{tracker}/,'');
+        return stext;
+    },
+
     findInitiativeBonus = function(charObj,token) {
         var bonus = '';
         if(_.has(bonusCache,charObj.id)) {
@@ -821,7 +848,8 @@ var GroupInitiative = GroupInitiative || (function() {
                     if( ! _.isUndefined(stat) && !_.isNull(stat) && 
                         _.isNumber(stat) || (_.isString(stat) && stat.length)
                     ) {
-                        stat = (stat+'').replace(/@\{([^\|]*?|[^\|]*?\|max|[^\|]*?\|current)\}/g, '@{'+(charObj.get('name'))+'|$1}');
+//                        stat = (stat+'').replace(/@\{([^\|]*?|[^\|]*?\|max|[^\|]*?\|current)\}/g, '@{'+(charObj.get('name'))+'|$1}');
+                        stat = parseEmbeddedStatReferences(stat,charObj);
                         stat = _.reduce(details.adjustments || [],function(memo,a){
                             var args,adjustment,func;
                             if(memo) {
@@ -1641,4 +1669,5 @@ on("ready",function(){
         GroupInitiative.CheckInstall();
         GroupInitiative.RegisterEventHandlers();
 });
+
 
