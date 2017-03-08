@@ -5,8 +5,8 @@
 var Observer = Observer || (function() {
     'use strict';
 
-    var version = '0.1.2',
-        lastUpdate = 1476799960,
+    var version = '0.1.3',
+        lastUpdate = 1488988761,
         schemaVersion = 0.1,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         updateTokenName = 'Observer Update Token',
@@ -350,7 +350,7 @@ var Observer = Observer || (function() {
     removeObservers = function(){
         _.each(
             filterObjs((o)=>(_.contains(['character','graphic'],o.get('type')) && o.get('controlledby')!=='') ),
-            (c)=>c.set('controlledby', _.difference(c.get('controlledby').split(/,/),state.Observer.observers).join())
+            (character)=>character.set('controlledby', _.difference(character.get('controlledby').split(/,/),state.Observer.observers).join())
         );
     },
 
@@ -366,7 +366,7 @@ var Observer = Observer || (function() {
     assureObservers = function(){
         _.each(
             filterObjs((o)=>(o.get('type')==='character' && o.get('controlledby')!=='') ),
-            (c)=>{c.set('controlledby', _.union(c.get('controlledby').split(/,/),state.Observer.observers).join());}
+            (character)=>{character.set('controlledby', _.union(character.get('controlledby').split(/,/),state.Observer.observers).join());}
         );
         forceUpdateOfVision();
     },
@@ -378,25 +378,25 @@ var Observer = Observer || (function() {
         }
     },
 
-    handleChangeTurnOrder = function(c){
-        c=c||Campaign();
-        let initp=c.get('initiativepage'),
-            to=JSON.parse(c.get('turnorder')||'[]');
+    handleChangeTurnOrder = function(){
+        let camp=Campaign(),
+            initp=camp.get('initiativepage'),
+            to=JSON.parse(camp.get('turnorder')||'[]');
         if(state.Observer.config.initRestrict && initp && to.length){
-            let t=getObj('graphic',to[0].id),
-                c=getObj('character',(t||{get:_.noop}).get('represents'));
-            if(t){
+            let token=getObj('graphic',to[0].id),
+                character=getObj('character',(token||{get:_.noop}).get('represents'));
+            if(token){
                 removeObservers();
-                if(c){
-                    if(state.Observer.config.initNPCs || c.get('controlledby')!==''){
-                        c.set('controlledby', _.union(c.get('controlledby').split(/,/),state.Observer.observers).join());
+                if(character){
+                    if(state.Observer.config.initNPCs || character.get('controlledby')!==''){
+                        character.set('controlledby', _.union(character.get('controlledby').split(/,/),state.Observer.observers).join());
                         forceUpdateOfVision();
                     } else {
                         assureObservers();
                     }
                 } else {
                     if(state.Observer.config.initTokens){
-                        t.set('controlledby', _.union(t.get('controlledby').split(/,/),state.Observer.observers).join());
+                        token.set('controlledby', _.union(token.get('controlledby').split(/,/),state.Observer.observers).join());
                         forceUpdateOfVision();
                     } else {
                         assureObservers();
