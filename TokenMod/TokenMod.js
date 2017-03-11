@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.25',
-        lastUpdate = 1486789391,
+    var version = '0.8.26',
+        lastUpdate = 1489248651,
         schemaVersion = 0.3,
 
         observers = {
@@ -1405,6 +1405,8 @@ var TokenMod = TokenMod || (function() {
                                 mods[k]=delta.id;
                                 mods[k.split(/_/)[0]+'_value']=delta.get('current');
                                 mods[k.split(/_/)[0]+'_max']=delta.get('max');
+                            } else {
+                                mods[k]=`sheetattr_${f[0]}`;
                             }
                         }
                     }
@@ -1619,17 +1621,29 @@ var TokenMod = TokenMod || (function() {
                 }
 
                 if(ids.length){
-					_.chain(ids)
-						.uniq()
-						.map(function(t){
-							return getObj('graphic',t);
-						})
-						.reject(_.isUndefined)
-						.each(function(t) {
-							applyModListToToken(modlist,t);
-						});
-				}
-				break;
+                    _.chain(ids)
+                    .uniq()
+                    .map(function(t){
+                        return {
+                            id: t,
+                            token: getObj('graphic',t),
+                            character: getObj('character',t)
+                        };
+                    })
+                    .reduce(function(m,o){
+                        if(o.token){
+                            m.push(o.token);
+                        } else if(o.character){
+                            m=_.union(m,findObjs({type:'graphic',represents:o.character.id}));
+                        }
+                        return m;
+                    },[])
+                    .reject(_.isUndefined)
+                    .each(function(t) {
+                        applyModListToToken(modlist,t);
+                    });
+                }
+                break;
 
 		}
 
