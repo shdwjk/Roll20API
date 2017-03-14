@@ -5,8 +5,8 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.24',
-        lastUpdate = 1488643422,
+    var version = '0.9.25',
+        lastUpdate = 1489497067,
         schemaVersion = 1.1,
         bonusCache = {},
         observers = {
@@ -810,7 +810,7 @@ var GroupInitiative = GroupInitiative || (function() {
 
     parseEmbeddedStatReferences = function(stat,charObj){
         let charName=charObj.get('name'),
-            stext=(stat||'').replace(/@{[^}]*}/g,(s)=>{
+            stext=(stat+'').replace(/@{[^}]*}/g,(s)=>{
                 let parts=_.rest(s.match(/@{([^|}]*)\|?([^|}]*)\|?([^|}]*)}/)),
                     whoName,statName,modName;
                 if(parts[2].length){
@@ -848,7 +848,6 @@ var GroupInitiative = GroupInitiative || (function() {
                     if( ! _.isUndefined(stat) && !_.isNull(stat) && 
                         _.isNumber(stat) || (_.isString(stat) && stat.length)
                     ) {
-//                        stat = (stat+'').replace(/@\{([^\|]*?|[^\|]*?\|max|[^\|]*?\|current)\}/g, '@{'+(charObj.get('name'))+'|$1}');
                         stat = parseEmbeddedStatReferences(stat,charObj);
                         stat = _.reduce(details.adjustments || [],function(memo,a){
                             var args,adjustment,func;
