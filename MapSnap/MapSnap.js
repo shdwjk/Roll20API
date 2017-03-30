@@ -5,8 +5,8 @@
 var MapSnap = MapSnap || (function() {
     'use strict';
 
-    var version = '0.1.3',
-        lastUpdate = 1435116180,
+    var version = '0.1.4',
+        lastUpdate = 1490869913,
         schemaVersion = 0.1,
 
     checkInstall = function() {
@@ -49,7 +49,7 @@ var MapSnap = MapSnap || (function() {
     },
 
     showHelp = function(who) {
-        sendChat('','/w '+who+' '+
+        sendChat('','/w "'+who+'" '+
             '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                 '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
                     'MapSnap v'+version+
@@ -91,7 +91,7 @@ var MapSnap = MapSnap || (function() {
         if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
-        who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
@@ -110,7 +110,7 @@ var MapSnap = MapSnap || (function() {
                         showHelp(who);
                         return;
                 }
-                sendChat('MapSnap','/w '+who+' MapSnap is currently: <b>'+(state.MapSnap.snap ? 'ON' : 'OFF')+'</b>');
+                sendChat('MapSnap','/w "'+who+'" MapSnap is currently: <b>'+(state.MapSnap.snap ? 'ON' : 'OFF')+'</b>');
                 break;
         }
     },

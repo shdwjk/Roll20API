@@ -5,8 +5,8 @@ var globalconfig = globalconfig || undefined;
 var TokenNameNumber = TokenNameNumber || (function() {
     'use strict';
 
-    var version = '0.5.9',
-        lastUpdate = 1457563292,
+    var version = '0.5.10',
+        lastUpdate = 1490870989,
         schemaVersion = 0.5,
         statuses = [
             'red', 'blue', 'green', 'brown', 'purple', 'pink', 'yellow', // 0-6
@@ -211,7 +211,7 @@ var TokenNameNumber = TokenNameNumber || (function() {
         if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
-        who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+--/);
         switch(args.shift()) {

@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.26',
-        lastUpdate = 1489248651,
+    var version = '0.8.27',
+        lastUpdate = 1490870793,
         schemaVersion = 0.3,
 
         observers = {
@@ -277,7 +277,7 @@ var TokenMod = TokenMod || (function() {
 
 
 	showHelp = function(id) {
-		var who=getObj('player',id).get('_displayname');
+		var who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 		sendChat('', '/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
 	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
@@ -1482,7 +1482,7 @@ var TokenMod = TokenMod || (function() {
 
 
 	handleConfig = function(config, id) {
-		var args, cmd, who=getObj('player',id).get('_displayname');
+		var args, cmd, who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         if(config.length) {
             while(config.length) {

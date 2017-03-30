@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.6',
-        lastUpdate = 1486754991,
+    var version = '0.3.7',
+        lastUpdate = 1490362793,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -165,7 +165,7 @@ var Ammo = Ammo || (function() {
 		if (msg.type !== "api") {
 			return;
 		}
-        who=getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
 		if(_.has(msg,'inlinerolls')){
 			msg.content = _.chain(msg.inlinerolls)

@@ -5,8 +5,8 @@
 var IsGMModule = IsGMModule || (function() {
     'use strict';
 
-    var version = '0.7.1',
-        lastUpdate = 1427604250,
+    var version = '0.7.2',
+        lastUpdate = 1490707497,
         schemaVersion = 0.6,
         active = true,
         reset_password = "swordfish",
@@ -66,10 +66,10 @@ var IsGMModule = IsGMModule || (function() {
                         checkInstall();
                         sendChat('IsGM','/w gm IsGM data reset.');
                     } else {
-                        who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
-                        sendChat('IsGM','/w '+who+' ('+who+')Only GMs may reset the IsGM data.'
-                        +'If you are a GM you can reset by specifying the reset password from'
-                        +'the top of the IsGM script as an argument to !reset-isgm');
+						who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+                        sendChat('IsGM','/w "'+who+'" ('+who+') Only GMs may reset the IsGM data.'+
+                        'If you are a GM you can reset by specifying the reset password from'+
+                        'the top of the IsGM script as an argument to !reset-isgm');
                     }
                     break;
             }

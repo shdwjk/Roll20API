@@ -5,8 +5,8 @@
 var ColorEmote = ColorEmote || (function() {
     'use strict';
 
-    var version = '0.1.3',
-        lastUpdate = 1455714420,
+    var version = '0.1.4',
+        lastUpdate = 1490368906,
         schemaVersion = 0.4,
         symbols = {
             whitePawn: '&#'+'9817;',
@@ -349,7 +349,7 @@ var ColorEmote = ColorEmote || (function() {
 
 
     showHelp = function(playerid) {
-        var who=getObj('player',playerid).get('_displayname');
+		let who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         sendChat('','/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
@@ -431,7 +431,7 @@ var ColorEmote = ColorEmote || (function() {
         if(details.whisper){
             sendChat('','/w gm '+output);
             if(!playerIsGM(details.playerid)){
-                sendChat('','/w '+details.who+' '+output);
+                sendChat('','/w "'+details.who+'" '+output);
             }
         } else {
             sendChat('','/direct '+output);
@@ -486,7 +486,16 @@ var ColorEmote = ColorEmote || (function() {
                     return;
                 }
 
-                player=getObj('player',msg.playerid);
+                player=(getObj('player',msg.playerid)||{get:function(prop){
+					let propmap={
+						speakingas: 'gm|0',
+						displayname: 'API',
+						_displayname: 'API',
+						d20userid: 0,
+						color: '#000000'
+					};
+					return propmap[prop];
+				}});
                 turnData=getCharacterAndTokenTurn();
                 text=args.join(' ');
 
@@ -590,7 +599,7 @@ var ColorEmote = ColorEmote || (function() {
                     showHelp(msg.playerid);
                     return;
                 }
-                who=getObj('player',msg.playerid).get('_displayname');
+				who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
                 if(!args.length) {
                     sendChat('','/w "'+who+'" '+
@@ -621,13 +630,13 @@ var ColorEmote = ColorEmote || (function() {
                             opt=opt.join(' ');
                             if(_.has(parseOrders,opt)){
                                 state.ColorEmote.config.parseOrder=opt;
-                                sendChat('','/w '+who+' '
+                                sendChat('','/w "'+who+'" '
                                     +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                         +getConfigOption_ParseOrder()
                                     +'</div>'
                                 );
                             } else {
-                                sendChat('','/w '+who+' '
+                                sendChat('','/w "'+who+'" '
                                     +'<div><b>Unsupported Parse Order:</div> '+opt+'</div>'
                                 );
                             }
@@ -636,14 +645,14 @@ var ColorEmote = ColorEmote || (function() {
                         case 'set-image-scale':
                             if(_.has(imageScales,opt[0])){
                                 state.ColorEmote.config.imageScale=opt[0];
-                                sendChat('','/w '+who+' '
+                                sendChat('','/w "'+who+'" '
                                     +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                         +getConfigOption_ImageScale()
                                     +'</div>'
                                 );
                                 setDynamicCSS();
                             } else {
-                                sendChat('','/w '+who+' '
+                                sendChat('','/w "'+who+'" '
                                     +'<div><b>Unsupported Image Scale:</div> '+opt[0]+'</div>'
                                 );
                             }
@@ -652,21 +661,21 @@ var ColorEmote = ColorEmote || (function() {
                         case 'set-vignette-mode':
                             if(_.has(vignetteModes,opt[0])){
                                 state.ColorEmote.config.vignetteMode=opt[0];
-                                sendChat('','/w '+who+' '
+                                sendChat('','/w "'+who+'" '
                                     +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                         +getConfigOption_VignetteMode()
                                     +'</div>'
                                 );
                                 setDynamicCSS();
                             } else {
-                                sendChat('','/w '+who+' '
+                                sendChat('','/w "'+who+'" '
                                     +'<div><b>Unsupported Vignette Mode:</div> '+opt[0]+'</div>'
                                 );
                             }
                             break;
 
                         default:
-                            sendChat('','/w '+who+' '
+                            sendChat('','/w "'+who+'" '
                                 +'<div><b>Unsupported Option:</div> '+a+'</div>'
                             );
                     }

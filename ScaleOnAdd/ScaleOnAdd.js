@@ -5,8 +5,8 @@
 var ScaleOnAdd = ScaleOnAdd || (function() {
     'use strict';
 
-    var version = '0.1.1',
-        lastUpdate = 1447802869,
+    var version = '0.1.2',
+        lastUpdate = 1490870610,
         schemaVersion = 0.1,
         lastAddId = null,
 
@@ -145,7 +145,7 @@ var ScaleOnAdd = ScaleOnAdd || (function() {
 				.value();
 		}
 
-		who=getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+--/);
         switch(args.shift()) {

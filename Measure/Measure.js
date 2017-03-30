@@ -5,8 +5,8 @@
 var Measure = Measure || (function() {
     'use strict';
 
-    var version = '0.3.1',
-        lastUpdate = 1427604255,
+    var version = '0.3.2',
+        lastUpdate = 1490870046,
 
 	checkInstall = function() {
         log('-=> Measure v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
@@ -28,7 +28,7 @@ var Measure = Measure || (function() {
 		switch(args.shift()) {
             case '!wmeasure':
                 whisper = true;
-                who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+				who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
                 // break; // Intentional fall through
 
             case '!measure':
@@ -68,7 +68,7 @@ var Measure = Measure || (function() {
                         },[])
                         .join('')
                         .tap(function(o){
-                            sendChat('Measure',(whisper ? '/w '+who : '/direct')+' <div><b>Measurements:</b><ul>'+o+'</ul></div>');
+                            sendChat('Measure',(whisper ? '/w "'+who+'"' : '/direct')+' <div><b>Measurements:</b><ul>'+o+'</ul></div>');
                         });
                     
                     

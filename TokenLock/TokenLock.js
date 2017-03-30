@@ -5,8 +5,8 @@
 var TokenLock = TokenLock || (function() {
     'use strict';
 
-    var version = '0.2.5',
-        lastUpdate = 1473857742,
+    var version = '0.2.6',
+        lastUpdate = 1490870700,
     	schemaVersion = 0.2,
 
 	ch = function (c) {
@@ -120,7 +120,7 @@ var TokenLock = TokenLock || (function() {
 		if (msg.type !== "api" || !playerIsGM(msg.playerid) ) {
 			return;
 		}
-        who=getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
 		args = msg.content.split(/\s+/);
 		switch(args.shift()) {

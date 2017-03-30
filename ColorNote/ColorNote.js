@@ -1,8 +1,8 @@
 var ColorNote = ColorNote || (function() {
     'use strict';
  
-    var version = '0.2.1',
-        lastUpdate = 1432818056,
+    var version = '0.2.2',
+        lastUpdate = 1490368932,
  
     ch = function (c) {
     	var entities = {
@@ -32,7 +32,7 @@ var ColorNote = ColorNote || (function() {
  
 	showHelp = function(who) {
         sendChat('',
-            '/w '+who+' '
+            '/w "'+who+'" '
 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
 		+'ColorNote v'+version
@@ -71,7 +71,7 @@ var ColorNote = ColorNote || (function() {
 			return;
 		}
 
-		who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+		who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
 		args = msg.content.split(/\s+/);
 		switch(args[0]) {

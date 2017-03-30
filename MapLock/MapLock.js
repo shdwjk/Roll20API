@@ -5,8 +5,8 @@
 var MapLock = MapLock || (function() {
     'use strict';
 
-    var version = '0.4.3',
-        lastUpdate = 1458040738,
+    var version = '0.4.4',
+        lastUpdate = 1490707622,
         schemaVersion = 0.4,
 
     checkInstall = function() {
@@ -46,7 +46,7 @@ var MapLock = MapLock || (function() {
 
 	showHelp = function(who) {
         sendChat('',
-            '/w '+who+' '
+            '/w "'+who+'" '
 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
 		+'MapLock v'+version
@@ -84,10 +84,10 @@ var MapLock = MapLock || (function() {
     },
 
     msgPlayer = function(who,msg) {
-        sendChat('MapLock','/w '+who
-            +' <div style="font-weight:bold;font-size: 90%; border: 1px solid #999999; background-color: #ffcccc;">'
-                + msg
-            +'</div>'
+        sendChat('MapLock','/w "'+who+'" '+
+			'<div style="font-weight:bold;font-size: 90%; border: 1px solid #999999; background-color: #ffcccc;">'+
+                msg +
+            '</div>'
         );
     },
     tintGraphics = function(gids, highlight) {
@@ -114,7 +114,7 @@ var MapLock = MapLock || (function() {
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
             case '!map-lock':
-                who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+				who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
                 ids=_.pluck(msg.selected,'_id');
                 switch(args.shift()) {
                     case 'toggle':

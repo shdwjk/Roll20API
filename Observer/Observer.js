@@ -5,8 +5,8 @@
 var Observer = Observer || (function() {
     'use strict';
 
-    var version = '0.1.4',
-        lastUpdate = 1489521840,
+    var version = '0.1.5',
+        lastUpdate = 1490870139,
         schemaVersion = 0.1,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         updateTokenName = 'Observer Update Token',
@@ -210,7 +210,7 @@ var Observer = Observer || (function() {
         if (msg.type !== "api") {
             return;
         }
-        who=getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+--/);
         switch(args.shift()) {

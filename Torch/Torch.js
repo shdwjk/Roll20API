@@ -5,8 +5,8 @@
 var Torch = Torch || (function() {
     'use strict';
 
-    var version = '0.8.10',
-        lastUpdate = 1490294093,
+    var version = '0.8.11',
+        lastUpdate = 1490871046,
         schemaVersion = 0.1,
 		flickerURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
 		flickerPeriod = 400,
@@ -189,7 +189,7 @@ var Torch = Torch || (function() {
 		if (msg.type !== "api") {
 			return;
 		}
-		who=getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
 		args = msg.content.split(" ");
 		switch(args[0]) {

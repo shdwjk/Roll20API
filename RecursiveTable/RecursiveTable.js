@@ -5,8 +5,8 @@
 var RecursiveTable = RecursiveTable || (function() {
     'use strict';
 
-    var version = '0.1.2',
-        lastUpdate = 1453302547,
+    var version = '0.1.3',
+        lastUpdate = 1490870357,
         schemaVersion = 0.1,
         maxParseDepth = 10,
 
@@ -110,7 +110,7 @@ var RecursiveTable = RecursiveTable || (function() {
         if (msg.type !== "api") {
             return;
         }
-        who=getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+/);
         switch(args[0]) {

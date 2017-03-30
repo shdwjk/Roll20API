@@ -5,8 +5,8 @@
 var DryErase = DryErase || (function() {
     'use strict';
 
-    var version = '0.1.6',
-        lastUpdate = 1455114250,
+    var version = '0.1.7',
+        lastUpdate = 1490368977,
         schemaVersion = 0.3,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         defaults = {
@@ -320,7 +320,7 @@ var DryErase = DryErase || (function() {
         if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
-        who=getObj('player',msg.playerid).get('_displayname');
+		who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+--/);
         switch(args.shift()) {

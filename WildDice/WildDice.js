@@ -5,8 +5,8 @@
 var WildDice = WildDice || (function() {
     'use strict';
 
-    var version = '0.3.1',
-        lastUpdate = 1435721274,
+    var version = '0.3.2',
+        lastUpdate = 1490872135,
 
 	ch = function (c) {
 		var entities = {
@@ -36,7 +36,7 @@ var WildDice = WildDice || (function() {
 
     showHelp = function(who) {
 
-        sendChat('','/w '+who+' '+
+        sendChat('','/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
 	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
 		'WildDice v'+version+
@@ -95,7 +95,7 @@ var WildDice = WildDice || (function() {
             return;
         }
 
-        who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+/);
         switch(args[0]) {
@@ -131,34 +131,34 @@ var WildDice = WildDice || (function() {
                 }
                 sum = _.reduce(rDice.concat(bonusDice),function(m,r){return m+r;},0) + wildDie + pips;
 
-                sendChat( 'WildDice', (w ? '/w gm ' : '/direct ')
-                    +'<div>'
-                        +'<div style="background: white; border: 1px solid black; padding: 1px 3px; color: black; font-weight: bold;">Dice:'
-                            +'<div>'
-                                +_.map(rDice,function(d){
+                sendChat( 'WildDice', (w ? '/w gm ' : '/direct ')+
+                    '<div>'+
+                        '<div style="background: white; border: 1px solid black; padding: 1px 3px; color: black; font-weight: bold;">Dice:'+
+                            '<div>'+
+                                _.map(rDice,function(d){
                                         var c = 'white';
                                         if( markFirstMax && d === _.max(rDice) ) {
                                             c = '#666666';
                                             markFirstMax = false;
                                         }
                                         return '<div style="float:left;background-color: '+c+'; border: 1px solid #999999;border-radius: 2px;font-weight:bold;padding:1px 5px; margin:1px 3px;">'+d+'</div>';
-                                    }).join('')
-                                    +'<div style="float:left; background-color: red; color: white; border: 1px solid #999999;border-radius: 2px;font-weight:bold;padding:1px 5px; margin:1px 3px;">'+wildDie+'</div>'
-                                +_.map(bonusDice,function(d){
+                                    }).join('')+
+                                    '<div style="float:left; background-color: red; color: white; border: 1px solid #999999;border-radius: 2px;font-weight:bold;padding:1px 5px; margin:1px 3px;">'+wildDie+'</div>'+
+                                _.map(bonusDice,function(d){
                                         return '<div style="float:left;background-color: green; color: white; border: 1px solid #999999;border-radius: 2px;font-weight:bold;padding:1px 5px; margin:1px 3px;">'+d+'</div>';
-                                    }).join('')
-                                +(pips
-                                    ? '<div style="float:left; background-color: yellow; color: black; border: 1px solid #999999;border-radius: 10px;font-weight:bold;padding:1px 5px; margin:1px 8px;"> + '+pips+'</div>'
-                                    : '')
-                                +'<div style="clear: both"></div>'
-                            +'</div>'
-                        +'</div>'
-                        +'<div>'
-                            +(critFailDice.length ? ('<div style="float:left; background: red; margin-left: 10px; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;">'+ sumFail +' Crit Fail</div>') : '')
-                            +'<div style="float:left; margin-left: 10px; background: '+(critFailDice.length ? 'orange' : 'green' )+ '; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;">'+sum+(critFailDice.length ? ' Complication' : ' Total')+'</div>'
-                            +'<div style="clear: both"></div>'
-                        +'</div>'
-                    +'</div>');
+                                    }).join('')+
+                                (pips ?
+									'<div style="float:left; background-color: yellow; color: black; border: 1px solid #999999;border-radius: 10px;font-weight:bold;padding:1px 5px; margin:1px 8px;"> + '+pips+'</div>' :
+									'')+
+                                '<div style="clear: both"></div>'+
+                            '</div>'+
+                        '</div>'+
+                        '<div>'+
+                            (critFailDice.length ? ('<div style="float:left; background: red; margin-left: 10px; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;">'+ sumFail +' Crit Fail</div>') : '')+
+                            '<div style="float:left; margin-left: 10px; background: '+(critFailDice.length ? 'orange' : 'green' )+ '; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;">'+sum+(critFailDice.length ? ' Complication' : ' Total')+'</div>'+
+                            '<div style="clear: both"></div>'+
+                        '</div>'+
+                    '</div>');
                 
                 break;
         }

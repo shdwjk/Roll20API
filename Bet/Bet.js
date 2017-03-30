@@ -5,8 +5,8 @@
 var Bet = Bet || (function() {
     'use strict';
 
-    var version = '0.1.3',
-        lastUpdate = 1445881281,
+    var version = '0.1.4',
+        lastUpdate = 1490362976,
         schemaVersion = 0.1,
 
     checkInstall = function() {
@@ -27,7 +27,7 @@ var Bet = Bet || (function() {
         if (msg.type !== "api") {
             return;
         }
-		who = getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+/);
         switch(args[0]) {

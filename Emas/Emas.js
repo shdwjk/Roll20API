@@ -5,8 +5,8 @@
 var Emas = Emas || (function() {
     'use strict';
 
-	var version = '0.8.1',
-        lastUpdate = 1427604244,
+	var version = '0.8.2',
+        lastUpdate = 1490369005,
 
 	ch = function (c) {
 		var entities = {
@@ -36,7 +36,7 @@ var Emas = Emas || (function() {
 
 	showHelp = function(who) {
         sendChat('',
-            '/w '+who+' '
+            '/w "'+who+'" '
 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
 		+'Emas v'+version
@@ -145,7 +145,7 @@ var Emas = Emas || (function() {
 
 
 		args = msg.content.split(/\s+/);
-		who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+		who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 		switch(args[0]) {
 			case '!emas':
 				if(1 === args.length) {
@@ -165,7 +165,7 @@ var Emas = Emas || (function() {
 				if(1 === args.length) {
 					showHelp(who);
 				} else {
-					sendChat(msg.who,'/w '+who+' '+_.rest(args,2).join(' '));
+					sendChat(msg.who,'/w "'+who+'" '+_.rest(args,2).join(' '));
 					sendChat(msg.who,'/w '+_.rest(args).join(' '));
 				}
 				break;

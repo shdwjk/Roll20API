@@ -5,8 +5,8 @@
 var CleanAbilities = CleanAbilities || (function() {
     'use strict';
 
-    var version = '0.1.1',
-        lastUpdate = 1430365103,
+    var version = '0.1.2',
+        lastUpdate = 1490363223,
         schemaVersion = 0.1,
 
     checkInstall = function() {
@@ -21,7 +21,7 @@ var CleanAbilities = CleanAbilities || (function() {
     },
 
     showHelp = function(who) {
-        sendChat('','/w '+who+' '+
+        sendChat('','/w "'+who+'" '+
             'Help goes here.... sorry..'
         );
     },
@@ -32,7 +32,7 @@ var CleanAbilities = CleanAbilities || (function() {
         if (msg.type !== "api" || !playerIsGM(msg.playerid) ) {
             return;
         }
-		who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+		who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+/);
         switch(args[0]) {

@@ -5,8 +5,8 @@
 var ImperialCalendar = ImperialCalendar || (function() {
     'use strict';
 
-    var version = '0.1.1',
-        lastUpdate = 1485142047,
+    var version = '0.1.2',
+        lastUpdate = 1490707355,
         schemaVersion = 0.2,
         Uw = (w)=>`&${w};`,
         Un = (n)=>`&#${n};`,
@@ -522,7 +522,7 @@ var ImperialCalendar = ImperialCalendar || (function() {
         if (msg.type !== "api") {
             return;
         }
-        who = (getObj('player',msg.playerid)||{get:_.noop}).get('displayname');
+        who = (getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+--/);
         switch(args.shift()) {
@@ -585,7 +585,7 @@ var ImperialCalendar = ImperialCalendar || (function() {
                                         }
                                     } else if(_.has(n,'id')) {
                                         let note = _.find(state.ImperialCalendar.notes[n.day],(o)=>o.id===n.id );
-                                        if(note && (args.isGM || note.owner===args.whoid)){
+                                        if(note && (args.isGM || note.owner===args.whoID)){
                                             state.ImperialCalendar.notes[n.day]=_.without(state.ImperialCalendar.notes[n.day],note);
                                             args.show=_.sortBy(_.union((args.show||[]),[n.day]),_.identity);
                                         }

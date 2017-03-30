@@ -5,8 +5,8 @@
 var Facing = Facing || (function() {
     'use strict';
 
-    var version = '0.1.2',
-    lastUpdate = 1430571841,
+    var version = '0.1.3',
+    lastUpdate = 1490707181,
     schemaVersion = 0.1,
     defaults = {
         image: 'https://s3.amazonaws.com/files.d20.io/images/9183999/XcViJVf7-cGOXcZq1KWp-A/thumb.png?1430541914',
@@ -300,7 +300,7 @@ var Facing = Facing || (function() {
 
     showHelp = function(who) {
 
-        sendChat('','/w '+who+' '
+        sendChat('','/w "'+who+'" '
             +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                 +'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
                     +'Facing v'+version
@@ -342,7 +342,7 @@ var Facing = Facing || (function() {
         if (msg.type !== "api" ) {
             return;
         }
-        who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
@@ -368,7 +368,7 @@ var Facing = Facing || (function() {
 
             case '!facing-config':
                 if(!playerIsGM(msg.playerid)) {
-                    sendChat('','/w '+who+' '
+                    sendChat('','/w "'+who+'" '
                         +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                             +'<div><b>Error:</b> Only the GM may configure Facing.</div>'
                         +'</div>'
@@ -380,7 +380,7 @@ var Facing = Facing || (function() {
                     return;
                 }
                 if(!args.length) {
-                    sendChat('','/w '+who+' '
+                    sendChat('','/w "'+who+'" '
                         +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                         +'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
                         +'Facing v'+version
@@ -407,7 +407,7 @@ var Facing = Facing || (function() {
                             } else {
                                 state.Facing.config.image = defaults.image;
                             }
-                            sendChat('','/w '+who+' '
+                            sendChat('','/w "'+who+'" '
                                 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                     +omsg
                                     +getConfigOption_RingImage()
@@ -420,7 +420,7 @@ var Facing = Facing || (function() {
                             } else {
                                 state.Facing.config.attributeName = defaults.attributeName;
                             }
-                            sendChat('','/w '+who+' '
+                            sendChat('','/w "'+who+'" '
                                 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                     +getConfigOption_AttributeName()
                                 +'</div>'
@@ -428,7 +428,7 @@ var Facing = Facing || (function() {
                             break;
                         case '--toggle-relative':
                             state.Facing.config.relative=!state.Facing.config.relative;
-                            sendChat('','/w '+who+' '
+                            sendChat('','/w "'+who+'" '
                                 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                     +getConfigOption_Relative()
                                 +'</div>'
@@ -445,7 +445,7 @@ var Facing = Facing || (function() {
                             } else {
                                 state.Facing.config.scale = defaults.scale;
                             }
-                            sendChat('','/w '+who+' '
+                            sendChat('','/w "'+who+'" '
                                 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                     +omsg
                                     +getConfigOption_Scale()
@@ -454,7 +454,7 @@ var Facing = Facing || (function() {
                             break;
 
                         default:
-                            sendChat('','/w '+who+' '
+                            sendChat('','/w "'+who+'" '
                                 +'<div><b>Unsupported Option:</div> '+a+'</div>'
                             );
                     }

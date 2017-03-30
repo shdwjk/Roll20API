@@ -1,6 +1,6 @@
 {
   "name": "MapLock",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Provides locking of graphics to prevent moving/resizing/rotating them.  Also highlighting.\r\rSee `!map-lock --help` from the console for help and configuration options.",
   "authors": "The Aaron",
   "roll20userid": "104025",

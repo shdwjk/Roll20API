@@ -5,8 +5,8 @@
 var InitiativeAssistant = InitiativeAssistant || (function() {
     'use strict';
 
-    var version = '0.1.3',
-        lastUpdate = 1429545338,
+    var version = '0.1.4',
+        lastUpdate = 1490707384,
         schemaVersion = 0.2,
         sorters = {
             'None': function(to) {
@@ -78,7 +78,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
     },
 
     showHelp = function(who) {
-        sendChat('','/w '+who+' '
+        sendChat('','/w "'+who+'" '
             +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                 +'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
                     +'InitiativeAssistant v'+version
@@ -125,7 +125,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
         if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
-		who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
 		if(_.has(msg,'inlinerolls')){
 			msg.content = _.chain(msg.inlinerolls)
@@ -278,7 +278,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
                     }
                 });
                 if(output){
-                    sendChat('Initiative Assistant','/w '+who+' '+output);
+                    sendChat('Initiative Assistant','/w "'+who+'" '+output);
                 }
                 
                 break;
@@ -288,7 +288,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
                     return;
                 }
                 if(!args.length) {
-                    sendChat('','/w '+who+' '
+                    sendChat('','/w "'+who+'" '
                         +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                             +'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
                                 +'InitiativeAssistant v'+version
@@ -308,7 +308,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
                             } else {
                                 msg='<div><b>Error:</b> Not a valid sort method: '+opt[0]+'</div>';
                             }
-                            sendChat('','/w '+who+' '
+                            sendChat('','/w "'+who+'" '
                                 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
                                     +msg
                                     +getConfigOption_SortOptions()
@@ -317,7 +317,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
                             break;
 
                         default:
-                            sendChat('','/w '+who+' '
+                            sendChat('','/w "'+who+'" '
                                 +'<div><b>Unsupported Option:</div> '+a+'</div>'
                             );
                     }

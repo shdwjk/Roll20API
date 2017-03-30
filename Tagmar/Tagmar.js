@@ -5,8 +5,8 @@
 var Tagmar = Tagmar || (function() {
     'use strict';
 
-    var version = '0.1.1',
-        lastUpdate = 1478701973,
+    var version = '0.1.2',
+        lastUpdate = 1490870651,
         schemaVersion = 0.1,
         colorNameLookup = ['green','white','yellow','orange','red','blue','indigo','grey'],
         colorValueLookup = ['#009933','#ffffff','#FFFB00','#FE9901','#FF2500','#3399FF','#014586','#014586'],
@@ -180,7 +180,7 @@ var Tagmar = Tagmar || (function() {
 				.value();
 		}
 
-        who=getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
             case '!btagmar':

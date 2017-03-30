@@ -9,8 +9,8 @@
 var TurnMarker = TurnMarker || (function(){
     "use strict";
     
-    var version = '1.3.7',
-        lastUpdate = 1473862089,
+    var version = '1.3.8',
+        lastUpdate = 1490871535,
         schemaVersion = 1.17,
         active = false,
         threadSync = 1,
@@ -139,7 +139,7 @@ var TurnMarker = TurnMarker || (function(){
             return;
         }
 
-        who=getObj('player',msg.playerid).get('_displayname');
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
         tokenized = msg.content.split(/\s+/);
         command = tokenized[0];
 

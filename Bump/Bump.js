@@ -2,13 +2,21 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var globalconfig = globalconfig || undefined;
-var Bump = Bump || (function() {
+if('undefined' === typeof TAB){
+	log('####[>ERROR<]###############################################');
+	log('##  Bump requires TheAaronBase (TAB)                      ##');
+	log('############################################################');
+} else { _.defer(function() {
     'use strict';
 
-    var version = '0.2.10',
-        lastUpdate = 1457563083,
+    var version = '0.2.11',
+        lastUpdate = 1490363083,
         schemaVersion = 0.4,
+		tab=TAB({
+			module: 'Bump',
+			version: version,
+			lastUpdate: lastUpdate
+		}),
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461',
 
@@ -162,6 +170,7 @@ var Bump = Bump || (function() {
                     break;
             }
         }
+        checkGlobalConfig();
         buildTemplates();
         cleanupObjectReferences();
     },
@@ -449,7 +458,7 @@ var Bump = Bump || (function() {
         if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
-        who=getObj('player',msg.playerid).get('_displayname');
+		who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
@@ -579,18 +588,9 @@ var Bump = Bump || (function() {
         }
     };
 
-    return {
-        CheckInstall: checkInstall,
-        Notify_TurnOrderChange: handleTurnOrderChange,
-        RegisterEventHandlers: registerEventHandlers
-    };
-    
-}());
-
-on('ready',function() {
-    'use strict';
-
-    Bump.CheckInstall();
-    Bump.RegisterEventHandlers();
-});
+	on('ready',function() {
+		checkInstall();
+		registerEventHandlers();
+	});
+});}
 

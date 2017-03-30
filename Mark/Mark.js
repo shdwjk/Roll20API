@@ -5,8 +5,8 @@
 var Mark = Mark || (function() {
     'use strict';
 
-    var version = '0.3.3',
-        lastUpdate = 1427606528,
+    var version = '0.3.4',
+        lastUpdate = 1490869985,
 		schemaVersion = 0.2,
 		markerURL = 'https://s3.amazonaws.com/files.d20.io/images/4994795/7MdfzjgXCkaESbRbxATFSw/thumb.png?1406949835',
 
@@ -32,9 +32,9 @@ var Mark = Mark || (function() {
 		return '';
 	},
 
-	showHelp = function() {
+	showHelp = function(who) {
         sendChat('',
-            '/w gm '
+            '/w "'+who+'" '
 +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 	+'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'
 		+'Mark v'+version
@@ -111,7 +111,7 @@ var Mark = Mark || (function() {
 			return;
 		}
 
-		who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 		
 		args = msg.content.split(/ +/);
 		switch(args[0]) {
@@ -123,7 +123,7 @@ var Mark = Mark || (function() {
 
             case '!mark':
 				if(1 === args.length) {
-					showHelp();
+					showHelp(who);
 					break;
 				}
 
@@ -143,7 +143,7 @@ var Mark = Mark || (function() {
 					.value();
 
 				if(errors.length) {
-					sendChat('','/w '+who
+					sendChat('','/w "'+who+'" '
 						+'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
 							+'<div><span style="font-weight:bold;color:#990000;">Error:</span> '
 							+errors.join('</div><div><span style="font-weight:bold;color:#990000;">Error:</span> ')

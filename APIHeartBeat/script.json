@@ -1,6 +1,6 @@
 {
   "name": "APIHeartBeat",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Provides an API Heartbeat by setting the requesting player's color continuously.",
   "authors": "The Aaron",
   "roll20userid": "104025",
@@ -13,5 +13,5 @@
   },
   "conflicts": [],
   "script": "APIHeartBeat.js",
-  "useroptions": {}
+  "useroptions": []
 }

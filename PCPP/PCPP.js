@@ -5,8 +5,8 @@
 var PCPP = PCPP || (function() {
 	'use strict';
 
-    var version = '0.3.1',
-        lastUpdate = 1428467091,
+    var version = '0.3.2',
+        lastUpdate = 1490870215,
         schemaVersion = 0.1,
 
 	powerCardFunction = function() {
@@ -50,17 +50,17 @@ var PCPP = PCPP || (function() {
 					function(gmap,g){
 						var attrmap=_.reduce(g.match(/@#\{(.*?)\}/g), function(amap,a){
 							var parts=a.match(/@#\{([^|]*)\|([^\|]*)\|?(.*)?\}/),
-							char = findObjs({
+							character = findObjs({
 								type:'character',
 								name: parts[1]
 							})[0],
 							attr;
 
 							amap[a]=0;
-							if(char) {
+							if(character) {
 								attr = findObjs({
 									type: 'attribute',
-									characterid: char.id,
+									characterid: character.id,
 									name: parts[2]
 								})[0];
 								if(attr) {
@@ -82,17 +82,17 @@ var PCPP = PCPP || (function() {
 						function(gmap,g){
 							var attrmap=_.reduce(g.match(/@#\{(.*?)\}/g), function(amap,a){
 								var parts=a.match(/@#\{([^|]*)\|([^\|]*)\|?(.*)?\}/),
-								char = findObjs({
+								character = findObjs({
 									type:'character',
 									name: parts[1]
 								})[0],
 								attr;
 
 								amap[a]=0;
-								if(char) {
+								if(character) {
 									attr = findObjs({
 										type: 'attribute',
-										characterid: char.id,
+										characterid: character.id,
 										name: parts[2]
 									})[0];
 									if(attr) {

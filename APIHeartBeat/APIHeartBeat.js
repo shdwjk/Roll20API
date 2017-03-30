@@ -5,8 +5,8 @@
 var APIHeartBeat = APIHeartBeat || (function() {
     'use strict';
 
-    var version = '0.4.1',
-        lastUpdate = 1427602482,
+    var version = '0.4.2',
+        lastUpdate = 1490362946,
         schemaVersion = 0.2,
         beatInterval = false,
         beatPeriod = 200,
@@ -158,7 +158,7 @@ var APIHeartBeat = APIHeartBeat || (function() {
             return;
         }
         player = getObj('player',msg.playerid);
-        who = player && player.get('_displayname').split(' ')[0];
+        who = (player||{get:()=>'API'}).get('_displayname').split(' ')[0];
 
         args = msg.content.split(/\s+/);
         switch(args.shift()) {
