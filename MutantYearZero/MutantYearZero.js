@@ -5,8 +5,8 @@
 var MutantYearZero = MutantYearZero || (function() {
     'use strict';
 
-    var version = '0.1.9',
-        lastUpdate = 1490872482,
+    var version = '0.1.10',
+        lastUpdate = 1491217452,
         schemaVersion = 0.4,
         symbols = {
             biohazard: '&#'+'9763;',
@@ -428,31 +428,6 @@ var MutantYearZero = MutantYearZero || (function() {
         );
     },
 
-    getSkillDiceCounts = function(msg,idx) {
-        let match = ((msg.inlinerolls && msg.inlinerolls[idx] && msg.inlinerolls[idx].expression)||'').match(/^(.*)d(\d+)$/),
-            val,
-            rolls={},
-            negative=false;
-        try {
-            /* jshint ignore:start */
-            val = eval(match[1].replace(/[^\d-+\*\/\(\)]/g,''));
-            /* jshint ignore:end */
-            if(_.isNumber(val)){
-                negative = val < 0 ;
-            } else {
-                return {};
-            }
-            if(negative) {
-                _.reduce(_.map(_.range(Math.abs(val)),_.bind(randomInteger,{},match[2])),(m,r)=>{m[r]=(m[r]||0)-1;return m;},rolls);
-            } else {
-                rolls = getDiceCounts(msg,idx);
-            }
-        } catch(e){
-        }
-
-        return rolls;
-    },
-
     getDiceCounts = function(msg,idx) {
         var rolls = {};
         if( msg.inlinerolls &&
@@ -474,8 +449,7 @@ var MutantYearZero = MutantYearZero || (function() {
 
     getDiceArray = function(c) {
         return _.reduce(c,function(m,v,k){
-            let sign = (v<0?-1:1);
-            _.times(Math.abs(v),function(){m.push(k*sign);});
+			_.times(v,function(){m.push(k);});
             return m;
         },[]);
     },
@@ -496,11 +470,10 @@ var MutantYearZero = MutantYearZero || (function() {
         }).reverse().join('');
     },
     getRollableDiceCount = function(dice){
-        return _.filter(dice,function(v){return (v+'').match(/^-?\d+$/);}).length;
+        return _.filter(dice,function(v){return (v+'').match(/^\d+$/);}).length;
     },
     makeRerollExpression = function(dice){
-        var cnt = getRollableDiceCount(dice),
-            negative=(undefined!==_.find(_.keys(dice),(o)=>o.match(/^-/)));
+        var cnt = getRollableDiceCount(dice);
         return ' '+ch('[')+ch('[')+cnt+'d6'+ch(']')+ch(']')+' ';
     },
     validatePlayerRollHash = function(playerid, hash, skill,base,gear){
@@ -733,7 +706,7 @@ var MutantYearZero = MutantYearZero || (function() {
                 }
 
                 owner = owner || msg.playerid;
-                skillDice=getSkillDiceCounts(msg,rollIndices[0]);
+                skillDice=getDiceCounts(msg,rollIndices[0]);
                 baseDice=getDiceCounts(msg,rollIndices[1]);
                 gearDice=getDiceCounts(msg,rollIndices[2]);
 
@@ -754,7 +727,7 @@ var MutantYearZero = MutantYearZero || (function() {
                 }
                 pushedValues=getCountsForRoll(owner,hash);
 
-                successes = pushedValues.success + (skillDice['6']||0) - (skillDice['-6']||0) + (baseDice['6']||0) + (gearDice['6']||0) ;
+                successes=pushedValues.success + (skillDice['6']||0) + (baseDice['6']||0) + (gearDice['6']||0) ;
                 trauma = pushedValues.trauma + (baseDice['1']||0);
                 gearDamage = pushedValues.damage + (gearDice['1']||0);
                 pushes = pushedValues.pushes+1;
