@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.27',
-        lastUpdate = 1490870793,
+    var version = '0.8.29',
+        lastUpdate = 1491237262,
         schemaVersion = 0.3,
 
         observers = {
@@ -90,7 +90,7 @@ var TokenMod = TokenMod || (function() {
 		},
 
 		regex = {
-			numberString: /^[+\-]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][+\-]?[0-9]+)?$/,
+			numberString: /^[+\-\*\/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][+\-]?[0-9]+)?$/,
 			stripSingleQuotes: /'([^']+(?='))'/g,
 			stripDoubleQuotes: /"([^"]+(?="))"/g,
 			layers: /^(?:gmlayer|objects|map|walls)$/,
@@ -277,7 +277,7 @@ var TokenMod = TokenMod || (function() {
 
 
 	showHelp = function(id) {
-		var who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+		var who=(getObj('player',id)||{get:()=>'API'}).get('_displayname');
 		sendChat('', '/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
 	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
@@ -962,10 +962,14 @@ var TokenMod = TokenMod || (function() {
 
 
 	getRelativeChange = function(current,update) {
-		var cnum,unum;
-
+		var cnum,unum,op;
         if( update && _.has(update,0) && ('=' === update[0]) ){
             return parseFloat(_.rest(update).join(''));
+        }
+        
+        if(update.match(/^[+\-\/\*]/)){
+            op=update[0];
+            update=_.rest(update).join('');
         }
         
         cnum = current && (_.isNumber(current) ?
@@ -983,10 +987,14 @@ var TokenMod = TokenMod || (function() {
 
 		if(!_.isNaN(unum) && !_.isUndefined(unum) ) {
 			if(!_.isNaN(cnum) && !_.isUndefined(cnum) ) {
-				switch(update[0]) {
+				switch(op) {
 					case '+':
 					case '-':
 						return cnum+unum;
+					case '*':
+                        return cnum*unum;
+					case '/':
+                        return cnum/unum;
 
 					default:
 						return unum;
@@ -1028,8 +1036,8 @@ var TokenMod = TokenMod || (function() {
 					break;
 
 				case 'number':
-                    if( '=' === args[0][0] ) {
-                        t='=';
+                    if( args[0][0].match(/^[=+\-\/\*]/) ) {
+                        t=args[0][0];
                         args[0]=_.rest(args[0]).join('');
                     } else {
                         t='';
@@ -1666,3 +1674,4 @@ on("ready",function(){
 	TokenMod.CheckInstall();
 	TokenMod.RegisterEventHandlers();
 });
+

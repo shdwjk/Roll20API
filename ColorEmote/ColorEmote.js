@@ -5,8 +5,8 @@
 var ColorEmote = ColorEmote || (function() {
     'use strict';
 
-    var version = '0.1.4',
-        lastUpdate = 1490368906,
+    var version = '0.1.5',
+        lastUpdate = 1491142093,
         schemaVersion = 0.4,
         symbols = {
             whitePawn: '&#'+'9817;',
@@ -349,7 +349,7 @@ var ColorEmote = ColorEmote || (function() {
 
 
     showHelp = function(playerid) {
-		let who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+		let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
 
         sendChat('','/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
