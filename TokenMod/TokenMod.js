@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.29',
-        lastUpdate = 1491237262,
+    var version = '0.8.30',
+        lastUpdate = 1491528814,
         schemaVersion = 0.3,
 
         observers = {
@@ -1490,7 +1490,7 @@ var TokenMod = TokenMod || (function() {
 
 
 	handleConfig = function(config, id) {
-		var args, cmd, who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+		var args, cmd, who=(getObj('player',id)||{get:()=>'API'}).get('_displayname');
 
         if(config.length) {
             while(config.length) {
