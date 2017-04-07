@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.30',
-        lastUpdate = 1491528814,
+    var version = '0.8.31',
+        lastUpdate = 1491577764,
         schemaVersion = 0.3,
 
         observers = {
@@ -962,39 +962,33 @@ var TokenMod = TokenMod || (function() {
 
 
 	getRelativeChange = function(current,update) {
-		var cnum,unum,op;
-        if( update && _.has(update,0) && ('=' === update[0]) ){
-            return parseFloat(_.rest(update).join(''));
-        }
+		var cnum,unum,op='=';
+        if(_.isString(update)){
+            if( _.has(update,0) && ('=' === update[0]) ){
+                return parseFloat(_.rest(update).join(''));
+            }
         
-        if(update.match(/^[+\-\/\*]/)){
-            op=update[0];
-            update=_.rest(update).join('');
+            if(update.match(/^[+\-\/\*]/)){
+                op=update[0];
+                update=_.rest(update).join('');
+            }
         }
-        
-        cnum = current && (_.isNumber(current) ?
-            current :
-            ( _.isString(current) ?
-                (current.match(regex.numberString) ? parseFloat(current,10) : NaN) :
-                NaN)
-            );
-        unum = update && (_.isNumber(update) ?
-            update :
-            ( _.isString(update) ?
-                (update.match(regex.numberString) ? parseFloat(update,10) : NaN) :
-                NaN)
-            );
+
+        cnum = parseFloat(current);
+        unum = parseFloat(update);
+            
 
 		if(!_.isNaN(unum) && !_.isUndefined(unum) ) {
 			if(!_.isNaN(cnum) && !_.isUndefined(cnum) ) {
 				switch(op) {
 					case '+':
-					case '-':
 						return cnum+unum;
+					case '-':
+						return cnum-unum;
 					case '*':
                         return cnum*unum;
 					case '/':
-                        return cnum/unum;
+                        return cnum/(unum||1);
 
 					default:
 						return unum;
@@ -1023,8 +1017,8 @@ var TokenMod = TokenMod || (function() {
 					break;
 
 				case 'numberBlank':
-                    if( '=' === args[0][0] ) {
-                        t='=';
+                    if( args[0][0].match(/^[=+\-\/\*]/) ) {
+                        t=args[0][0];
                         args[0]=_.rest(args[0]).join('');
                     } else {
                         t='';
@@ -1158,9 +1152,9 @@ var TokenMod = TokenMod || (function() {
 							statparts = s.shift().match(/^(\S+?)(\[(\d*)\]|)$/)||[],
                             index = ( '[]' === statparts[2] ? statparts[2] : ( undefined !== statparts[3] ? Math.max(parseInt(statparts[3],10)-1,0) : 0 ) ),
                             stat=statparts[1]||'',
-							op = (_.contains(['-','+','=','!','?'],stat[0]) ? stat[0] : false),
+							op = (_.contains(['*','/','-','+','=','!','?'],stat[0]) ? stat[0] : false),
 							numraw = s.shift() || '',
-							numop = (_.contains(['-','+'],numraw[0]) ? numraw[0] : false),
+							numop = (_.contains(['*','/','-','+'],numraw[0]) ? numraw[0] : false),
 							num = Math.max(0,Math.min(9,Math.abs(parseInt(numraw,10)))) || 0;
 
 						stat = ( op ? stat.substring(1) : stat);
