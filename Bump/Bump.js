@@ -2,21 +2,13 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-if('undefined' === typeof TAB){
-	log('####[>ERROR<]###############################################');
-	log('##  Bump requires TheAaronBase (TAB)                      ##');
-	log('############################################################');
-} else { _.defer(function() {
+var globalconfig = globalconfig || undefined;
+var Bump = Bump || (function() {
     'use strict';
 
-    var version = '0.2.11',
-        lastUpdate = 1490363083,
+    var version = '0.2.12',
+        lastUpdate = 1491529681,
         schemaVersion = 0.4,
-		tab=TAB({
-			module: 'Bump',
-			version: version,
-			lastUpdate: lastUpdate
-		}),
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461',
 
@@ -588,9 +580,18 @@ if('undefined' === typeof TAB){
         }
     };
 
-	on('ready',function() {
-		checkInstall();
-		registerEventHandlers();
-	});
-});}
+    return {
+        CheckInstall: checkInstall,
+        Notify_TurnOrderChange: handleTurnOrderChange,
+        RegisterEventHandlers: registerEventHandlers
+    };
+    
+}());
+
+on('ready',function() {
+    'use strict';
+
+    Bump.CheckInstall();
+    Bump.RegisterEventHandlers();
+});
 
