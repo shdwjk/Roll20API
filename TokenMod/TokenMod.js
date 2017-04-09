@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.31',
-        lastUpdate = 1491577764,
+    var version = '0.8.32',
+        lastUpdate = 1491749095,
         schemaVersion = 0.3,
 
         observers = {
@@ -276,8 +276,7 @@ var TokenMod = TokenMod || (function() {
     },
 
 
-	showHelp = function(id) {
-		var who=(getObj('player',id)||{get:()=>'API'}).get('_displayname');
+	showHelp = function(who) {
 		sendChat('', '/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
 	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
@@ -1017,7 +1016,7 @@ var TokenMod = TokenMod || (function() {
 					break;
 
 				case 'numberBlank':
-                    if( args[0][0].match(/^[=+\-\/\*]/) ) {
+                    if( _.isString(args[0]) && args[0].length && args[0][0].match(/^[=+\-\/\*]/) ) {
                         t=args[0][0];
                         args[0]=_.rest(args[0]).join('');
                     } else {
@@ -1526,128 +1525,143 @@ var TokenMod = TokenMod || (function() {
 	},
 
 	 handleInput = function(msg_orig) {
-		var msg = _.clone(msg_orig),
-			args, cmds, ids=[],
-            ignoreSelected = false,
-			modlist={
-				flip: [],
-				on: [],
-				off: [],
-				set: {},
-                order: []
-			};
+        try {
+            var msg = _.clone(msg_orig),
+                who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname'),
+                args, cmds, ids=[],
+                ignoreSelected = false,
+                modlist={
+                    flip: [],
+                    on: [],
+                    off: [],
+                    set: {},
+                    order: []
+                };
 
-		if (msg.type !== "api") {
-			return;
-		}
+            if (msg.type !== "api") {
+                return;
+            }
 
-		if(_.has(msg,'inlinerolls')){
-			msg.content = _.chain(msg.inlinerolls)
-				.reduce(function(m,v,k){
-                    var ti=_.reduce(v.results.rolls,function(m2,v2){
-                        if(_.has(v2,'table')){
-                            m2.push(_.reduce(v2.results,function(m3,v3){
-                                m3.push(v3.tableItem.name);
-                                return m3;
-                            },[]).join(', '));
-                        }
-                        return m2;
-                    },[]).join(', ');
-					m['$[['+k+']]']= (ti.length && ti) || v.results.total || 0;
-					return m;
-				},{})
-				.reduce(function(m,v,k){
-					return m.replace(k,v);
-				},msg.content)
-				.value();
-		}
-
-		args = msg.content
-            .replace(/<br\/>\n/g, ' ')
-            .replace(/(\{\{(.*?)\}\})/g," $2 ")
-            .split(/\s+--/);
-
-		switch(args.shift()) {
-			case '!token-mod':
-
-				while(args.length) {
-					cmds=args.shift().match(/([^\s]+[\|#]'[^']+'|[^\s]+[\|#]"[^"]+"|[^\s]+)/g);
-					switch(cmds.shift()) {
-						case 'help':
-							showHelp(msg.playerid);
-							return;
-
-						case 'config':
-							if(playerIsGM(msg.playerid)) {
-								handleConfig(cmds,msg.playerid);
-							}
-							return;
-
-						case 'flip':
-							modlist.flip=_.union(_.filter(cmds,filters.isBoolean),modlist.flip);
-							break;
-
-						case 'on':
-							modlist.on=_.union(_.filter(cmds,filters.isBoolean),modlist.on);
-							break;
-
-						case 'off':
-							modlist.off=_.union(_.filter(cmds,filters.isBoolean),modlist.off);
-							break;
-
-						case 'set':
-							modlist.set=parseSetArguments(cmds,modlist.set);
-							break;
-
-                        case 'order':
-                            modlist.order=parseOrderArguments(cmds,modlist.order);
-                            break;
-
-                        case 'ignore-selected':
-                            ignoreSelected=true;
-                            break;
-
-						case 'ids':
-							ids=_.union(cmds,ids);
-							break;
-					}
-				}
-				modlist.off=_.difference(modlist.off,modlist.on);
-				modlist.flip=_.difference(modlist.flip,modlist.on,modlist.off);
-                if( !playerIsGM(msg.playerid) && !state.TokenMod.playersCanUse_ids ) {
-                    ids=[];
-                }
-
-                if(!ignoreSelected) {
-                    ids=_.union(ids,_.pluck(msg.selected,'_id'));
-                }
-
-                if(ids.length){
-                    _.chain(ids)
-                    .uniq()
-                    .map(function(t){
-                        return {
-                            id: t,
-                            token: getObj('graphic',t),
-                            character: getObj('character',t)
-                        };
-                    })
-                    .reduce(function(m,o){
-                        if(o.token){
-                            m.push(o.token);
-                        } else if(o.character){
-                            m=_.union(m,findObjs({type:'graphic',represents:o.character.id}));
-                        }
+            if(_.has(msg,'inlinerolls')){
+                msg.content = _.chain(msg.inlinerolls)
+                    .reduce(function(m,v,k){
+                        var ti=_.reduce(v.results.rolls,function(m2,v2){
+                            if(_.has(v2,'table')){
+                                m2.push(_.reduce(v2.results,function(m3,v3){
+                                    m3.push(v3.tableItem.name);
+                                    return m3;
+                                },[]).join(', '));
+                            }
+                            return m2;
+                        },[]).join(', ');
+                        m['$[['+k+']]']= (ti.length && ti) || v.results.total || 0;
                         return m;
-                    },[])
-                    .reject(_.isUndefined)
-                    .each(function(t) {
-                        applyModListToToken(modlist,t);
-                    });
-                }
-                break;
+                    },{})
+                    .reduce(function(m,v,k){
+                        return m.replace(k,v);
+                    },msg.content)
+                    .value();
+            }
 
-		}
+            args = msg.content
+                .replace(/<br\/>\n/g, ' ')
+                .replace(/(\{\{(.*?)\}\})/g," $2 ")
+                .split(/\s+--/);
+
+            switch(args.shift()) {
+                case '!token-mod':
+
+                    while(args.length) {
+                        cmds=args.shift().match(/([^\s]+[\|#]'[^']+'|[^\s]+[\|#]"[^"]+"|[^\s]+)/g);
+                        switch(cmds.shift()) {
+                            case 'help':
+                                showHelp(who);
+                                return;
+
+                            case 'config':
+                                if(playerIsGM(msg.playerid)) {
+                                    handleConfig(cmds,msg.playerid);
+                                }
+                                return;
+
+                            case 'flip':
+                                modlist.flip=_.union(_.filter(cmds,filters.isBoolean),modlist.flip);
+                                break;
+
+                            case 'on':
+                                modlist.on=_.union(_.filter(cmds,filters.isBoolean),modlist.on);
+                                break;
+
+                            case 'off':
+                                modlist.off=_.union(_.filter(cmds,filters.isBoolean),modlist.off);
+                                break;
+
+                            case 'set':
+                                modlist.set=parseSetArguments(cmds,modlist.set);
+                                break;
+
+                            case 'order':
+                                modlist.order=parseOrderArguments(cmds,modlist.order);
+                                break;
+
+                            case 'ignore-selected':
+                                ignoreSelected=true;
+                                break;
+
+                            case 'ids':
+                                ids=_.union(cmds,ids);
+                                break;
+                        }
+                    }
+                    modlist.off=_.difference(modlist.off,modlist.on);
+                    modlist.flip=_.difference(modlist.flip,modlist.on,modlist.off);
+                    if( !playerIsGM(msg.playerid) && !state.TokenMod.playersCanUse_ids ) {
+                        ids=[];
+                    }
+
+                    if(!ignoreSelected) {
+                        ids=_.union(ids,_.pluck(msg.selected,'_id'));
+                    }
+
+                    if(ids.length){
+                        _.chain(ids)
+                        .uniq()
+                        .map(function(t){
+                            return {
+                                id: t,
+                                token: getObj('graphic',t),
+                                character: getObj('character',t)
+                            };
+                        })
+                        .reduce(function(m,o){
+                            if(o.token){
+                                m.push(o.token);
+                            } else if(o.character){
+                                m=_.union(m,findObjs({type:'graphic',represents:o.character.id}));
+                            }
+                            return m;
+                        },[])
+                        .reject(_.isUndefined)
+                        .each(function(t) {
+                            applyModListToToken(modlist,t);
+                        });
+                    }
+                    break;
+
+            }
+        } catch (e) {
+            let who=(getObj('player',msg_orig.playerid)||{get:()=>'API'}).get('_displayname');
+            sendChat('TokenMod',`/w "${who}" `+
+                `<div style="border:1px solid black; background-color: #ffeeee; padding: .2em; border-radius:.4em;" >`+
+                    `<div>There was an error while trying to run your command:</div>`+
+                    `<div style="margin: .1em 1em 1em 1em;"><code>${msg_orig.content}</code></div>`+
+                    `<div>Please <a class="showtip tipsy" title="The Aaron's profile on Roll20." style="color:blue; text-decoration: underline;" href="https://app.roll20.net/users/104025/the-aaron">send me this information</a> so I can make sure this doesn't happen again (triple click for easy select in most browsers.):</div>`+
+                    `<div style="font-size: .6em; line-height: 1em;margin:.1em .1em .1em 1em; padding: .1em .3em; color: #666666; border: 1px solid #999999; border-radius: .2em; background-color: white;">`+
+                        JSON.stringify({msg: msg_orig, stack: e.stack})+
+                    `</div>`+
+                `</div>`
+            );
+        }
 
 	},
 
@@ -1668,4 +1682,5 @@ on("ready",function(){
 	TokenMod.CheckInstall();
 	TokenMod.RegisterEventHandlers();
 });
+
 
