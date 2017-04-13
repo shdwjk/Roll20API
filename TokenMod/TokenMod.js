@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.32',
-        lastUpdate = 1491749095,
+    var version = '0.8.34',
+        lastUpdate = 1492117510,
         schemaVersion = 0.3,
 
         observers = {
@@ -1330,7 +1330,14 @@ var TokenMod = TokenMod || (function() {
                                         current[sm.status]= _.filter(current[sm.status],function(e,idx){
                                             return idx !== sm.index;
                                         });
-                                    }
+                                    } else {
+										current[sm.status] = current[sm.status] || [];
+										current[sm.status].push({
+											mark: sm.status,
+											num: Math.max(0,Math.min(9,getRelativeChange(0, sm.sign+sm.number))),
+											index: statusCount++
+										});
+									}
 								} else {
                                     current[sm.status] = current[sm.status] || [];
 									current[sm.status].push({
@@ -1370,7 +1377,8 @@ var TokenMod = TokenMod || (function() {
                                         });
                                     }
                                 } else {
-									current[sm.status]= _.first(current[sm.status],-1);
+                                    current[sm.status] = current[sm.status] || [];
+									current[sm.status].pop();
                                 }
 								break;
 							case '=':
@@ -1641,6 +1649,7 @@ var TokenMod = TokenMod || (function() {
                             }
                             return m;
                         },[])
+						.uniq()
                         .reject(_.isUndefined)
                         .each(function(t) {
                             applyModListToToken(modlist,t);
@@ -1682,5 +1691,6 @@ on("ready",function(){
 	TokenMod.CheckInstall();
 	TokenMod.RegisterEventHandlers();
 });
+
 
 
