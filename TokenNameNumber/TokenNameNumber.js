@@ -1,12 +1,13 @@
-// Github:   https://github.com/shdwjk/Roll20API/blob/master/TokenNameNumber/TokenNameNumber.js // By:       The Aaron, Arcane Scriptomancer
+// Github:   https://github.com/shdwjk/Roll20API/blob/master/TokenNameNumber/TokenNameNumber.js
+// By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
 var globalconfig = globalconfig || undefined;
 var TokenNameNumber = TokenNameNumber || (function() {
     'use strict';
 
-    var version = '0.5.10',
-        lastUpdate = 1490870989,
+    var version = '0.5.11',
+        lastUpdate = 1492690445,
         schemaVersion = 0.5,
         statuses = [
             'red', 'blue', 'green', 'brown', 'purple', 'pink', 'yellow', // 0-6
@@ -323,15 +324,17 @@ var TokenNameNumber = TokenNameNumber || (function() {
 
     saveTokenId = function(obj){
         tokenIds.push(obj.id);
-
-        setTimeout((function(id){
-            return function(){
-                var token=getObj('graphic',id);
+        let token_id = obj.id;
+        
+        _.delay(()=>{
+                var token=getObj('graphic',token_id);
                 if(token){
                     setNumberOnToken(token);
                 }
-            };
-        }(obj.id)),100);
+        },100);
+        _.delay(()=>{
+            tokenIds=_.without(tokenIds,token_id);
+        },1000);
     },
 
     setNumberOnToken = function(obj) {
@@ -344,7 +347,6 @@ var TokenNameNumber = TokenNameNumber || (function() {
         statuspart='';
 
         if(_.contains(tokenIds,obj.id)){
-            tokenIds=_.without(tokenIds,obj.id);
 
             if( 'graphic' === obj.get('type') &&
                 'token'   === obj.get('subtype') ) {
@@ -355,6 +357,7 @@ var TokenNameNumber = TokenNameNumber || (function() {
 
 
                     if(tokenName.match( /%%NUMBERED%%/ ) || _.some(matchers,function(m) { return m.test(tokenName);}) ) {
+                        tokenIds=_.without(tokenIds,obj.id);
                         if( 0 === matchers.length || !_.some(matchers,function(m) { return m.test(tokenName);}) ) {
                             matcher='^('+esRE(tokenName).replace(/%%NUMBERED%%/,')(\\d+)(')+')$';
                             addMatcher(obj.get('pageid'), obj.get('represents'), matcher );
