@@ -5,8 +5,8 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.25',
-        lastUpdate = 1489497067,
+    var version = '0.9.26',
+        lastUpdate = 1493124218,
         schemaVersion = 1.1,
         bonusCache = {},
         observers = {
@@ -19,7 +19,8 @@ var GroupInitiative = GroupInitiative || (function() {
             'Ascending': function(to){
                 var last=0;
                 return _.sortBy(to,function(i){
-                    let val=parseFloat(i.pr)||last;
+                    let val=(parseFloat(i.pr));
+					val = _.isNaN(val) ? last : val;
                     last=val;
                     return val;
                 });
@@ -27,7 +28,8 @@ var GroupInitiative = GroupInitiative || (function() {
             'Descending': function(to){
                 var last=100000;
                 return _.sortBy(to,function(i){
-                    let val=(-(parseFloat(i.pr)))||last;
+                    let val=(-(parseFloat(i.pr)));
+					val = _.isNaN(val) ? last : val;
                     last=val;
                     return val;
                 });
