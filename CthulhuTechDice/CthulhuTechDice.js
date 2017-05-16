@@ -5,8 +5,8 @@
 var CthulhuTechDice = CthulhuTechDice || (function() {
     'use strict';
 
-    var version = '0.1.12',
-        lastUpdate = 1453432350,
+    var version = '0.1.13',
+        lastUpdate = 1494935796,
         schemaVersion = 0.1,
 
     checkInstall = function() {
@@ -22,10 +22,10 @@ var CthulhuTechDice = CthulhuTechDice || (function() {
     
     getDiceCounts = function(msg,idx) {
         var rolls = {};
-        if( msg.inlinerolls
-            && msg.inlinerolls[idx]
-            && msg.inlinerolls[idx].results
-            && msg.inlinerolls[idx].results.rolls[0]
+        if( msg.inlinerolls &&
+            msg.inlinerolls[idx] &&
+            msg.inlinerolls[idx].results &&
+            msg.inlinerolls[idx].results.rolls[0]
         ) {
             _.each(msg.inlinerolls[idx].results.rolls,function(res){
                 rolls=_.reduce(_.map(res.results,function(r){
@@ -89,7 +89,7 @@ var CthulhuTechDice = CthulhuTechDice || (function() {
         switch(args.shift()) {
             case '!wct':
                 w=true;
-                /* break; */ // Intentional drop through
+                /* break; // intentional dropthrough */ /* falls through */
             case '!ct':
 				if(args.length>1){
 					bonus = parseInt(args[1],10);
@@ -228,7 +228,7 @@ var CthulhuTechDice = CthulhuTechDice || (function() {
 
                 if( optional && optional.length ) {
                     optional = '<div style="'+
-                                'background: #161617 url(http://www.cthulhutech.com/images/textbox.jpg) repeat-y right top;'+
+                                'background: #161617 url(https://s3.amazonaws.com/files.d20.io/images/33084459/32YnJv6tEcX5itYd3wNjNg/med.jpg?1494935522) repeat-y right top;'+
                                 'padding: 8px;'+
                                 'margin-bottom: 8px;'+
                                 'border: solid #323132 1px;'+
@@ -263,7 +263,7 @@ var CthulhuTechDice = CthulhuTechDice || (function() {
                         'text-align: center;'+
                     '">'+
                         '<div style="'+
-                                'background: #000000 url(http://www.cthulhutech.com/images/bg.jpg) repeat-y left top;'+
+                                'background: #000000 url(https://s3.amazonaws.com/files.d20.io/images/33084449/3cr3zRY3-2TY3Y_ywRGlvw/med.jpg?1494935471) repeat-y left top;'+
                                 'color: #757779;'+
                                 'padding: 8px;'+
                                 'padding-left: 30px;'+
@@ -273,7 +273,7 @@ var CthulhuTechDice = CthulhuTechDice || (function() {
                             '">'+
                             optional+
                             '<div style="'+
-                                'background: #161617 url(http://www.cthulhutech.com/images/textbox.jpg) repeat-y right top;'+
+                                'background: #161617 url(https://s3.amazonaws.com/files.d20.io/images/33084459/32YnJv6tEcX5itYd3wNjNg/med.jpg?1494935522) repeat-y right top;'+
                                 'padding: 8px;'+
                                 'float:right;'+
                                 'border: solid #323132 1px;'+
@@ -327,7 +327,7 @@ var CthulhuTechDice = CthulhuTechDice || (function() {
 								)+
                             '</div>'+
                             '<div style="'+
-                                'background: #161617 url(http://www.cthulhutech.com/images/textbox.jpg) repeat-y right top;'+
+                                'background: #161617 url(https://s3.amazonaws.com/files.d20.io/images/33084459/32YnJv6tEcX5itYd3wNjNg/med.jpg?1494935522) repeat-y right top;'+
                                 'padding: 8px;'+
                                 'margin-right: 138px;'+
                                 'border: solid #323132 1px;'+
