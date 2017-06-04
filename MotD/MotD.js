@@ -5,8 +5,8 @@
 var MotD = MotD || (function() {
 	'use strict';
 
-	var version = '0.2.2',
-        lastUpdate = 1490870097,
+	var version = '0.2.3',
+        lastUpdate = 1496592036,
 		motdNoteId,
 		motdNoteName = 'MotD Note',
 		motdText,
@@ -45,7 +45,7 @@ var MotD = MotD || (function() {
 	handlePlayerLogin = function(obj,prev) {
         if( true === obj.get('online') && false === prev._online ) {
             setTimeout(function(){
-				var who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+				var who=obj.get('displayname');
     		    sendChat('MotD','/w "'+who+'" '+
 					motdText.replace(/%%NAME%%/g,obj.get('displayname'))
 				);
