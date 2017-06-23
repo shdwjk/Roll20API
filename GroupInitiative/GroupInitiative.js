@@ -5,13 +5,13 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.26',
-        lastUpdate = 1493124218,
+    var version = '0.9.27',
+        lastUpdate = 1498239221,
         schemaVersion = 1.1,
         bonusCache = {},
         observers = {
                 turnOrderChange: []
-    		},
+            },
         sorters = {
             'None': function(to) {
                 return to;
@@ -20,7 +20,7 @@ var GroupInitiative = GroupInitiative || (function() {
                 var last=0;
                 return _.sortBy(to,function(i){
                     let val=(parseFloat(i.pr));
-					val = _.isNaN(val) ? last : val;
+                    val = _.isNaN(val) ? last : val;
                     last=val;
                     return val;
                 });
@@ -29,7 +29,7 @@ var GroupInitiative = GroupInitiative || (function() {
                 var last=100000;
                 return _.sortBy(to,function(i){
                     let val=(-(parseFloat(i.pr)));
-					val = _.isNaN(val) ? last : val;
+                    val = _.isNaN(val) ? last : val;
                     last=val;
                     return val;
                 });
@@ -60,16 +60,16 @@ var GroupInitiative = GroupInitiative || (function() {
           };
         }()),
 
-		observeTurnOrderChange = function(handler){
-			if(handler && _.isFunction(handler)){
-				observers.turnOrderChange.push(handler);
-			}
-		},
-		notifyObservers = function(event,obj,prev){
-			_.each(observers[event],function(handler){
-				handler(obj,prev);
-			});
-		},
+        observeTurnOrderChange = function(handler){
+            if(handler && _.isFunction(handler)){
+                observers.turnOrderChange.push(handler);
+            }
+        },
+        notifyObservers = function(event,obj,prev){
+            _.each(observers[event],function(handler){
+                handler(obj,prev);
+            });
+        },
 
         formatDieRoll = function(rollData) {
             var critFail = _.reduce(rollData.rolls,function(m,r){
@@ -252,7 +252,7 @@ var GroupInitiative = GroupInitiative || (function() {
             if(stat ) {
                 stat = (_.isString(stat) ? stat : stat+'');
                 if('0' !== stat) {
-                    stat = stat.replace(/@\{([^\|]*?|[^\|]*?\|max|[^\|]*?\|current)\}/g, '@{'+(s.character.get('name'))+'|$1}');
+                    stat = stat.replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{'+(s.character.get('name'))+'|$1}');
                     return '('+stat+')d'+state.GroupInitiative.config.dieSize;
                 }
             } 
@@ -814,9 +814,8 @@ var GroupInitiative = GroupInitiative || (function() {
         let charName=charObj.get('name'),
             stext=(stat+'').replace(/@{[^}]*}/g,(s)=>{
                 let parts=_.rest(s.match(/@{([^|}]*)\|?([^|}]*)\|?([^|}]*)}/)),
-                    whoName,statName,modName;
+                    statName,modName;
                 if(parts[2].length){
-                    whoName=parts[0];
                     statName=parts[1];
                     modName=parts[2];
                 } else if(parts[1].length){
@@ -824,7 +823,6 @@ var GroupInitiative = GroupInitiative || (function() {
                         statName=parts[0];
                         modName=parts[1];
                     } else {
-                        whoName=parts[0];
                         statName=parts[1];
                     }
                 } else {
@@ -837,7 +835,7 @@ var GroupInitiative = GroupInitiative || (function() {
         return stext;
     },
 
-    findInitiativeBonus = function(charObj,token) {
+    findInitiativeBonus = function(charObj,/*eslint-disable no-unused-vars*/token/*eslint-enable no-unused-vars*/) {
         var bonus = '';
         if(_.has(bonusCache,charObj.id)) {
             return bonusCache[charObj.id];
@@ -883,7 +881,6 @@ var GroupInitiative = GroupInitiative || (function() {
 
     handleInput = function(msg_orig) {
         var msg = _.clone(msg_orig),
-            obj,
             prev=Campaign().get('turnorder'),
             args,
             cmds,
@@ -901,23 +898,23 @@ var GroupInitiative = GroupInitiative || (function() {
             turnEntries,
             finalize,
             isReroll=false
-			;
+            ;
 
         if (msg.type !== "api" ) {
             return;
         }
 
         if(_.has(msg,'inlinerolls')){
-        	msg.content = _.chain(msg.inlinerolls)
-				.reduce(function(m,v,k){
-					m['$[['+k+']]']=v.results.total || 0;
-					return m;
-				},{})
-				.reduce(function(m,v,k){
-					return m.replace(k,v);
-				},msg.content)
-				.value();
-		}
+            msg.content = _.chain(msg.inlinerolls)
+                .reduce(function(m,v,k){
+                    m['$[['+k+']]']=v.results.total || 0;
+                    return m;
+                },{})
+                .reduce(function(m,v,k){
+                    return m.replace(k,v);
+                },msg.content)
+                .value();
+        }
 
         args = msg.content.split(/\s+--/);
         switch(args.shift()) {
@@ -927,16 +924,16 @@ var GroupInitiative = GroupInitiative || (function() {
 
                     switch(cmds[0]) {
                         case 'help':
-							if(!playerIsGM(msg.playerid)){
-								return;
-							}
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             showHelp();
                             break;
 
                         case 'add-group':
-							if(!playerIsGM(msg.playerid)){
-								return;
-							}
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             workgroup=[];
                             workvar={};
 
@@ -996,7 +993,7 @@ var GroupInitiative = GroupInitiative || (function() {
                             }
                             break;
 
-                        case 'stack':
+                        case 'stack': {
                             cmds.shift();
                             let operation=cmds.shift(),
                                 showdate=function(ms){
@@ -1188,12 +1185,13 @@ var GroupInitiative = GroupInitiative || (function() {
                                     stacklist();
                                     break;
                             }
+                            }
                             break;
 
                         case 'promote':
-							if(!playerIsGM(msg.playerid)){
-								return;
-							}
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             cmds[1]=Math.max(parseInt(cmds[1],10),1);
                             if(state.GroupInitiative.bonusStatGroups.length >= cmds[1]) {
                                 if(1 !== cmds[1]) {
@@ -1223,9 +1221,9 @@ var GroupInitiative = GroupInitiative || (function() {
                             break;
 
                         case 'del-group':
-							if(!playerIsGM(msg.playerid)){
-								return;
-							}
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             cmds[1]=Math.max(parseInt(cmds[1],10),1);
                             if(state.GroupInitiative.bonusStatGroups.length >= cmds[1]) {
                                 state.GroupInitiative.bonusStatGroups=_.filter(state.GroupInitiative.bonusStatGroups, function(v,k){
@@ -1252,22 +1250,22 @@ var GroupInitiative = GroupInitiative || (function() {
                             }
                             break;
 
-						case 'reroll':
+                        case 'reroll':
                             isReroll=true;
-                            if(cmds[1] && cmds[1].match(/^[\-\+]?\d+(\.\d+)?$/)){
+                            if(cmds[1] && cmds[1].match(/^[-+]?\d+(\.\d+)?$/)){
                                 manualBonus=parseFloat(cmds[1])||0;
                             }
-							msg.selected= _.chain(JSON.parse(Campaign().get('turnorder'))||[])
-								.filter(function(e){
-									return '-1' !== e.id;
-								})
-								.map(function(e){
-									return {_type: 'graphic', _id: e.id};
-								})
-								.value();
+                            msg.selected= _.chain(JSON.parse(Campaign().get('turnorder'))||[])
+                                .filter(function(e){
+                                    return '-1' !== e.id;
+                                })
+                                .map(function(e){
+                                    return {_type: 'graphic', _id: e.id};
+                                })
+                                .value();
                             cont=true;
                             notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
-							break;
+                            break;
 
                         case 'sort':
                             Campaign().set('turnorder', JSON.stringify(
@@ -1278,8 +1276,8 @@ var GroupInitiative = GroupInitiative || (function() {
                             notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                             break;
 
-						case 'adjust':
-                            if(cmds[1] && cmds[1].match(/^[\-\+]?\d+(\.\d+)?$/)){
+                        case 'adjust':
+                            if(cmds[1] && cmds[1].match(/^[-+]?\d+(\.\d+)?$/)){
                                 manualBonus=parseFloat(cmds[1]);
                                 manualBonusMin=parseFloat(cmds[2]);
                                 manualBonusMin=_.isNaN(manualBonusMin)?-10000:manualBonusMin;
@@ -1302,10 +1300,10 @@ var GroupInitiative = GroupInitiative || (function() {
                                     '</div>'
                                 );
                             }
-							break;
+                            break;
 
-						case 'adjust-current':
-                            if(cmds[1] && cmds[1].match(/^[\-\+]?\d+(\.\d+)?$/)){
+                        case 'adjust-current':
+                            if(cmds[1] && cmds[1].match(/^[-+]?\d+(\.\d+)?$/)){
                                 manualBonus=parseFloat(cmds[1]);
                                 manualBonusMin=parseFloat(cmds[2]);
                                 manualBonusMin=_.isNaN(manualBonusMin)?-10000:manualBonusMin;
@@ -1328,19 +1326,19 @@ var GroupInitiative = GroupInitiative || (function() {
                                     '</div>'
                                 );
                             }
-							break;
+                            break;
 
 
-						case 'clear':
+                        case 'clear':
                             Campaign().set({
                                 turnorder: '[]',
                                 initiativepage: (state.GroupInitiative.config.autoOpenInit ? false : Campaign().get('initiativepage'))
                             });
                             notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
-							break;
+                            break;
 
                         case 'bonus':
-                            if(cmds[1] && cmds[1].match(/^[\-\+]?\d+(\.\d+)?$/)){
+                            if(cmds[1] && cmds[1].match(/^[-+]?\d+(\.\d+)?$/)){
                                 manualBonus=parseFloat(cmds[1]);
                                 cont=true;
                             } else {
@@ -1353,9 +1351,9 @@ var GroupInitiative = GroupInitiative || (function() {
                             break;
 
                         default:
-							if(!playerIsGM(msg.playerid)){
-								return;
-							}
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             sendChat('GroupInitiative', '/w gm ' +
                                 '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
                                     'Not a valid command: <b>'+cmds[0]+'</b>'+
@@ -1459,7 +1457,7 @@ var GroupInitiative = GroupInitiative || (function() {
     });
 
     _.each(initRolls, function(ir){
-        sendChat('',ir.index+':'+ir.roll,function(msg){
+        sendChat('',ir.index+':'+ir.roll.replace(/\[\[\s+/,'[[') ,function(msg){
             var parts = msg[0].content.split(/:/),
                 ird = msg[0].inlinerolls[parts[1].match(/\d+/)],
                 rdata = {
@@ -1500,9 +1498,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 }
                 break;
             case '!group-init-config':
-				if(!playerIsGM(msg.playerid)){
-					return;
-				}
+                if(!playerIsGM(msg.playerid)){
+                    return;
+                }
                 if(_.contains(args,'--help')) {
                     showHelp();
                     return;
@@ -1659,7 +1657,7 @@ var GroupInitiative = GroupInitiative || (function() {
 
     return {
         RegisterEventHandlers: registerEventHandlers,
-		ObserveTurnOrderChange: observeTurnOrderChange,
+        ObserveTurnOrderChange: observeTurnOrderChange,
         CheckInstall: checkInstall
     };
 }());
