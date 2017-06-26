@@ -5,8 +5,8 @@
 var Observer = Observer || (function() {
     'use strict';
 
-    var version = '0.1.5',
-        lastUpdate = 1490870139,
+    var version = '0.1.6',
+        lastUpdate = 1498517780,
         schemaVersion = 0.1,
         clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
         updateTokenName = 'Observer Update Token',
@@ -67,7 +67,7 @@ var Observer = Observer || (function() {
 
 
     checkInstall = function() {
-    	log('-=> Observer v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+        log('-=> Observer v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'Observer') || state.Observer.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
@@ -85,27 +85,27 @@ var Observer = Observer || (function() {
         buildTemplates();
     },
 
-	ch = function (c) {
-		var entities = {
-			'<' : 'lt',
-			'>' : 'gt',
-			"'" : '#39',
-			'@' : '#64',
-			'{' : '#123',
-			'|' : '#124',
-			'}' : '#125',
-			'[' : '#91',
-			']' : '#93',
-			'"' : 'quot',
-			'-' : 'mdash',
-			' ' : 'nbsp'
-		};
+    ch = function (c) {
+        var entities = {
+            '<' : 'lt',
+            '>' : 'gt',
+            "'" : '#39',
+            '@' : '#64',
+            '{' : '#123',
+            '|' : '#124',
+            '}' : '#125',
+            '[' : '#91',
+            ']' : '#93',
+            '"' : 'quot',
+            '-' : 'mdash',
+            ' ' : 'nbsp'
+        };
 
-		if(_.has(entities,c) ){
-			return ('&'+entities[c]+';');
-		}
-		return '';
-	},
+        if(_.has(entities,c) ){
+            return ('&'+entities[c]+';');
+        }
+        return '';
+    },
 
     makeConfigOption = function(config,command,text) {
         var onOff = (config ? 'On' : 'Off' ),
@@ -164,34 +164,34 @@ var Observer = Observer || (function() {
 
         sendChat('','/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
-		'Observer v'+version+
-	'</div>'+
-	'<div style="padding-left:10px;margin-bottom:3px;">'+
-		'<p>Manages observer players, who are given the visiblilty (and control) of all player characters.  This is useful for both podcasting views and local play on a single player screen. Note that observers will lose their former character associations when they are nolonger observers.</p>'+
-	'</div>'+
-	'<b>Commands</b>'+
-	'<div style="padding-left:10px;">'+
-		'<b><span style="font-family: serif;">!observer '+ch('[')+'--help'+ch('|')+'--add'+ch('|')+'--del'+ch(']')+'</span></b>'+
-		'<div style="padding-left: 10px;padding-right:20px">'+
-			'<ul>'+
-				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-					'<b><span style="font-family: serif;">--help</span></b> - Shows the Help screen'+
-				'</li> '+
-				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-					'<b><span style="font-family: serif;">--add</span></b> '+ch('<')+'Player Name Fragment'+ch('>')+' '+ch('[')+ch('<')+'Player Name Fragment'+ch('>')+' ...'+ch(']')+' - Adds the matching players as observers.  Partial names should work fine.'+
-				'</li> '+
-				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-					'<b><span style="font-family: serif;">--del</span></b> '+ch('<')+'Player Name Fragment'+ch('>')+' '+ch('[')+ch('<')+'Player Name Fragment'+ch('>')+' ...'+ch(']')+' - Removes the matching players as observers.  Partial names should work fine.'+
-				'</li> '+
-			'</ul>'+
-		'</div>'+
+    '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+        'Observer v'+version+
+    '</div>'+
+    '<div style="padding-left:10px;margin-bottom:3px;">'+
+        '<p>Manages observer players, who are given the visiblilty (and control) of all player characters.  This is useful for both podcasting views and local play on a single player screen. Note that observers will lose their former character associations when they are nolonger observers.</p>'+
+    '</div>'+
+    '<b>Commands</b>'+
+    '<div style="padding-left:10px;">'+
+        '<b><span style="font-family: serif;">!observer '+ch('[')+'--help'+ch('|')+'--add'+ch('|')+'--del'+ch(']')+'</span></b>'+
+        '<div style="padding-left: 10px;padding-right:20px">'+
+            '<ul>'+
+                '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                    '<b><span style="font-family: serif;">--help</span></b> - Shows the Help screen'+
+                '</li> '+
+                '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                    '<b><span style="font-family: serif;">--add</span></b> '+ch('<')+'Player Name Fragment'+ch('>')+' '+ch('[')+ch('<')+'Player Name Fragment'+ch('>')+' ...'+ch(']')+' - Adds the matching players as observers.  Partial names should work fine.'+
+                '</li> '+
+                '<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+                    '<b><span style="font-family: serif;">--del</span></b> '+ch('<')+'Player Name Fragment'+ch('>')+' '+ch('[')+ch('<')+'Player Name Fragment'+ch('>')+' ...'+ch(']')+' - Removes the matching players as observers.  Partial names should work fine.'+
+                '</li> '+
+            '</ul>'+
+        '</div>'+
     '</div>'+
     '<b>Observer Players</b>'+
         '<ul>'+
         getObserverPlayers()+
         '</ul>'+
-	'<b>Configuration</b>'+
+    '<b>Configuration</b>'+
     getAllConfigOptions()+
 '</div>'
         );
@@ -258,7 +258,7 @@ var Observer = Observer || (function() {
 
                             removeObservers();
                             state.Observer.observers=op(state.Observer.observers,players);
-                            assureObservers();
+                            playerViewObservers();
                             sendChat('Observer',`/w gm ${opname} observers: ${playerNames.join()}`);
                             break;
 
@@ -280,9 +280,9 @@ var Observer = Observer || (function() {
                 if(!args.length) {
                     sendChat('','/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
-		'Observer v'+version+
-	'</div>'+
+    '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+        'Observer v'+version+
+    '</div>'+
     getAllConfigOptions()+
 '</div>'
                     );
@@ -340,15 +340,15 @@ var Observer = Observer || (function() {
             imgsrc: clearURL,
             pageid: pageid
         })[0] || createObj('graphic',{
-			imgsrc: clearURL,
-			layer: 'map',
-			pageid: pageid,
-			width: 70,
-			height: 70,
-			left: -1000,
-			top: -1000,
-			name: updateTokenName,
-			showname: false
+            imgsrc: clearURL,
+            layer: 'map',
+            pageid: pageid,
+            width: 70,
+            height: 70,
+            left: -1000,
+            top: -1000,
+            name: updateTokenName,
+            showname: false
         });
     },
 
@@ -371,14 +371,21 @@ var Observer = Observer || (function() {
         _.each(updateTokens,(t)=>t.set({left:(-1000+randomInteger(800)),top:(-1000+randomInteger(800))}));
     },
     
-    assureObservers = function(){
-        _.chain(findObjs({
-            type: 'character'
-        }))
+    playerViewObservers = function(){
+        _.chain(_.flatten([
+            findObjs({
+                type: 'character'
+            }),
+            findObjs({
+                type: 'graphic'
+            })
+        ]))
         .filter((o)=>o.get('controlledby')!=='')
-        .each( (o)=>o.set('controlledby', _.difference(o.get('controlledby').split(/,/),state.Observer.observers).join())); 
+        .each( (o)=>o.set('controlledby', _.union(o.get('controlledby').split(/,/),state.Observer.observers).join()))
+        ; 
         forceUpdateOfVision();
     },
+
 
     handleChangeCharacterControlledBy = function(obj){
         let cb =obj.get('controlledby');
@@ -401,20 +408,20 @@ var Observer = Observer || (function() {
                         character.set('controlledby', _.union(character.get('controlledby').split(/,/),state.Observer.observers).join());
                         forceUpdateOfVision();
                     } else {
-                        assureObservers();
+                        playerViewObservers();
                     }
                 } else {
-                    if(state.Observer.config.initTokens){
+                    if(state.Observer.config.initTokens || token.get('controlledby')!==''){
                         token.set('controlledby', _.union(token.get('controlledby').split(/,/),state.Observer.observers).join());
                         forceUpdateOfVision();
                     } else {
-                        assureObservers();
+                        playerViewObservers();
                     }
                 }
                 return;
             } 
         }
-        assureObservers();
+        playerViewObservers();
     },
 
     registerEventHandlers = function() {
@@ -423,6 +430,7 @@ var Observer = Observer || (function() {
         on('change:campaign:turnorder', handleChangeTurnOrder);
         on('change:campaign:initiativepage', handleChangeTurnOrder);
 
+        /* global GroupInitiative */
         if('undefined' !== typeof GroupInitiative && GroupInitiative.ObserveTurnOrderChange){
             GroupInitiative.ObserveTurnOrderChange(handleChangeTurnOrder);
         }
