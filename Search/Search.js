@@ -5,8 +5,8 @@
 var Search = Search || (function() {
     'use strict';
 
-    const version = '0.1.0',
-        lastUpdate = 1499211259,
+    const version = '0.1.1',
+        lastUpdate = 1499812094,
         schemaVersion = 0.1;
 
 	// Minified Porter Stemmer from: http://tartarus.org/~martin/PorterStemmer/js.txt
@@ -879,7 +879,7 @@ var Search = Search || (function() {
     },
 
 	buildLookup = function(data){
-		const dataTree=JSON.parse(data),
+		const dataTree=JSON.parse(data||'{}'),
 			pathSep=' > ';
 
 		let lookup = {};
