@@ -6,8 +6,8 @@ var globalconfig = globalconfig || undefined;
 var TokenNameNumber = TokenNameNumber || (function() {
     'use strict';
 
-    var version = '0.5.11',
-        lastUpdate = 1492690445,
+    var version = '0.5.12',
+        lastUpdate = 1500994908,
         schemaVersion = 0.5,
         statuses = [
             'red', 'blue', 'green', 'brown', 'purple', 'pink', 'yellow', // 0-6
@@ -60,8 +60,8 @@ var TokenNameNumber = TokenNameNumber || (function() {
             switch(state.TokenNameNumber && state.TokenNameNumber.version) {
                 case 0.3: 
 				case 0.4:
-				  delete state.TokenNameNumber.globalConfigCache;
-                  state.TokenNameNumber.globalconfigCache = {lastsaved:0};
+					delete state.TokenNameNumber.globalConfigCache;
+					state.TokenNameNumber.globalconfigCache = {lastsaved:0};
 
                 /* falls through */
                 case 'UpdateSchemaVersion':
@@ -90,7 +90,7 @@ var TokenNameNumber = TokenNameNumber || (function() {
     },
 
     ch = function (c) {
-    	var entities = {
+		var entities = {
 			'<' : 'lt',
 			'>' : 'gt',
 			"'" : '#39',
@@ -419,7 +419,8 @@ var TokenNameNumber = TokenNameNumber || (function() {
 
     return {
         CheckInstall: checkInstall,
-        RegisterEventHandlers: registerEventHandlers
+        RegisterEventHandlers: registerEventHandlers,
+		NotifyOfCreatedToken: saveTokenId
     };
 }());
 
