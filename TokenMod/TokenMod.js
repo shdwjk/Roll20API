@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    var version = '0.8.34',
-        lastUpdate = 1492117510,
+    var version = '0.8.35',
+        lastUpdate = 1501515620,
         schemaVersion = 0.3,
 
         observers = {
@@ -812,11 +812,11 @@ var TokenMod = TokenMod || (function() {
 				'</pre>'+
 			'</div>'+
 
-			'<p>When using Token ID or Characte ID methods, it'+ch("'")+'s a good idea to use an explicit operation:</p>'+
+			'<p>When using Token ID or Character ID methods, it'+ch("'")+'s a good idea to use an explicit operation:</p>'+
 
 			'<div style="padding-left: 10px;padding-right:20px">'+
 				'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-                    '!token-mod --set controlledby|=@{target|token_id}'+
+                    '!token-mod --set controlledby|='+ch('@')+ch('{')+'target'+ch('|')+'token_id'+ch('}')+
 				'</pre>'+
 			'</div>'+
 
@@ -1409,7 +1409,7 @@ var TokenMod = TokenMod || (function() {
                     } else {
                         cid=mods.represents || token.get('represents') || '';
                         if('' !== cid) {
-                            delta=findObjs({type: 'attribute', characterid: cid, name: f[0]})[0];
+                            delta=findObjs({type: 'attribute', characterid: cid, name: f[0]}, {caseInsensitive: true})[0];
                             if(delta) {
                                 mods[k]=delta.id;
                                 mods[k.split(/_/)[0]+'_value']=delta.get('current');
