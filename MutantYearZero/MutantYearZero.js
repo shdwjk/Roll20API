@@ -626,6 +626,7 @@ var MutantYearZero = MutantYearZero || (function() {
             pushes,
 
             push=false,
+            nopush=false,
             pushButton,
             w=false,
             cmd,
@@ -672,6 +673,16 @@ var MutantYearZero = MutantYearZero || (function() {
             cmd=matches[1];
             hash=parseInt(matches[2],10);
         }
+        
+		if('!wmyz-np' === cmd) {
+			cmd='!wmyz';
+			nopush=true;
+		}
+		
+		if('!myz-np' === cmd) {
+			cmd='!myz';
+			nopush=true;
+		}
 
         switch(cmd) {
             case '!wmyz':
@@ -785,16 +796,18 @@ var MutantYearZero = MutantYearZero || (function() {
                     optional: optional
                 });
 
-                pushButton = (_.reduce([skillDiceArray,baseDiceArray,gearDiceArray],function(m,dice){ return m+getRollableDiceCount(dice);},0) ?
-                    makeButton(
-                        '!'+(w?'w':'')+'myz['+hash+'] '+
-                        makeRerollExpression(skillDiceArray)+
-                        makeRerollExpression(baseDiceArray)+
-                        makeRerollExpression(gearDiceArray),
-                        symbols.push+' '+pushes
-                    ) :
-                    ''
-                );
+				if(!nopush) {
+					pushButton = (_.reduce([skillDiceArray,baseDiceArray,gearDiceArray],function(m,dice){ return m+getRollableDiceCount(dice);},0) ?
+						makeButton(
+							'!'+(w?'w':'')+'myz['+hash+'] '+
+							makeRerollExpression(skillDiceArray)+
+							makeRerollExpression(baseDiceArray)+
+							makeRerollExpression(gearDiceArray),
+							symbols.push+' '+pushes
+						) :
+						''
+					);
+				}
 
                 output = makeOutput([
                         makeLabel( successes+' '+symbols.radioactive, colors.lightGreen),
@@ -902,7 +915,6 @@ on('ready',function() {
     MutantYearZero.CheckInstall();
     MutantYearZero.RegisterEventHandlers();
 });
-
 
 
 
