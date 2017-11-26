@@ -813,7 +813,7 @@ var MutantYearZero = MutantYearZero || (function() {
                 });
 
 				if(!nopush) {
-					pushButton = (_.reduce([skillDiceArray,baseDiceArray,gearDiceArray],function(m,dice){ return m+getRollableDiceCount(dice);},0) ?
+					pushButton = (_.reduce([skillDiceArray,baseDiceArray,gearDiceArray,diffDiceArray],function(m,dice){ return m+getRollableDiceCount(dice);},0) ?
 						makeButton(
 							'!'+(w?'w':'')+'myz['+hash+'] '+
 							makeRerollExpression(skillDiceArray)+
