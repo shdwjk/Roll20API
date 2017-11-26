@@ -23,7 +23,8 @@ var MutantYearZero = MutantYearZero || (function() {
             yellow: '#ddcf43',
             lightYellow: '#FFF699',
             black: '#1d1d1d',
-            lightBlack: '#8F8E8E'
+            lightBlack: '#8F8E8E',
+            red: '#FF0000'
         },
         defaults = {
             css: {
@@ -118,7 +119,7 @@ var MutantYearZero = MutantYearZero || (function() {
         reportingModes = {
             'off': 'None',
             'gm': 'GM',
-            'gm+player': 'GM &amp; Player',
+            'gm+player': 'GM & Player',
             'public': 'Public'
         }, 
         templates = {},
@@ -390,7 +391,7 @@ var MutantYearZero = MutantYearZero || (function() {
 	'</div>'+
 	'<b>Commands</b>'+
 	'<div style="padding-left:10px;">'+
-		'<b><span style="font-family: serif;">!myz '+ch('[')+'Skill Roll'+ch(']')+' '+ch('[')+'Base Roll'+ch(']')+' '+ch('[')+'Gear Roll'+ch(']')+' '+ch('[')+'--'+ch('<')+'Label'+ch('>')+ch('|')+ch('<')+'Message'+ch('>')+' ...'+ch(']')+'</span></b>'+
+		'<b><span style="font-family: serif;">!myz '+ch('[')+'Skill Roll'+ch(']')+' '+ch('[')+'Base Roll'+ch(']')+' '+ch('[')+'Gear Roll'+ch(']')+' '+ch('[')+'Diff Roll'+ch(']')+' '+ch('[')+'--'+ch('<')+'Label'+ch('>')+ch('|')+ch('<')+'Message'+ch('>')+' ...'+ch(']')+'</span></b>'+
 		'<div style="padding-left: 10px;padding-right:20px">'+
 			'<p>Performs a Mutant Year Zero Roll.</p>'+
 			'<ul>'+
@@ -402,6 +403,9 @@ var MutantYearZero = MutantYearZero || (function() {
 				'</li> '+
 				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
 					'<b><span style="font-family: serif;">'+ch('[')+'Gear Roll'+ch(']')+'</span></b> '+ch('-')+' An inline dice expression rolling the d6s ('+symbols.radioactive+').  1s are counted as Gear Degradation ('+symbols.explosion+'). Example: '+ch('[')+ch('[')+'2d6'+ch(']')+ch(']')+
+				'</li> '+
+				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
+					'<b><span style="font-family: serif;">'+ch('[')+'Diff Roll'+ch(']')+'</span></b> '+ch('-')+' An inline dice expression rolling the d6s. 6s reduce the number of successes ('+symbols.radioactive+'). Shall be a positive value only if Skill role is a negative number of dice. Example: '+ch('[')+ch('[')+'0d6'+ch(']')+ch(']')+
 				'</li> '+
 				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
 					'<b><span style="font-family: serif;">'+ch('[')+'--'+ch('<')+'Label'+ch('>')+ch('|')+ch('<')+'Message'+ch('>')+' ...'+ch(']')+'</span></b> '+ch('-')+' An optional set of text to be shown above the die roll. Label may be omitted to just provid a text field.  You can specify as many optional descriptions as you like.'+
@@ -476,12 +480,13 @@ var MutantYearZero = MutantYearZero || (function() {
         var cnt = getRollableDiceCount(dice);
         return ' '+ch('[')+ch('[')+cnt+'d6'+ch(']')+ch(']')+' ';
     },
-    validatePlayerRollHash = function(playerid, hash, skill,base,gear){
+    validatePlayerRollHash = function(playerid, hash, skill,base,gear,diff){
         var obj=state.MutantYearZero.playerRolls[playerid];
         return (obj && obj.hash === hash &&
             obj.dice.skillDice === skill &&
             obj.dice.baseDice === base &&
-            obj.dice.gearDice === gear 
+            obj.dice.gearDice === gear &&
+            obj.dice.diffDice === diff
         );
     },
     getCountsForRoll = function(playerid,hash){
@@ -614,10 +619,12 @@ var MutantYearZero = MutantYearZero || (function() {
             skillDice, // skill: green
             baseDice, // base(stat): yellow, trauma on 1s
             gearDice, // gear: black, degradation on 1s
+            diffDice,
 
             skillDiceArray,
             baseDiceArray,
             gearDiceArray,
+            diffDiceArray, 
 
             successes=0,
             trauma=0,
@@ -720,8 +727,8 @@ var MutantYearZero = MutantYearZero || (function() {
                 skillDice=getDiceCounts(msg,rollIndices[0]);
                 baseDice=getDiceCounts(msg,rollIndices[1]);
                 gearDice=getDiceCounts(msg,rollIndices[2]);
+                diffDice=getDiceCounts(msg,rollIndices[3]);
 
-                
                 if(push &&
                     (
                         _.has(state.MutantYearZero.playerRolls,owner) &&
@@ -730,7 +737,8 @@ var MutantYearZero = MutantYearZero || (function() {
                     !validatePlayerRollHash(owner,hash,
                         getDiceArray(skillDice).length,
                         getDiceArray(baseDice).length,
-                        getDiceArray(gearDice).length
+                        getDiceArray(gearDice).length,
+                        getDiceArray(diffDice).length
                     )
                 ){
                     reportBadPushCounts(msg.playerid);
@@ -738,18 +746,25 @@ var MutantYearZero = MutantYearZero || (function() {
                 }
                 pushedValues=getCountsForRoll(owner,hash);
 
-                successes=pushedValues.success + (skillDice['6']||0) + (baseDice['6']||0) + (gearDice['6']||0) ;
+                successes=pushedValues.success + (skillDice['6']||0) + (baseDice['6']||0) + (gearDice['6']||0) - (diffDice['6']||0);
                 trauma = pushedValues.trauma + (baseDice['1']||0);
                 gearDamage = pushedValues.damage + (gearDice['1']||0);
                 pushes = pushedValues.pushes+1;
 
                 optional = (optional.length && optional) || getOptionalForRoll(owner,hash);
 
-
                 skillDiceArray=_.map(getDiceArray(skillDice),function(v){
                     switch(v){
                         case '6':
-                        case '-6':
+                            return symbols.radioactive;
+                        default:
+                            return v;
+                    }
+                });
+                
+                diffDiceArray=_.map(getDiceArray(diffDice),function(v){
+                    switch(v){
+                        case '6':
                             return symbols.radioactive;
                         default:
                             return v;
@@ -785,7 +800,8 @@ var MutantYearZero = MutantYearZero || (function() {
                    dice: {
                        skillDice: getRollableDiceCount(skillDiceArray),
                        baseDice: getRollableDiceCount(baseDiceArray),
-                       gearDice: getRollableDiceCount(gearDiceArray)
+                       gearDice: getRollableDiceCount(gearDiceArray),
+                       diffDice: getRollableDiceCount(diffDiceArray)
                     },
                     counts: {
                         success: successes,
@@ -802,7 +818,8 @@ var MutantYearZero = MutantYearZero || (function() {
 							'!'+(w?'w':'')+'myz['+hash+'] '+
 							makeRerollExpression(skillDiceArray)+
 							makeRerollExpression(baseDiceArray)+
-							makeRerollExpression(gearDiceArray),
+							makeRerollExpression(gearDiceArray)+
+							makeRerollExpression(diffDiceArray),
 							symbols.push+' '+pushes
 						) :
 						''
@@ -819,11 +836,10 @@ var MutantYearZero = MutantYearZero || (function() {
                         makeOptionalText(optional),
                         makeDiceImages(skillDiceArray,colors.green),
                         makeDiceImages(baseDiceArray,colors.yellow, colors.black),
-                        makeDiceImages(gearDiceArray,colors.black)
+                        makeDiceImages(gearDiceArray,colors.black),
+                        makeDiceImages(diffDiceArray,colors.red)
                     ].join('')
                 );
-
-
 
                 who=getObj('player',owner).get('displayname');
                 if(w){
@@ -834,7 +850,6 @@ var MutantYearZero = MutantYearZero || (function() {
                 } else {
                     sendChat(who, '/direct '+output);
                 }
-
                 break;
 
             case '!myz-config':
@@ -891,9 +906,7 @@ var MutantYearZero = MutantYearZero || (function() {
                                 '<div><b>Unsupported Option:</div> '+a+'</div>'
                             );
                     }
-                            
                 });
-
                 break;
         }
     },
