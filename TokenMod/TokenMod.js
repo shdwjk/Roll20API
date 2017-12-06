@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.36',
-        lastUpdate = 1512431135,
+    const version = '0.8.37',
+        lastUpdate = 1512604267,
         schemaVersion = 0.3,
 
 
@@ -615,6 +615,28 @@ var TokenMod = TokenMod || (function() {
                 tokenChange: []
         },
 
+        getPageForPlayer =( pid ) => {
+            if(playerIsGM(pid)){
+                return  getObj('player',pid).get('lastpage');
+            }
+            let ppages = Campaign().get('playerspecificpages');
+            if(ppages[pid]){
+                return ppages[pid];
+            }
+            return Campaign().get('playerpageid');
+        },
+
+        getActivePages = () => _.union([
+            Campaign().get('playerpageid')],
+            _.values(Campaign().get('playerspecificpages')),
+            _.chain(findObjs({
+                type: 'player',
+                online: true
+            }))
+            .filter((p)=>playerIsGM(p.id))
+            .map((p)=>p.get('lastpage'))
+            .value()
+        ),
 
 
         transforms = {
@@ -872,6 +894,8 @@ var TokenMod = TokenMod || (function() {
                         _h.required(
                             `--help`,
                             `--ignore-selected`,
+                            `--current-page`,
+                            `--active-pages`,
                             `--config`,
                             `--on`,
                             `--off`,
@@ -910,6 +934,8 @@ var TokenMod = TokenMod || (function() {
                     _h.ul(
                         `${_h.bold('--help')} -- Displayes this help`,
                         `${_h.bold('--ignore-selected')} -- Prevents modifications to the selected tokens (only modifies tokens passed with --ids).`,
+                        `${_h.bold('--current-page')} -- Only modifies tokens on the calling player${ch("'")}s current page.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
+                        `${_h.bold('--active-pages')} -- Only modifies tokens on pages where there is a player or the GM.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
                         `${_h.bold('--config')} -- Sets Config options. `,
                         `${_h.bold('--on')} -- Turns on any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
                         `${_h.bold('--off')} -- Turns off any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
@@ -1383,7 +1409,7 @@ var TokenMod = TokenMod || (function() {
                             ),
 							_h.paragraph(`Using ${_h.code('=')} with this syntax will set the current side to the last added image:`),
                             _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3,4,5,9 --ids ${_h.attr.selected('token_id')}`)
+                                _h.pre(`!token-mod --set imgsrc|+=${_h.attr.target('token_id')}:3,4,5,9 --ids ${_h.attr.selected('token_id')}`)
                             ),
 							_h.paragraph(`Images are copied in the order specified.  You can even copy images from a token you${ch("'")}re setting.`),
                             _h.inset(
@@ -1394,7 +1420,7 @@ var TokenMod = TokenMod || (function() {
                                 _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:${ch('*')} --ids ${_h.attr.selected('token_id')}`)
                             ),
 
-							_h.paragraph(`You can remove images from the image list using ${_h.code('-')} followed by the index to remove.  If you remove the currently used image, the side will be set to 0.`),
+							_h.paragraph(`You can remove images from the image list using ${_h.code('-')} followed by the index to remove.  If you remove the currently used image, the side will be set to 1.`),
                             _h.inset(
                                 _h.pre(`!token-mod --set imgsrc|-3`)
                             ),
@@ -2295,6 +2321,7 @@ var TokenMod = TokenMod || (function() {
             var msg = _.clone(msg_orig),
                 args, cmds, ids=[],
                 ignoreSelected = false,
+                pageRestriction=[],
                 modlist={
                     flip: [],
                     on: [],
@@ -2334,7 +2361,7 @@ var TokenMod = TokenMod || (function() {
                 .split(/\s+--/);
 
             switch(args.shift()) {
-                case '!token-mod':
+                case '!token-mod': {
 
                     while(args.length) {
                         cmds=args.shift().match(/([^\s]+[|#]'[^']+'|[^\s]+[|#]"[^"]+"|[^\s]+)/g);
@@ -2373,6 +2400,14 @@ var TokenMod = TokenMod || (function() {
                                 ignoreSelected=true;
                                 break;
 
+                            case 'active-pages':
+                                pageRestriction=getActivePages();
+                                break;
+
+                            case 'current-page':
+                                pageRestriction=[getPageForPlayer(msg.playerid)];
+                                break;
+
                             case 'ids':
                                 ids=_.union(cmds,ids);
                                 break;
@@ -2387,6 +2422,10 @@ var TokenMod = TokenMod || (function() {
                     if(!ignoreSelected) {
                         ids=_.union(ids,_.pluck(msg.selected,'_id'));
                     }
+
+                    let pageFilter = pageRestriction.length
+                        ? (o) => pageRestriction.includes(o.get('pageid'))
+                        : () => true;
 
                     if(ids.length){
                         _.chain(ids)
@@ -2408,11 +2447,13 @@ var TokenMod = TokenMod || (function() {
                         },[])
                         .uniq()
                         .reject(_.isUndefined)
+                        .filter(pageFilter)
                         .each(function(t) {
                             applyModListToToken(modlist,t);
                         });
                     }
-                    break;
+                }
+                break;
 
             }
         } catch (e) {
