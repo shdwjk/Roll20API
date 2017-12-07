@@ -5,13 +5,16 @@
 var ColorEmote = ColorEmote || (function() {
     'use strict';
 
-    var version = '0.1.5',
-        lastUpdate = 1491142093,
+    var version = '0.1.7',
+        lastUpdate = 1512660186,
         schemaVersion = 0.4,
         symbols = {
             whitePawn: '&#'+'9817;',
             blackPawn: '&#'+'9823;',
             dropDown: '&#'+'9660;'
+        },
+        regex = {
+            whisperTarget: /^(?:"([^"]*)"|([^\s]*))\s+/
         },
         parseOrders = {
             'character first': ['character','token','player'],
@@ -187,14 +190,14 @@ var ColorEmote = ColorEmote || (function() {
         defaults.css.emoteImage['max-height'] = imageScales[state.ColorEmote.config.imageScale];
     },
 
-	getBrightness = function (hex) {
-		var r,g,b;
-		hex = hex.replace('#', '');
-		r = parseInt(hex.substr(0, 2),16);
-		g = parseInt(hex.substr(2, 2),16);
-		b = parseInt(hex.substr(4, 2),16);
-		return ((r * 299) + (g * 587) + (b * 114)) / 1000;
-	},
+    getBrightness = function (hex) {
+        var r,g,b;
+        hex = hex.replace('#', '');
+        r = parseInt(hex.substr(0, 2),16);
+        g = parseInt(hex.substr(2, 2),16);
+        b = parseInt(hex.substr(4, 2),16);
+        return ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    },
 
     counterColor = function(color){
         return (getBrightness(color) < (255 / 2)) ? "#FFFFFF" : "#000000";
@@ -230,16 +233,16 @@ var ColorEmote = ColorEmote || (function() {
     },
 
     checkInstall = function() {
-    	log('-=> ColorEmote v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+        log('-=> ColorEmote v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'ColorEmote') || state.ColorEmote.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
-			switch(state.ColorEmote && state.ColorEmote.version) {
-				case 0.3:
-					state.ColorEmote.config.parseOrder = 'character first';
-					state.ColorEmote.config.shortForm = false;
-                    /* break; // intentional dropthrough */
-					
+            switch(state.ColorEmote && state.ColorEmote.version) {
+                case 0.3:
+                    state.ColorEmote.config.parseOrder = 'character first';
+                    state.ColorEmote.config.shortForm = false;
+                    /* break; // intentional dropthrough */ /* falls through */
+                    
                 case 'UpdateSchemaVersion':
                     state.ColorEmote.version = schemaVersion;
                     break;
@@ -263,25 +266,25 @@ var ColorEmote = ColorEmote || (function() {
 
     ch = function (c) {
         var entities = {
-			'<' : 'lt',
-			'>' : 'gt',
-			"'" : '#39',
-			'@' : '#64',
-			'{' : '#123',
-			'|' : '#124',
-			'}' : '#125',
-			'[' : '#91',
-			']' : '#93',
-			'"' : 'quot',
-			'-' : 'mdash',
-			' ' : 'nbsp'
-		};
+            '<' : 'lt',
+            '>' : 'gt',
+            "'" : '#39',
+            '@' : '#64',
+            '{' : '#123',
+            '|' : '#124',
+            '}' : '#125',
+            '[' : '#91',
+            ']' : '#93',
+            '"' : 'quot',
+            '-' : 'mdash',
+            ' ' : 'nbsp'
+        };
 
-		if(_.has(entities,c) ){
-			return ('&'+entities[c]+';');
-		}
-		return '';
-	},
+        if(_.has(entities,c) ){
+            return ('&'+entities[c]+';');
+        }
+        return '';
+    },
 
     makeConfigOption = function(config,command,text) {
         var buttonText = (_.isString(config) ? config : (config ? 'On' : 'Off' )),
@@ -347,70 +350,116 @@ var ColorEmote = ColorEmote || (function() {
              getConfigOption_VignetteMode();
     },
 
-
-    showHelp = function(playerid) {
-		let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
-
-        sendChat('','/w "'+who+'" '+
-'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
-		'ColorEmote v'+version+
-	'</div>'+
-	'<div style="padding-left:10px;margin-bottom:3px;">'+
-		'<p>ColorEmote provides a long form emote block with a colored background and header based on the Character, Token, or Player speaking.  The header contains a representative image for the speaker (Character Avatar, Token Image, or Player Image) as well as the name of the speaker.</p>'+
-        '<p>The speaker is the first one of the following to be found:</p>'+
-        '<ol>'+
-            '<li>An explicit Token or Character ID specified with the bracketed command syntax:'+
-                '<div style="padding-left: 10px;padding-right:20px">'+
-                    '<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-                        '!cem'+ch('[')+ch('@')+ch('{')+'target'+ch('|')+'token_id'+ch('}')+ch(']')+' Does the things!'+
-                    '</pre>'+
-                '</div>'+
-            '</li>'+
-            '<li>The selected token'+ch("'")+'s character.</li>'+
-            '<li>The selected token.</li>'+
-            '<li>The character the player is speaking as.</li>'+
-            '<li>The player.</li>'+
-        '</ol>'+
-        '<p>Background color is determined based on what is speaking.  The foreground color will be either black or white depending on the brightness of the background color.  The background color is chosen using the following methods:</p>'+
-        '<ul>'+
-            '<li><b>Characters</b> will have the color stored in an attribute named <b>color</b> or the player color.  The <b>color</b> attribute must be specified in standard html form with the # sign.  ex: #ff3322 or #f32 </li>'+
-            '<li><b>Tokens</b> will have their aura2 color.</li>'+
-            '<li><b>Players</b> will have their player color.</li>'+
-        '</ul>'+
-        '<p>If it is currently the speaker'+ch("'")+'s turn, a black pawn ('+symbols.blackPawn+') on a white circle will be displayed on the right side. (Does not apply to Players speaking.)</p>'+
-        '<p>Multi-line emote messages may be specified by surrounding them in '+ch('{')+ch('{')+' and '+ch('}')+ch('}')+'.  You can insert new lines by pressing shift-enter.  Example:</p>'+
-            '<div style="padding-left: 10px;padding-right:20px">'+
-                '<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-                    '!cem {{ Does the things!<br><br>But it fails in the usual way... }}'+
-                '</pre>'+
-            '</div>'+
-	'</div>'+
-	'<b>Commands</b>'+
-	'<div style="padding-left:10px;">'+
-		'<b><span style="font-family: serif;">!cem'+ch('[')+' token_id '+ch('|')+' character_id '+ch(']')+' '+ch('[')+' '+ch('<')+'Message'+ch('>')+' '+ch('|')+' '+ch('{')+ch('{')+' '+ch('<')+'Multi-line Message'+ch('>')+' '+ch('}')+ch('}')+' '+ch(']')+'</span></b>'+
-		'<div style="padding-left: 10px;padding-right:20px">'+
-			'<p>Outputs an Emote. Note that the optional bracketed syntax has no space between the !cem and leading '+ch('[')+'.</p>'+
-		'</div>'+
-    '</div>'+
-	'<div style="padding-left:10px;">'+
-		'<b><span style="font-family: serif;">!wcem'+ch('[')+' token_id '+ch('|')+' character_id '+ch(']')+' '+ch('[')+' '+ch('<')+'Message'+ch('>')+' '+ch('|')+' '+ch('{')+ch('{')+' '+ch('<')+'Multi-line Message'+ch('>')+' '+ch('}')+ch('}')+' '+ch(']')+'</span></b>'+
-		'<div style="padding-left: 10px;padding-right:20px">'+
-			'<p>Identical to !cem except that the output is whispered to the player emoting and the GM.</p>'+
-		'</div>'+
-    '</div>'+
-    ( playerIsGM(playerid)
-        ?  '<b>Configuration</b>' + getAllConfigOptions() 
-        : ''
-    )+
-'</div>'
-        );
+    help = {
+        outer: (o) => `<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">${o}</div>`,
+        title: (t,v) => `<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">${t} v${v}</div>`,
+        subhead: (o) => `<b>${o}</b>`,
+        optional: (o) => `${ch('[')}${Array.isArray(o) ? o.join(` ${ch('|')} `):o}${ch(']')}`,
+        required: (o) => `${ch('<')}${Array.isArray(o) ? o.join(` ${ch('|')} `):o}${ch('>')}`,
+        header: (o) => `<div style="padding-left:10px;margin-bottom:3px;">${Array.isArray(o) ? o.join(''):o}</div>`,
+        paragraph: (o) => `<p>${o}</p>`,
+        items: (o) => `<li>${Array.isArray(o) ? o.join('</li><li>') : o}</li>`,
+        ol: (o) => `<ol>${help.items(o)}</ol>`,
+        ul: (o) => `<ul>${help.items(o)}</ul>`,
+        inset: (o) => `<div style="padding-left: 10px;padding-right:20px">${o}</div>`,
+        pre: (o) =>`<pre style="white-space:normal;word-break:normal;word-wrap:normal;">${o}</pre>`,
+        attr: {
+            bare: (o)=>`${ch('@')}${ch('{')}${o}${ch('}')}`,
+            selected: (o)=>`${ch('@')}${ch('{')}selected${ch('|')}${o}${ch('}')}`,
+            target: (o)=>`${ch('@')}${ch('{')}target${ch('|')}${o}${ch('}')}`,
+            char: (o,c)=>`${ch('@')}${ch('{')}${c||'CHARACTER NAME'}${ch('|')}${o}${ch('}')}`
+        },
+        bold: (o) => `<b>${o}</b>`,
+        font: {
+            command: (o)=>`<b><span style="font-family:serif;">${o}</span></b>`,
+        }
+    },
+    _h = {
+        outer: (...o) => `<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">${o.join(' ')}</div>`,
+        title: (t,v) => `<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">${t} v${v}</div>`,
+        subhead: (...o) => `<b>${o.join(' ')}</b>`,
+        minorhead: (...o) => `<u>${o.join(' ')}</u>`,
+        optional: (...o) => `${ch('[')}${o.join(` ${ch('|')} `)}${ch(']')}`,
+        required: (...o) => `${ch('<')}${o.join(` ${ch('|')} `)}${ch('>')}`,
+        header: (...o) => `<div style="padding-left:10px;margin-bottom:3px;">${o.join(' ')}</div>`,
+        section: (s,...o) => `${_h.subhead(s)}${_h.inset(...o)}`,
+        paragraph: (...o) => `<p>${o.join(' ')}</p>`,
+        items: (o) => `<li>${o.join('</li><li>')}</li>`,
+        ol: (...o) => `<ol>${_h.items(o)}</ol>`,
+        ul: (...o) => `<ul>${_h.items(o)}</ul>`,
+        grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`,
+        cell: (o) =>  `<div style="width: 130px; padding: 0 3px; float: left;">${o}</div>`,
+        statusCell: (o) =>  `<div style="width: 130px; padding: 0 3px; height: 1.5em; float: left;">${statusImg(o)}${o}</div>`,
+        inset: (...o) => `<div style="padding-left: 10px;padding-right:20px">${o.join(' ')}</div>`,
+        pre: (...o) =>`<div style="border:1px solid #e1e1e8;border-radius:4px;padding:8.5px;margin-bottom:9px;font-size:12px;white-space:normal;word-break:normal;word-wrap:normal;background-color:#f7f7f9;font-family:monospace;overflow:auto;">${o.join(' ')}</div>`,
+        preformatted: (...o) =>_h.pre(o.join('<br>').replace(/\s/g,ch(' '))),
+        code: (...o) => `<code>${o.join(' ')}</code>`,
+        attr: {
+            bare: (o)=>`${ch('@')}${ch('{')}${o}${ch('}')}`,
+            selected: (o)=>`${ch('@')}${ch('{')}selected${ch('|')}${o}${ch('}')}`,
+            target: (o)=>`${ch('@')}${ch('{')}target${ch('|')}${o}${ch('}')}`,
+            char: (o,c)=>`${ch('@')}${ch('{')}${c||'CHARACTER NAME'}${ch('|')}${o}${ch('}')}`
+        },
+        bold: (...o) => `<b>${o.join(' ')}</b>`,
+        italic: (...o) => `<i>${o.join(' ')}</i>`,
+        font: {
+            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`,
+        }
     },
 
 
+    showHelp = function(playerid) {
+        let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
 
+        sendChat('','/w "'+who+'" '+
+            _h.outer(
+                _h.title('ColorEmote',version),
+                _h.header(
+                    _h.paragraph('ColorEmote provides a long form emote block with a colored background and header based on the Character, Token, or Player speaking.  The header contains a representative image for the speaker (Character Avatar, Token Image, or Player Image) as well as the name of the speaker.'),
+                    _h.paragraph('The speaker is the first one of the following to be found:'),
+                    _h.ol(
+                        'An explicit Token or Character ID specified with the bracketed command syntax:'+
+                        _h.inset(
+                            _h.pre(`!cem${_h.optional(_h.attr.target('token_id'))} Does the things!`)
+                        ),
+                        `The selected token${ch("'")}s character.`,
+                        'The selected token.',
+                        'The character the player is speaking as.',
+                        'The player.'
+                    ),
+                    _h.paragraph('Background color is determined based on what is speaking.  The foreground color will be either black or white depending on the brightness of the background color.  The background color is chosen using the following methods:'),
+                    _h.ul(
+                        `${_h.bold('Characters')} will have the color stored in an attribute named ${_h.bold('color')} or the player color.  The ${_h.bold('color')} attribute must be specified in standard html form with the # sign.  ex: #ff3322 or #f32`,
+                        `${_h.bold('Tokens')} will have their aura2 color.`,
+                        `${_h.bold('Players')} will have their player color.`
+                    ),
+                    _h.paragraph( `If it is currently the speaker${ch("'")}s turn, a black pawn (${symbols.blackPawn}) on a white circle will be displayed on the right side. (Does not apply to Players speaking.)`),
+                    _h.paragraph(`Multi-line emote messages may be specified by surrounding them in ${ch('{')}${ch('{')} and ${ch('}')}${ch('}')}.  You can insert new lines by pressing shift-enter.  Example:`),
+                    _h.inset(
+                        _h.pre(`!cem ${ch('{')}${ch('{')} Does the things!<br><br>But it fails in the usual way... ${ch('}')}${ch('}')}`)
+                    )
+                ),
+                _h.subhead('Commands'),
+                _h.inset(
+                    _h.font.command(`!cem${_h.optional(` token_id ${ch('|')} character_id `)} ${_h.optional(` ${_h.required('Message')} ${ch('|')} ${ch('{')}${ch('{')} ${_h.required('Multi-line Message')} ${ch('}')}${ch('}')}`)}`)+
+                    _h.paragraph(`Outputs an Emote. Note that the optional bracketed syntax has no space between the !cem and leading ${ch('[')}`)
+                ),
+                _h.inset(
+                    _h.font.command(`!wcem${_h.optional(` token_id ${ch('|')} character_id `)} ${_h.optional(` ${_h.required('Message')} ${ch('|')} ${ch('{')}${ch('{')} ${_h.required('Multi-line Message')} ${ch('}')}${ch('}')}`)}`)+
+                    _h.paragraph(`Identical to !cem except that the output is whispered to the player emoting and the GM.`)
+                ),
+                _h.inset(
+                    _h.font.command(`!wpcem${_h.optional(` token_id ${ch('|')} character_id `)} ${_h.required('target')} ${_h.optional(` ${_h.required('Message')} ${ch('|')} ${ch('{')}${ch('{')} ${_h.required('Multi-line Message')} ${ch('}')}${ch('}')}`)}`)+
+                    _h.paragraph(`Identical to !wcem except output is whispered to the specified ${_h.bold('target')}, which can be a player or character name.  Be sure to wrap a multi-word name with double quotes. ex: ${ch('"')}Bob the Slayer${ch('"')}`)
+                ),
+                ( playerIsGM(playerid)
+                    ?  _h.subhead('Configuration') + getAllConfigOptions() 
+                    : ''
+                )
+            )
+        );
+    },
 
-    
 
     getCharacterAndTokenTurn = function(){
         var token = getObj('graphic',(JSON.parse(Campaign().get('turnorder')||'[]')[0]||{id:null}).id);
@@ -429,9 +478,9 @@ var ColorEmote = ColorEmote || (function() {
     performOutput = function(details){
         var output=makeOutput(details.name,details.img,details.isTurn,details.message,details.color);
         if(details.whisper){
-            sendChat('','/w gm '+output);
-            if(!playerIsGM(details.playerid)){
-                sendChat('','/w "'+details.who+'" '+output);
+            sendChat(`"${details.name}" to "${details.target}"`,`/w "${details.target}" ${output}`);
+            if(!  ('gm'===details.target && playerIsGM(details.playerid))){
+                sendChat(`"${details.name}" to "${details.target}"`,`/w "${details.who}" ${output}`);
             }
         } else {
             sendChat('','/direct '+output);
@@ -441,29 +490,30 @@ var ColorEmote = ColorEmote || (function() {
     handleInput = function(msg_orig) {
         var msg = _.clone(msg_orig),
             args, cmd, matches, ctid, turnData,
+            wTarget = 'gm',
             parsers={},
             player,character,token,data,
-            img, name, text, color,who,
-            isTurn = false, whisper=false
-            ;
+            img, name, text, color, who,
+            isTurn = false, whisper=false,
+            isHelp=false;
 
         if (msg.type !== "api") {
             return;
         }
         
-		if(_.has(msg,'inlinerolls')){
-			msg.content = _.chain(msg.inlinerolls)
-				.reduce(function(m,v,k){
-					m['$[['+k+']]']=v.results.total || 0;
-					return m;
-				},{})
-				.reduce(function(m,v,k){
-					return m.replace(k,v);
-				},msg.content)
-				.value();
-		}
+        if(_.has(msg,'inlinerolls')){
+            msg.content = _.chain(msg.inlinerolls)
+                .reduce(function(m,v,k){
+                    m['$[['+k+']]']=v.results.total || 0;
+                    return m;
+                },{})
+                .reduce(function(m,v,k){
+                    return m.replace(k,v);
+                },msg.content)
+                .value();
+        }
 
-		args = msg.content
+        args = msg.content
             .replace(/<br\/>\n/g, '<br/>')
             .replace(/(\{\{(.*?)\}\})/g," $2 ")
             .split(/\s+/);
@@ -474,30 +524,39 @@ var ColorEmote = ColorEmote || (function() {
             cmd=matches[1];
             ctid=matches[2];
         }
+
+        isHelp = ( 0 === args.length || _.contains(args,'--help'));
+        text=args.join(' ');
+
         switch(cmd) {
+            case '!wpcem':
+                wTarget = text.match(regex.whisperTarget)[1];
+                text = text.replace(regex.whisperTarget,'');
+                /* break; // intentional dropthrough */ /* falls through */
+
             case '!wcem':
                 whisper=true;
-                /* break; // intentional drop thru */
+                /* break; // intentional dropthrough */ /* falls through */
 
             case '!cem':
 
-                if( 0 === args.length || _.contains(args,'--help')) {
+                if(isHelp){
                     showHelp(msg.playerid);
                     return;
                 }
 
+
                 player=(getObj('player',msg.playerid)||{get:function(prop){
-					let propmap={
-						speakingas: 'gm|0',
-						displayname: 'API',
-						_displayname: 'API',
-						d20userid: 0,
-						color: '#000000'
-					};
-					return propmap[prop];
-				}});
+                    let propmap={
+                        speakingas: 'gm|0',
+                        displayname: 'API',
+                        _displayname: 'API',
+                        d20userid: 0,
+                        color: '#000000'
+                    };
+                    return propmap[prop];
+                }});
                 turnData=getCharacterAndTokenTurn();
-                text=args.join(' ');
 
                 
                 // explicit token
@@ -539,6 +598,7 @@ var ColorEmote = ColorEmote || (function() {
                                     isTurn: isTurn,
                                     color: color,
                                     whisper: whisper,
+                                    target: wTarget,
                                     message: text
                                 });
 
@@ -557,6 +617,7 @@ var ColorEmote = ColorEmote || (function() {
                             isTurn: isTurn,
                             color: color,
                             whisper: whisper,
+                            target: wTarget,
                             message: text
                         });
                     },
@@ -572,6 +633,7 @@ var ColorEmote = ColorEmote || (function() {
                             isTurn: isTurn,
                             color: color,
                             whisper: whisper,
+                            target: wTarget,
                             message: text
                         });
                     }
@@ -599,14 +661,14 @@ var ColorEmote = ColorEmote || (function() {
                     showHelp(msg.playerid);
                     return;
                 }
-				who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+                who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
                 if(!args.length) {
                     sendChat('','/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
-		'ColorEmote v'+version+
-	'</div>'+
+    '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+        'ColorEmote v'+version+
+    '</div>'+
     '<b>Configuration</b>'+
     getAllConfigOptions()+
 '</div>'
