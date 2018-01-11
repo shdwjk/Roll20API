@@ -5,8 +5,8 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.27',
-        lastUpdate = 1498239221,
+    var version = '0.9.28',
+        lastUpdate = 1515682154,
         schemaVersion = 1.1,
         bonusCache = {},
         observers = {
@@ -674,6 +674,13 @@ var GroupInitiative = GroupInitiative || (function() {
                         '</ul>'+
                     '</div>'+
                 '</div>'+
+
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--toggle-turnorder</i> '+ch('[')+'bonus'+ch(']')+'</span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>Opens or closes the Turnorder window.</p>'+
+                    '</div>'+
+                '</div>'+
    
                 '<div style="padding-left:10px;">'+
                     '<b><span style="font-family: serif;">!group-init <i>--sort</i></span></b>'+
@@ -994,6 +1001,9 @@ var GroupInitiative = GroupInitiative || (function() {
                             break;
 
                         case 'stack': {
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             cmds.shift();
                             let operation=cmds.shift(),
                                 showdate=function(ms){
@@ -1250,6 +1260,21 @@ var GroupInitiative = GroupInitiative || (function() {
                             }
                             break;
 
+                        case 'toggle-turnorder':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
+                            if(false !== Campaign().get('initiativepage') ){
+                                Campaign().set({
+                                    initiativepage: false
+                                });
+                            } else {
+                                let player = (getObj('player',msg.playerid)||{get: ()=>true});
+                                Campaign().set({
+                                    initiativepage: player.get('_lastpage')
+                                });
+                            }
+                            break;
                         case 'reroll':
                             isReroll=true;
                             if(cmds[1] && cmds[1].match(/^[-+]?\d+(\.\d+)?$/)){
@@ -1268,6 +1293,9 @@ var GroupInitiative = GroupInitiative || (function() {
                             break;
 
                         case 'sort':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             Campaign().set('turnorder', JSON.stringify(
                                 sorters[state.GroupInitiative.config.sortOption](
                                     JSON.parse(Campaign().get('turnorder'))||[]
@@ -1277,6 +1305,9 @@ var GroupInitiative = GroupInitiative || (function() {
                             break;
 
                         case 'adjust':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             if(cmds[1] && cmds[1].match(/^[-+]?\d+(\.\d+)?$/)){
                                 manualBonus=parseFloat(cmds[1]);
                                 manualBonusMin=parseFloat(cmds[2]);
@@ -1303,6 +1334,9 @@ var GroupInitiative = GroupInitiative || (function() {
                             break;
 
                         case 'adjust-current':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             if(cmds[1] && cmds[1].match(/^[-+]?\d+(\.\d+)?$/)){
                                 manualBonus=parseFloat(cmds[1]);
                                 manualBonusMin=parseFloat(cmds[2]);
@@ -1330,6 +1364,9 @@ var GroupInitiative = GroupInitiative || (function() {
 
 
                         case 'clear':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             Campaign().set({
                                 turnorder: '[]',
                                 initiativepage: (state.GroupInitiative.config.autoOpenInit ? false : Campaign().get('initiativepage'))

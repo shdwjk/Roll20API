@@ -5,20 +5,23 @@
 var RecursiveTable = RecursiveTable || (function() {
 	'use strict';
 
-	var version = '0.2.1',
-	lastUpdate = 1500986989,
+	var version = '0.2.3',
+	lastUpdate = 1515681102,
 	schemaVersion = 0.1,
+	clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
 	defaults = {
 		maxdepth: 10,
 		delimiter: ', ',
 		dropempty: true,
 		sort: false,
 		prefaceuniquespace: false,
-	emptydefault: '',
+		showicons: false,
+		iconlabel: true,
+		emptydefault: '',
 		who: ''
 	},
 	regex = {
-		rtCmd: /^(!rt)(?:\[([^\]]*)\])?\s*/,
+		rtCmd: /^(!rt)(?:\[([^\]]*)\])?(?:\s+|$)/,
 		inlineRoll: /\[\[.*\]\]/
 
 	},
@@ -51,6 +54,7 @@ var RecursiveTable = RecursiveTable || (function() {
 			'|' : '#124',
 			'}' : '#125',
 			'[' : '#91',
+			'\\' : '#92',
 			']' : '#93',
 			'&' : 'amp',
 			'"' : 'quot',
@@ -88,92 +92,126 @@ var RecursiveTable = RecursiveTable || (function() {
 		};
 	}()),
 
-	makeSuffixer = function(suffix){
-		let n = 0;
-		return (val)=>val+suffix.repeat(n++);
+	makePrefixer = function(prefix){
+        let c = {};
+		return (val)=>{
+            val = val.trim();
+            c[val]=c[val]||0;
+            return prefix.repeat(c[val]++)+val;
+        };
 	},
 
-	showHelp = function(who) {
+	makeSuffixer = function(suffix){
+        let c = {};
+		return (val)=>{
+            val = val.trim();
+            c[val]=c[val]||0;
+            return val+suffix.repeat(c[val]++);
+        };
+	},
+
+    _h = {
+        outer: (...o) => `<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">${o.join(' ')}</div>`,
+        title: (t,v) => `<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">${t} v${v}</div>`,
+        subhead: (...o) => `<b>${o.join(' ')}</b>`,
+        minorhead: (...o) => `<u>${o.join(' ')}</u>`,
+        optional: (...o) => `${ch('[')}${o.join(` ${ch('|')} `)}${ch(']')}`,
+        required: (...o) => `${ch('<')}${o.join(` ${ch('|')} `)}${ch('>')}`,
+        header: (...o) => `<div style="padding-left:10px;margin-bottom:3px;">${o.join(' ')}</div>`,
+        section: (s,...o) => `${_h.subhead(s)}${_h.inset(...o)}`,
+        paragraph: (...o) => `<p>${o.join(' ')}</p>`,
+        items: (o) => `<li>${o.join('</li><li>')}</li>`,
+        ol: (...o) => `<ol>${_h.items(o)}</ol>`,
+        ul: (...o) => `<ul>${_h.items(o)}</ul>`,
+        grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`,
+        cell: (o) =>  `<div style="width: 130px; padding: 0 3px; float: left;">${o}</div>`,
+        inset: (...o) => `<div style="padding-left: 10px;padding-right:20px">${o.join(' ')}</div>`,
+        pre: (...o) =>`<div style="border:1px solid #e1e1e8;border-radius:4px;padding:8.5px;margin-bottom:9px;font-size:12px;white-space:normal;word-break:normal;word-wrap:normal;background-color:#f7f7f9;font-family:monospace;overflow:auto;">${o.join(' ')}</div>`,
+        preformatted: (...o) =>_h.pre(o.join('<br>').replace(/\s/g,ch(' '))),
+        code: (...o) => `<code>${o.join(' ')}</code>`,
+        attr: {
+            bare: (o)=>`${ch('@')}${ch('{')}${o}${ch('}')}`,
+            selected: (o)=>`${ch('@')}${ch('{')}selected${ch('|')}${o}${ch('}')}`,
+            target: (o)=>`${ch('@')}${ch('{')}target${ch('|')}${o}${ch('}')}`,
+            char: (o,c)=>`${ch('@')}${ch('{')}${c||'CHARACTER NAME'}${ch('|')}${o}${ch('}')}`
+        },
+        bold: (...o) => `<b>${o.join(' ')}</b>`,
+        italic: (...o) => `<i>${o.join(' ')}</i>`,
+        font: {
+            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`,
+        }
+    },
+
+	showHelp = function(playerid) {
+        let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
 
 		sendChat('','/w "'+who+'" '+
-			'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-			'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
-			'RecursiveTable v'+version+
-			'</div>'+
-			'<div style="padding-left:10px;margin-bottom:3px;">'+
-			'<p>RecursiveTable provides a way to expand the results of Rollable Tables which have inline rolls within them. Now with options and support for whispering Roll Templates.</p>'+
-			'<p>When using Rolltemplates, your message must have at least one <code>{{</code> that in not coming from a Rollable Table.  When using the <code>PrefaceUniqueSpace</code> option, be sure your <code>{{name=something}}</code> is first.</p>'+
-			'</div>'+
-			'<b>Commands</b>'+
-			'<div style="padding-left:10px;">'+
-			'<b><span style="font-family: serif;">!rt[options] [--help| ... ]</span></b>'+
-			'<div style="padding-left: 10px;padding-right:20px">'+
-			'<p>Performs all inline rolls, then continues to expand inline rolls (to a maximum depth of around 10).</p>'+
-			'<ul>'+
-			'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-			'<b><span style="font-family: serif;">--help</span></b> '+ch('-')+' Shows the Help screen'+
-			'</li> '+
-			'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-			'<b><span style="font-family: serif;">...</span></b> '+ch('-')+' Anything following !rt will be expanded, then sent to to the chat.'+
-			'</li> '+
-			'</ul>'+
-			'</div>'+
-			'<div style="padding-left: 10px;padding-right:20px">'+
-			'<p><b>Options</b> - These are inline settings to adjust how the rolls are put together.  Options are specified in <code>'+ch('[')+'</code> <code>'+ch(']')+'</code> right after the <code>!rt</code>:</p>'+
-			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-			'!rt'+ch('[')+'delimiter:-|maxdepth:20'+ch(']')+' something'+
-			'</pre>'+
-			'<p>Options are separated with the verticle pipe symbol (<code>'+ch('|')+'</code>) and have an optional argument separated by a <b>:</b>. Omitting the argument causes <b>true</b> to be used for switch options, or the default value.  All Options are case insenstive.  Options are one of 3 types: Number (any integer), Boolean (true values: <code>on</code>, <code>yes</code>, <code>y</code>, <code>true</code>.  false values: <code>off</code>, <code>no</code>, <code>n</code>, <code>false</code>), or text (any value except <code>]</code>, use <code>\\'+ch('|')+'</code> for <code>'+ch('|')+'</code>) </p>'+
-			'<ul>'+
-			'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-			'<b><span style="font-family: serif;">MaxDepth</span></b> '+ch('-')+' Specifies the number of recursions to perform.  <b>Default: 10 (Number)</b>'+
-			'</li> '+
-			'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-			'<b><span style="font-family: serif;">Delimiter</span></b> '+ch('-')+' A string of text to put between table items. The special value <code>BR</code> will cause html line breaks to be used. <b>Default: <code>, </code>(String)</b>'+
-			'</li> '+
-			'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-			'<b><span style="font-family: serif;">DropEmpty</span></b> '+ch('-')+' Causes empty table items to be dropped before joining with the delimiter. <b>Default: on (Boolean)</b>'+
-			'</li> '+
-			'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-			'<b><span style="font-family: serif;">Sort</span></b> '+ch('-')+' Causes table items to be sorted before being joined by the delimiter.  Note that this happens at a single layer of recursion, so if you have table items made of of lists of table items, the sorting will only be at each level. <b>Default: off (Boolean)</b>'+
-			'</li> '+
-			'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
-			'<b><span style="font-family: serif;">PrefaceUniqueSpaces</span></b> '+ch('-')+' Causes the final message to have a unique number of spaces inserted after each <code>'+ch('{')+ch('{')+'</code>. This is useful if you'+ch("'")+'re building Roll Templates and might have multiple lines with the same label. <b>Default: off (Boolean)</b>'+
-				'</li> '+
-			'</ul>'+
-			'</div>'+
-			'<b>Examples</b>'+
-			'<div style="padding-left:10px;">'+
-			'<p>Basic usage, whispering treasure to the gm.</p>'+
-			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-			'!rt /w gm '+ch('[')+ch('[')+'1t'+ch('[')+'treasure-table'+ch(']')+ch(']')+ch(']')+
-			'</pre>'+
-			'<p>Whispering a roll template:</p>'+
-			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-			'!rt /w gm '+ch('&')+ch('{')+'template:default'+ch('}')+ch('{')+ch('{')+'treasure='+ch('[')+ch('[')+'1t'+ch('[')+'treasure-table'+ch(']')+ch(']')+ch(']')+''+ch('}')+ch('}')+''+
-			'</pre>'+
-			'<p>Whispering a roll template, with each item on a separate line:</p>'+
-			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-			'!rt'+ch('[')+'Delimiter:BR'+ch(']')+' /w gm '+ch('&')+ch('{')+'template:default'+ch('}')+ch('{')+ch('{')+'treasure='+ch('[')+ch('[')+'1t'+ch('[')+'treasure-table'+ch(']')+ch(']')+ch(']')+''+ch('}')+ch('}')+''+
-			'</pre>'+
-			'<p>Whispering a roll template, with each item on a separate line, with empty results replaced by <code>Nothing</code>:</p>'+
-			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-			'!rt'+ch('[')+'Delimiter:BR|EmptyDefault:Nothing'+ch(']')+' /w gm '+ch('&')+ch('{')+'template:default'+ch('}')+ch('{')+ch('{')+'treasure='+ch('[')+ch('[')+'1t'+ch('[')+'treasure-table'+ch(']')+ch(']')+ch(']')+''+ch('}')+ch('}')+''+
-			'</pre>'+
-			'<p>Whispering a roll template, with each item on a separate line, with a table that is returning <code>{{label=values'+ch('}')+ch('}')+'</code>:</p>'+
-			'<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
-			'!rt'+ch('[')+'Delimiter:BR|PrefaceUniqueSpace'+ch(']')+' '+ch('&')+ch('{')+'template:default'+ch('}')+ch('{')+ch('{')+'name=Treasure Bundles'+ch('}')+ch('}')+''+ch('[')+ch('[')+'5t'+ch('[')+'treasure-bundle'+ch(']')+ch(']')+ch(']')+
-			'</pre>'+
-			'</div>'+
-			'</div>'+
-			'</div>'
+            _h.outer(
+                _h.title('RecursiveTable',version),
+                _h.header(
+                    _h.paragraph('RecursiveTable provides a way to expand the results of Rollable Tables which have inline rolls within them. Now with options and support for whispering Roll Templates.'),
+                    _h.paragraph(`When using Rolltemplates, your message must have at least one ${_h.code(ch('{')+ch('{'))} that in not coming from a Rollable Table.  When using the ${_h.code('PrefaceUniqueSpace')} option, be sure your ${_h.code(`${ch('{')}${ch('{')}name=something${ch('}')}${ch('}')}`)} is first.`)
+                ),
+                _h.subhead('Commands'),
+                _h.inset(
+                    _h.font.command( `!rt${_h.optional('options')} ${_h.optional('--help', '...')}`),
+                    _h.paragraph('Performs all inline rolls, then continues to expand inline rolls (to a maximum depth of around 10).'),
+                    _h.ul(
+                        `${_h.bold('--help')} -- Shows the Help screen`,
+                        `${_h.bold('...')} -- Anything following ${_h.code('!rt')} will be expanded, then sent to to the chat.`
+                    ),
+
+                    _h.section('Options'),
+                    _h.paragraph(`These are inline settings to adjust how the rolls are put together.  Options are specified in ${_h.code(ch('['))} ${_h.code(ch(']'))} right after the ${_h.code('!rt')}:`),
+                    _h.inset(
+                        _h.pre(`!rt[delimiter:-|maxdepth:20] something`)
+                    ),
+                    _h.paragraph( `Options are separated with the verticle pipe symbol (${_h.code(ch('|'))}) and have an optional argument separated by a ${_h.code(':')} or by ${_h.code('%%')} (Useful for API Command buttons where : causes problems). Omitting the argument causes ${_h.bold('true')} to be used for switch options, or the default value.  All Options are case insenstive.  Options are one of 3 types: Number (any integer), Boolean (true values: ${_h.code('on')}, ${_h.code('yes')}, ${_h.code('y')}, ${_h.code('true')}.  false values: ${_h.code('off')}, ${_h.code('no')}, ${_h.code('n')}, ${_h.code('false')}), or text (any value except ${_h.code(']')}, use ${_h.code(ch('\\')+ch('|'))} for ${_h.code(ch('|'))})`),
+
+                    _h.ul(
+                        `${_h.bold('MaxDepth')} -- Specifies the number of recursions to perform.  ${_h.bold('Default: 10 (Number)')}`,
+                        `${_h.bold('Delimiter')} -- A string of text to put between table items. The special value ${_h.code('BR')} will cause html line breaks to be used. ${_h.bold(`Default: ${_h.code(', ')} (String)`)}`,
+                        `${_h.bold('DropEmpty')} -- Causes empty table items to be dropped before joining with the delimiter. ${_h.bold('Default: on (Boolean)')}`,
+                        `${_h.bold('Sort')} -- Causes table items to be sorted before being joined by the delimiter.  Note that this happens at a single layer of recursion, so if you have table items made of of lists of table items, the sorting will only be at each level. ${_h.bold('Default: off (Boolean)')}`,
+                        `${_h.bold('PrefaceUniqueSpace')} -- Causes the final message to have a unique number of spaces inserted after each ${_h.code(ch('{')+ch('{'))}. This is useful if you${ch("'")}re building Roll Templates and might have multiple lines with the same label. ${_h.bold('Default: off (Boolean)')}`,
+                        `${_h.bold('ShowIcons')} -- Adds table avatars as inline icons, if they exist. ${_h.bold('Default: off (Boolean)')}`,
+                        `${_h.bold('IconLabel')} -- When table icons are shown, the text for the row is shown as a label below it. ${_h.bold('Default: on (Boolean)')}`
+                    ),
+
+                    _h.section('Examples'),
+                    
+                    _h.paragraph('Basic usage, whispering treasure to the gm:'),
+                    _h.inset(
+                        _h.pre( `!rt /w gm ${ch('[')+ch('[')}1t${ch('[')}treasure-table${ch(']')+ch(']')+ch(']')}`)
+                    ),
+
+                    _h.paragraph('Whispering a roll template:'),
+                    _h.inset(
+                        _h.pre( `!rt /w gm ${ch('&')+ch('{')}template:default${ch('}')+ch('{')+ch('{')}treasure=${ch('[')+ch('[')}1t${ch('[')}treasure-table${ch(']')+ch(']')+ch(']')+ch('}')+ch('}')}`)
+                    ),
+
+                    _h.paragraph('Whispering a roll template, with each item on a separate line:'),
+                    _h.inset(
+                        _h.pre( `!rt${ch('[')}Delimiter:BR${ch(']')} /w gm ${ch('&')+ch('{')}template:default${ch('}')+ch('{')+ch('{')}treasure=${ch('[')+ch('[')}1t${ch('[')}treasure-table${ch(']')+ch(']')+ch(']')+ch('}')+ch('}')}`)
+                    ),
+
+                    _h.paragraph( `Whispering a roll template, with each item on a separate line, with empty results replaced by ${_h.code('Nothing')}:`),
+                    _h.inset(
+                        _h.pre(`!rt${ch('[')}Delimiter:BR|EmptyDefault:Nothing${ch(']')} /w gm ${ch('&')+ch('{')}template:default${ch('}')+ch('{')+ch('{')}treasure=${ch('[')+ch('[')}1t${ch('[')}treasure-table${ch(']')+ch(']')+ch(']')+ch('}')+ch('}')}`)
+                    ),
+                    
+                    _h.paragraph(`Whispering a roll template, with each item on a separate line, with a table that is returning ${_h.code(`${ch('{')+ch('{')}label=values${ch('}')+ch('}')}`)}:`),
+                    _h.inset(
+                        _h.pre(`!rt${ch('[')}Delimiter:BR|PrefaceUniqueSpace${ch(']')} ${ch('&')+ch('{')}template:default${ch('}')+ch('{')+ch('{')}name=Treasure Bundles${ch('}')+ch('}')+ch('[')+ch('[')}5t${ch('[')}treasure-bundle${ch(']')+ch(']')+ch(']')}`)
+                    )
+                )
+            )
 		);
 	},
 
 	getAsBoolean = function(val,defVal){
-		let isTrue = _.contains(['on','yes','y','true'],val.toLowerCase()),
-		isFalse = _.contains(['off','no','n','false'],val.toLowerCase());
-		log({isTrue,isFalse});
+		let isTrue = _.isBoolean(val) ? val : _.contains(['on','yes','y','true'],(`${val}`||'true').toLowerCase()),
+		isFalse =  _.isBoolean(val) ? !val : _.contains(['off','no','n','false'],(`${val}`||'true').toLowerCase());
 		if(isTrue || isFalse){
 			return !isFalse;
 		}
@@ -184,13 +222,16 @@ var RecursiveTable = RecursiveTable || (function() {
 		return _.chain((cmdOpts||'').replace(/((?:\\.|[^|])*)\|/g,'$1\n').replace(/\\/,'').split(/\n/))
 		.filter((a)=>a.length)
 		.reduce((m,o)=>{
-			let tok=o.split(/:/),
+			let tok=o.split(/(?:%%|:)/),
 			c=tok.shift().toLowerCase(),
 			a=tok.join(':')||true;
 			switch(c){
+                case 'iconsize':
 				case 'maxdepth':
 					a=parseInt(a,10)||defaults[c];
 					break;
+				case 'showicons':
+				case 'iconlabel':
 				case 'dropempty':
 				case 'sort':
 				case 'prefaceuniquespace':
@@ -234,7 +275,52 @@ var RecursiveTable = RecursiveTable || (function() {
 		});
 	},
 
+    avatarCache = {},
+
+    lookupAvatar = (tableitemid) => {
+        let avatar = (getObj('tableitem',tableitemid)||{get:()=>null}).get('avatar');
+        avatarCache[tableitemid] = avatar;
+        return avatar;
+    },
+    getAvatar = (tableitemid) => avatarCache[tableitemid] || lookupAvatar(tableitemid),
+
 	parseInlines = function(inlines,opts){
+		const styles = {
+			o: {
+				'display':       'inline-block',
+				'max-width':     '20em',
+				'text-align':    'center',
+				'border':        '1px solid #aaa',
+				'border-radius': '3px',
+				'background-color': 'white',
+				'margin': '.1em'
+			},
+			i: {
+				'max-width':  '5em',
+				'max-height': '5em'
+			},
+			t: {
+				'border-top': '1px solid #aaa',
+				'background-color': '#eee',
+                'padding': '.1em'
+			}
+		};
+
+		const s = (o) => _.map(o,(v,k)=>`${k}:${v};`).join('');
+		const formatPart = (part) => (opts.showicons && part.avatar)
+			? `<div style="${s(styles.o)}">`+
+				`<img style="${s(styles.i)}" src="${part.avatar||clearURL}">`+
+				(opts.iconlabel ? `<div style="${s(styles.t)}">${part.text}</div>` : '')+
+				`</div>`
+			: part.text
+			;
+
+		const composeParts = (parts) => _.compose(
+				((x)=>_.map(x,formatPart)),
+				(opts.sort ? (x)=>_.sortBy(x,'text') : _.identity),
+				(opts.dropempty ?  (x)=>_.filter(x,(v)=>`${v.text}`.trim().length) : _.identity)
+			)(parts).join(opts.delimiter);
+		
 		return new Promise((returnSubs)=>{
 			let subOpts = _.clone(opts),
 			subs = {},
@@ -259,19 +345,20 @@ var RecursiveTable = RecursiveTable || (function() {
 
 						_.each(roll.results, (die,dieIdx)=>{
 							if(_.has(die,'tableItem') && _.isString(die.tableItem.name) && !die.tableItem.name.match(/^\d+$/)){
-								if( regex.inlineRoll.test(die.tableItem.name)){
-									if(subOpts.maxdepth){
+								if( regex.inlineRoll.test(die.tableItem.name) && subOpts.maxdepth) {
 										++context[key].sentinal;
+
 										promises.push(new Promise((done)=>{
 											rollAndParseInlines(die.tableItem.name,subOpts)
 											.then((text)=>{
-												context[key].parts[dieIdx]=text;
+												context[key].parts[dieIdx]={
+													text: text,
+													avatar: die.tableItem.avatar || getAvatar(die.tableItem.id)
+												};
+
 												--context[key].sentinal;
 												if(!context[key].sentinal){
-													subs[key]=_.compose(
-														(opts.sort ? (x)=>x.sort() : _.identity),
-														(opts.dropempty ?  (x)=>_.filter(x,(v)=>`${v}`.trim().length) : _.identity)
-													)(context[key].parts).join(opts.delimiter);
+													subs[key]=composeParts(context[key].parts);
 												}
 												done(true);
 											})
@@ -280,11 +367,11 @@ var RecursiveTable = RecursiveTable || (function() {
 												sendChat(`RecursiveTables`,`/w "${opts.who}" <div>An Error occured with this TableItem: <code>${eRoll}</code></div><div>Error: <code>${e.message}</code></div>`);
 											});
 										}));
-									} else {
-										context[key].parts[dieIdx]=`${die.tableItem.name}`.trim()||opts.emptydefault;
-									}
 								} else {
-									context[key].parts[dieIdx]=`${die.tableItem.name}`.trim()||opts.emptydefault;
+									context[key].parts[dieIdx]={
+										text: `${die.tableItem.name}`.trim()||opts.emptydefault,
+										avatar: die.tableItem.avatar || getAvatar(die.tableItem.id)
+									};
 								}
 								context[key].hasText=true;
 							} else {
@@ -293,11 +380,8 @@ var RecursiveTable = RecursiveTable || (function() {
 						});
 
 
-						if(context[key].hasText){
-							subs[key]=_.compose(
-								(opts.sort ? (x)=>x.sort() : _.identity),
-								(opts.dropempty ?  (x)=>_.filter(x,(v)=>`${v}`.trim().length) : _.identity)
-							)(context[key].parts).join(opts.delimiter);
+						if(context[key].hasText && !context[key].sentinal){
+							subs[key]=composeParts(context[key].parts);
 						} else {
 							subs[key]=result;
 						}
@@ -329,7 +413,13 @@ var RecursiveTable = RecursiveTable || (function() {
 		.then((subs)=>{
 			msg.content= _.reduce(subs,(m,v,k)=>m.replace(k,v),msg.content);
 
-			sendChat(msg.who||'[BLANK]',(msg.content||'[EMPTY]').replace(/\{\{/g,(opts.prefixuniquespaces ? makeSuffixer(' ') : _.identity)));
+            let prefixer=(opts.prefaceuniquespace ? makePrefixer(' ') : _.identity);
+			msg.content=(msg.content||'[EMPTY]').replace(/(?:\{\{)([^=]*)(?:=)/g,(full,match)=>`{{${prefixer(match)}=`);
+            
+			if(_.has(msg,'rolltemplate') && _.isString(msg.rolltemplate) && msg.rolltemplate.length){
+				msg.content = msg.content.replace(/\{\{/,'&{template:'+msg.rolltemplate+'} {{');
+			}
+			sendChat(msg.who||'[BLANK]',msg.content);
 		})
 		.catch((e)=>{
 			let eRoll=HE(msg.content);
@@ -347,19 +437,16 @@ var RecursiveTable = RecursiveTable || (function() {
 			}
 			who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
-			args = msg.content.split(/\s+/);
-			cmd = (args.shift().match(regex.rtCmd)||[]).splice(1);
+			cmd = (msg.content.match(regex.rtCmd)||[]).splice(1);
+			args = msg.content.replace(regex.rtCmd,'').trim().split(/\s+/);
 			switch(cmd[0]) {
 				case '!rt':
 					if('--help' === args[0]){
-						showHelp(who);
+						showHelp(msg.playerid);
 					} else {
 						opts = parseOptions(cmd[1]);
 						opts.who = who;
 						msg.content = msg.content.replace(regex.rtCmd,'');
-						if(_.has(msg,'rolltemplate') && _.isString(msg.rolltemplate) && msg.rolltemplate.length){
-							msg.content = msg.content.replace(/\{\{/,'&{template:'+msg.rolltemplate+'} {{');
-						}
 						parseMessage(msg,opts);
 					}
 					break;

@@ -5,8 +5,8 @@
 var Mark = Mark || (function() {
     'use strict';
 
-    var version = '0.3.4',
-        lastUpdate = 1490869985,
+    var version = '0.3.5',
+        lastUpdate = 1514912751,
 		schemaVersion = 0.2,
 		markerURL = 'https://s3.amazonaws.com/files.d20.io/images/4994795/7MdfzjgXCkaESbRbxATFSw/thumb.png?1406949835',
 
@@ -73,27 +73,18 @@ var Mark = Mark || (function() {
 				type: 'graphic',
 				subtype: 'token',
 				imgsrc: markerURL
-			}), function (g){
-				g.set({
-						layer: 'gmlayer',
-						width: 70,
-						height: 70,
-						top: 35,
-						left: 35,
-						statusmarkers: ''
-					});
-			});
+			}), (g)=>g.remove());
 	},
 
 	getStatusForCount = function(count) {
 		var colorOrder=["red", "blue", "green", "brown", "purple", "pink", "yellow"];
-		    return _.chain(count.toString().split(''))
-			.reduce(function(memo,d){
-				if(colorOrder.length) {
-					 memo.push(colorOrder.shift()+'@'+d);
-				} 
-				return memo;
-			}, [])
+        return _.chain(count.toString().split(''))
+            .reduce(function(memo,d){
+                if(colorOrder.length) {
+                    memo.push(colorOrder.shift()+'@'+d);
+                    } 
+                    return memo;
+                }, [])
 			.value()
 			.reverse()
 			.join(',');
@@ -103,8 +94,6 @@ var Mark = Mark || (function() {
 		var args,
 			who,
 			errors=[],
-			playerPage,
-			markerSupply,
 			tokens;
 
 		if (msg.type !== "api" ) {
@@ -152,40 +141,14 @@ var Mark = Mark || (function() {
 					);
 				}
 
-				// find player's page
-				if(_.has(Campaign().get('playerspecificpages'),msg.playerid)) {
-                    playerPage = Campaign().get('playerspecificpages')[msg.playerid];
-				} else {
-                    playerPage = Campaign().get('playerpageid');
-				}
-
-				markerSupply = findObjs({
-					type: 'graphic',
-					subtype: 'token',
-					imgsrc: markerURL,
-					layer: 'gmlayer',
-					pageid: playerPage
-				});
 				_.each(tokens, function (t) {
-					var m=markerSupply.pop(),
-						size=( Math.max(t.get('width'), t.get('height') ) * 1.7),
+					let size=( Math.max(t.get('width'), t.get('height') ) * 1.7),
 						count=++state.Mark.count,
-						status=getStatusForCount(count);
-
-					if(m) {
-						m.set({
-							width: size,
-							height: size,
-							top: t.get('top'),
-							left: t.get('left'),
-							layer: 'objects',
-							statusmarkers: status
-						});
-					} else {
+						status=getStatusForCount(count),
 						m = createObj('graphic',{
 							imgsrc: markerURL,
 							subtype: 'token',
-							pageid: playerPage,
+							pageid: t.get('pageid'),
 							width: size,
 							height: size,
 							top: t.get('top'),
@@ -193,7 +156,7 @@ var Mark = Mark || (function() {
 							layer: 'objects',
 							statusmarkers: status
 						});
-					}
+					
 					toBack(m);
 				});
 
