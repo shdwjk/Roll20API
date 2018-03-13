@@ -5,8 +5,8 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.28',
-        lastUpdate = 1515682154,
+    var version = '0.9.29',
+        lastUpdate = 1520955646,
         schemaVersion = 1.1,
         bonusCache = {},
         observers = {
@@ -373,8 +373,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                 }
                             ]
                         ],
-                        savedTurnOrders: {
-                        },
+                        savedTurnOrders: [],
                         config: {
                             rollType: 'Individual-Roll',
                             replaceRoll: false,
