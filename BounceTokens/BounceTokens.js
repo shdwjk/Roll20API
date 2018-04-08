@@ -5,10 +5,9 @@
 var BounceTokens = BounceTokens || (function(){
     'use strict';
 
-	var version = '0.1.0',
-        lastUpdate = 1473882811,
+	var version = '0.1.1',
+        lastUpdate = 1523203024,
 		schemaVersion = 0.1,
-		bounceInterval = false,
 		stepRate = 200,
 		defaultSecondsPerCycle = 20,
         millisecondsPerSecond = 1000,
@@ -47,9 +46,9 @@ var BounceTokens = BounceTokens || (function(){
 		'<p>Allows the GM to toggle bouncing of selected tokens</p>'+
 	'</div>'+
 	'<b>Commands</b>'+
-	'<div style="padding-left:10px;"><b><span style="font-family: serif;">!bounce-start '+ch('[')+'Seconds Per Cycle'+ch(']')+'</span></b>'+
+	'<div style="padding-left:10px;"><b><span style="font-family: serif;">!bounce-start '+ch('[')+'Seconds Per Cycle'+ch(']')+' '+ch('[')+'-- tokenID ...'+ch(']')+'</span></b>'+
 		'<div style="padding-left: 10px;padding-right:20px">'+
-			'Starts a selected token bouncing, optionally with a speed.'+
+			'Starts a selected or specified tokens bouncing, optionally with a speed.'+
 			'<ul>'+
 				'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'+
 					'<b><span style="font-family: serif;">Seconds Per Cycle</span></b> '+ch('-')+' Specifies the number of seconds for the token to make a full bounce.  <b>Default: '+defaultSecondsPerCycle +'</b></li>'+
@@ -57,9 +56,9 @@ var BounceTokens = BounceTokens || (function(){
 			'</ul>'+
 		'</div>'+
 	'</div>'+
-	'<div style="padding-left:10px;"><b><span style="font-family: serif;">!bounce-stop</span></b>'+
+	'<div style="padding-left:10px;"><b><span style="font-family: serif;">!bounce-stop '+ch('[')+'-- tokenID ...'+ch(']')+'</span></b>'+
 		'<div style="padding-left: 10px;padding-right:20px">'+
-			'Stops the selected tokens from bouncing.'+
+			'Stops the selected or specified tokens from bouncing.'+
 		'</div>'+
 	'</div>'+
 '</div>'
@@ -68,31 +67,29 @@ var BounceTokens = BounceTokens || (function(){
 
 
 	handleInput = function(msg) {
-		var args,
-            secondsPerCycle;
         
 		if ( "api" !== msg.type || !playerIsGM(msg.playerid) ) {
 			return;
 		}
 
-		args = msg.content.split(/\s+/);
+        let parts = msg.content.split(/\s+--\s+/);
+		let args = parts[0].split(/\s+/);
+        let ids = (parts[1]||'').split(/\s+/).filter((id)=>id.length);
+
 		
 		switch(args[0]) {
-			case '!bounce-start':
-				if(!( msg.selected && msg.selected.length > 0 ) ) {
+			case '!bounce-start': {
+				if(!( msg.selected && msg.selected.length > 0 ) && ids.length===0) {
 					showHelp();
 					return;
 				}
 
-                secondsPerCycle = Math.abs(args[1] || defaultSecondsPerCycle);
-				_.chain(msg.selected)
-					.map(function (o) {
-						return getObj(o._type,o._id);
-					})
-					.filter(function(o){
-						return 'token' === o.get('subtype');
-					})
-					.each(function(o){
+                let secondsPerCycle = Math.abs(args[1] || defaultSecondsPerCycle);
+
+                ids=[...new Set([...(msg.selected||[]).map((s)=>s._id), ...ids])];
+                ids.map((id)=>getObj('graphic',id))
+                    .filter((o)=>undefined !== o)
+                    .forEach((o)=>{
 						state.BounceTokens.bouncers[o.id]={
 							id: o.id,
                             top: o.get('top'),
@@ -101,33 +98,43 @@ var BounceTokens = BounceTokens || (function(){
 						};
 					})
 					;
+                }
 				break;
 
-			case '!bounce-stop':
-				if(!( msg.selected && msg.selected.length > 0 ) ) {
+			case '!bounce-stop': {
+				if(!( msg.selected && msg.selected.length > 0 ) && ids.length===0) {
 					showHelp();
 					return;
 				}
 
-				_.chain(msg.selected)
-					.map(function (o) {
-						return getObj(o._type,o._id);
-					})
-					.filter(function(o){
-						return 'token' === o.get('subtype');
-					})
-					.each(function(o){
+                ids=[...new Set([...(msg.selected||[]).map((s)=>s._id), ...ids])];
+                ids.map((id)=>getObj('graphic',id))
+                    .filter((o)=>undefined !== o)
+                    .forEach((o)=>{
                         o.set('top',state.BounceTokens.bouncers[o.id].top);
 						delete state.BounceTokens.bouncers[o.id];
 					})
 					;
+                }
 				break;
 		}
 
 	},
 
+    getActivePages = () => _.union([
+        Campaign().get('playerpageid')],
+        _.values(Campaign().get('playerspecificpages')),
+        _.chain(findObjs({
+            type: 'player',
+            online: true
+        }))
+        .filter((p)=>playerIsGM(p.id))
+        .map((p)=>p.get('lastpage'))
+        .value()
+    ),
+
 	animateBounce = function() {
-		var pages = _.union([Campaign().get('playerpageid')], _.values(Campaign().get('playerspecificpages')));
+		var pages = getActivePages();
 
 		_.chain(state.BounceTokens.bouncers)
 			.filter(function(o){
@@ -173,7 +180,7 @@ var BounceTokens = BounceTokens || (function(){
 			};
 		}
 
-		bounceInterval = setInterval(animateBounce,stepRate);
+		setInterval(animateBounce,stepRate);
 	},
 
 	registerEventHandlers = function() {
