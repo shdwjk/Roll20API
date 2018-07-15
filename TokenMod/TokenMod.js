@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.38',
-        lastUpdate = 1512679780,
+    const version = '0.8.39',
+        lastUpdate = 1531671313,
         schemaVersion = 0.3,
 
 
@@ -109,7 +109,7 @@ var TokenMod = TokenMod || (function() {
 		},
 
         regex = {
-            numberString: /^[-+\*/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][+-]?[0-9]+)?$/,
+            numberString: /^[-+*/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][+-]?[0-9]+)?$/,
             stripSingleQuotes: /'([^']+(?='))'/g,
             stripDoubleQuotes: /"([^"]+(?="))"/g,
             layers: /^(?:gmlayer|objects|map|walls)$/,
@@ -873,7 +873,7 @@ var TokenMod = TokenMod || (function() {
         bold: (...o) => `<b>${o.join(' ')}</b>`,
         italic: (...o) => `<i>${o.join(' ')}</i>`,
         font: {
-            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`,
+            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`
         }
     },
 
@@ -1255,6 +1255,16 @@ var TokenMod = TokenMod || (function() {
                             _h.paragraph(`The numbers following a status can be prefaced with a ${_h.code('+')} or ${_h.code('-')}, which causes their value to be applied to the current value. Here${ch("'")}s an example showing blue getting incremented by 2, and padlock getting decremented by 1.  Values will be bounded between 0 and 9.`),
                             _h.inset(
                                 _h.pre('!token-mod --set statusmarkers|blue:+2|padlock:-1')
+                            ),
+
+                            _h.paragraph(`You can append two additional numbers separated by ${_h.code(':')}.  These numbers will be used as the minimum and maximum value when setting or adjusting the number on a status marker.  Specified minimum and maximum values will be kept between 0 and 9.`),
+                            _h.inset(
+                                _h.pre('!token-mod --set statusmarkers|blue:+1:2:5')
+                            ),
+
+                            _h.paragraph(`Omitting either of the numbers will cause them to use their default value.  Here is an example limiting the max to 5:`),
+                            _h.inset(
+                                _h.pre('!token-mod --set statusmarkers|blue:+1::5')
                             ),
 
                             _h.paragraph(`You can optionally preface each status with a ${_h.code('?')} to modify the way ${_h.code('+')} and ${_h.code('-')} on status numbers work.  With ${_h.code('?')} on the front of the status, only selected tokens that have that status will be modified.  Additionally, if the status reaches 0, it will be removed.  Here${ch("'")}s an example showing blue getting decremented by 1.  If it reaches 0, it will be removed and no status will be added if it is missing.`),
@@ -1817,29 +1827,6 @@ var TokenMod = TokenMod || (function() {
 					
 					break;
                 case 'image':
-					/*
-						set imgsrc to a particular image (done)
-							imgsrc|http://some/url
-
-						copy imgsrc from another token
-							imgsrc|@{target|token_id}
-							imgsrc|@{target|token_id}:3
-
-						add images to sides
-							imgsrc|+http://some/url
-							imgsrc|+@{target|token_id}
-							imgsrc|+@{target|token_id}:3
-
-						add images to sides and set current image
-							imgsrc|+=http://some/url
-							imgsrc|+=@{target|token_id}
-							imgsrc|+=@{target|token_id}:3
-
-
-						copy images from another token (rollable table)
-							token id + operator
-						remove image(s)
-					*/
 					{
 						let c = imageOp.parseImage(args.shift());
 						if(c){
@@ -1923,6 +1910,8 @@ var TokenMod = TokenMod || (function() {
                             stat=statparts[1]||'',
                             op = (_.contains(['*','/','-','+','=','!','?'],stat[0]) ? stat[0] : false),
                             numraw = s.shift() || '',
+                            min = Math.min(Math.max(parseInt(s.shift(),10)||0, 0),9),
+                            max = Math.max(Math.min(parseInt(s.shift(),10)||9,9),0),
                             numop = (_.contains(['*','/','-','+'],numraw[0]) ? numraw[0] : false),
                             num = Math.max(0,Math.min(9,Math.abs(parseInt(numraw,10)))) || 0;
 
@@ -1934,6 +1923,8 @@ var TokenMod = TokenMod || (function() {
                                 number: num,
                                 index: index,
                                 sign: numop,
+                                min: (min<max?min:max),
+                                max: (max>min?max:min),
                                 operation: op || '+'
                             });
                         }
@@ -2104,7 +2095,7 @@ var TokenMod = TokenMod || (function() {
                                         current[sm.status] = current[sm.status] || [];
                                         current[sm.status].push({
                                             mark: sm.status,
-                                            num: Math.max(0,Math.min(9,getRelativeChange(0, sm.sign+sm.number))),
+                                            num: Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))),
                                             index: statusCount++
                                         });
                                     }
@@ -2112,14 +2103,14 @@ var TokenMod = TokenMod || (function() {
                                     current[sm.status] = current[sm.status] || [];
                                     current[sm.status].push({
                                         mark: sm.status,
-                                        num: Math.max(0,Math.min(9,getRelativeChange(0, sm.sign+sm.number))),
+                                        num: Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))),
                                         index: statusCount++
                                     });
                                 }
                                 break;
                             case '?':
                                 if('[]' !== sm.index && _.has(current,sm.status) && _.has(current[sm.status],sm.index)){
-                                    current[sm.status][sm.index].num = (Math.max(0,Math.min(9,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number))));
+                                    current[sm.status][sm.index].num = (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number))));
                                     if(0 === current[sm.status][sm.index].num) {
                                         current[sm.status]= _.filter(current[sm.status],function(e,idx){
                                             return idx !== sm.index;
@@ -2129,12 +2120,12 @@ var TokenMod = TokenMod || (function() {
                                 break;
                             case '+':
                                 if('[]' !== sm.index && _.has(current,sm.status) && _.has(current[sm.status],sm.index)){
-                                    current[sm.status][sm.index].num = (Math.max(0,Math.min(9,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number))));
+                                    current[sm.status][sm.index].num = (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number))));
                                 } else {
                                     current[sm.status] = current[sm.status] || [];
                                     current[sm.status].push({
                                         mark: sm.status,
-                                        num: Math.max(0,Math.min(9,getRelativeChange(0, sm.sign+sm.number))),
+                                        num: Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))),
                                         index: statusCount++
                                     });
                                 }
@@ -2156,7 +2147,7 @@ var TokenMod = TokenMod || (function() {
                                 current[sm.status] = [];
                                 current[sm.status].push({
                                     mark: sm.status,
-                                    num: Math.max(0,Math.min(9,getRelativeChange(0, sm.sign+sm.number))),
+                                    num: Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))),
                                     index: statusCount++
                                 });
                                 break;
