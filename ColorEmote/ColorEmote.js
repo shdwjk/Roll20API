@@ -5,8 +5,8 @@
 var ColorEmote = ColorEmote || (function() {
     'use strict';
 
-    var version = '0.1.8',
-        lastUpdate = 1512660596,
+    var version = '0.1.9',
+        lastUpdate = 1533731236,
         schemaVersion = 0.4,
         symbols = {
             whitePawn: '&#'+'9817;',
@@ -378,7 +378,7 @@ var ColorEmote = ColorEmote || (function() {
         bold: (...o) => `<b>${o.join(' ')}</b>`,
         italic: (...o) => `<i>${o.join(' ')}</i>`,
         font: {
-            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`,
+            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`
         }
     },
 
@@ -503,6 +503,22 @@ var ColorEmote = ColorEmote || (function() {
         isHelp = ( 0 === args.length || _.contains(args,'--help'));
         text=args.join(' ');
 
+        let orderOverride = [];
+        if(/-[ptc]$/.test(cmd)){
+            switch(cmd.match(/-([ptc])$/)[1]){
+                case 'p':
+                    orderOverride=['player'];
+                    break;
+                case 't':
+                    orderOverride=['token'];
+                    break;
+                case 'c':
+                    orderOverride=['character'];
+                    break;
+            }
+            cmd=cmd.replace(/-[ptc]$/,'');
+        }
+
         switch(cmd) {
             case '!wpcem':
                 wTarget = text.match(regex.whisperTarget)[1];
@@ -618,7 +634,7 @@ var ColorEmote = ColorEmote || (function() {
                     token:token,
                     player:player
                 };
-                _.find(parseOrders[state.ColorEmote.config.parseOrder],function(k){
+                _.find([...orderOverride,...parseOrders[state.ColorEmote.config.parseOrder]],function(k){
                     if(data[k]){
                         parsers[k]();
                         return true;

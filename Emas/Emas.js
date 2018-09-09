@@ -2,11 +2,11 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var Emas = Emas || (function() {
+const Emas = (() => {
     'use strict';
 
-	var version = '0.8.2',
-        lastUpdate = 1490369005,
+	const version = '0.8.3',
+        lastUpdate = 1532274889,
 
 	ch = function (c) {
 		var entities = {
@@ -125,7 +125,7 @@ var Emas = Emas || (function() {
     },
 	
 	handleInput = function(msg_orig) {
-		var args, who, msg = _.clone(msg_orig);
+		const msg = _.clone(msg_orig);
 
 		if (msg.type !== "api") {
 			return;
@@ -144,50 +144,50 @@ var Emas = Emas || (function() {
 		}
 
 
-		args = msg.content.split(/\s+/);
-		who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
-		switch(args[0]) {
+		const args = msg.content.split(/\s+/);
+		const who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+		switch(args.shift()) {
 			case '!emas':
 				if(1 === args.length) {
 					showHelp(who);
 				} else {
-					sendChat('','/emas '+_.rest(args).join(' '));
+					sendChat(args[0],`/emas ${args.join(' ')}`);
 				}
 				break;
 			case '!as':
 				if(1 === args.length) {
 					showHelp(who);
 				} else {
-					sendChat('','/as '+_.rest(args).join(' '));
+					sendChat(args[0],`/as ${args.join(' ')}`);
 				}
 				break;
 			case '!w':
 				if(1 === args.length) {
 					showHelp(who);
 				} else {
-					sendChat(msg.who,'/w "'+who+'" '+_.rest(args,2).join(' '));
-					sendChat(msg.who,'/w '+_.rest(args).join(' '));
+					sendChat(msg.who,`/w "${who}" ${args.slice(1).join(' ')}`);
+					sendChat(msg.who,`/w ${args.join(' ')}`);
 				}
 				break;
 			case '!r':
 				if(1 === args.length) {
 					showHelp(who);
 				} else {
-					sendChat('','/r '+_.rest(args).join(' '));
+					sendChat('',`/r ${args.join(' ')}`);
 				}
 				break;
 			case '!gr':
 				if(1 === args.length) {
 					showHelp(who);
 				} else {
-					sendChat('','/gr '+_.rest(args).join(' '));
+					sendChat('',`/gr ${args.join(' ')}`);
 				}
 				break;
 			case '!desc':
 				if(1 === args.length) {
 					showHelp(who);
 				} else {
-					sendChat('','/desc '+_.rest(args).join(' '));
+					sendChat('',`/desc ${args.join(' ')}`);
 				}
 				break;
 		}
@@ -201,7 +201,7 @@ var Emas = Emas || (function() {
 		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers
 	};
-}());
+})();
 
 on("ready",function(){
 	'use strict';

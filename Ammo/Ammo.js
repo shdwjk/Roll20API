@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.7',
-        lastUpdate = 1490362793,
+    var version = '0.3.8',
+        lastUpdate = 1533040966,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -30,49 +30,71 @@ var Ammo = Ammo || (function() {
 		}
 		return '';
 	},
-	sendMessage = function(message, who) {
-		sendChat('Ammo', (who ? ('/w '+who+' ') : '') + '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
-			message+
-			'</div>'
+	sendMessage = function(message, who, whisper) {
+		sendChat(
+            'Ammo',
+            `${(whisper||'gm'===who)?`/w ${who} `:''}<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">${message}</div>`
 		);
 	},
 
-	adjustAmmo = function (who,attr,amount,label,playerid) {
-		var val = parseInt(attr.get('current'),10)||0,
-			max = parseInt(attr.get('max'),10)||10000,
-			adj = (val+amount),
-			chr = getObj('character',attr.get('characterid')),
-			valid = true;
-        label=label||'ammo';
+	adjustAmmo = function (ec) {
+        let who = ec.output.who;
+        let attr = ec.operation.attr;
+        let amount = ec.operation.amount;
+        let label = ec.operation.label || 'ammo';
+        let playerid = ec.output.playerid;
 
-		if(adj < 0 ) {
+		const chr = getObj('character',attr.get('characterid'));
+		const val = parseInt(attr.get('current'),10)||0;
+		const max = parseInt(attr.get('max'),10)||10000;
+
+		let adjustedValue = (val+amount);
+        let overage = 0;
+		let valid = true;
+
+        if(ec.options.allowPartial) {
+            if (adjustedValue < 0) {
+                overage = Math.abs(adjustedValue);
+                adjustedValue = 0;
+            } else if( adjustedValue > max ) {
+                overage = adjustedValue - max;
+                adjustedValue = max;
+            }
+        }
+
+		if(adjustedValue < 0 ) {
 			sendMessage(
 				'<b>'+chr.get('name') + '</b> does not have enough '+label+'.  Needs '+Math.abs(amount)+', but only has '+
 				'<span style="color: #ff0000;">'+val+'</span>.'+
 				'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
-                who
+                who,
+                ec.output.whisper
 			);
 			valid = false;
-		} else if( adj > max) {
+		} else if( adjustedValue > max) {
 			sendMessage(
-				'<b>'+chr.get('name') + '</b> does not have enough storage space for '+label+'.  Needs '+adj+', but only has '+
+				'<b>'+chr.get('name') + '</b> does not have enough storage space for '+label+'.  Needs '+adjustedValue+', but only has '+
 				'<span style="color: #ff0000;">'+max+'</span>.'+
 				'<span style="font-weight:normal;color:#708090;>'+ch('[')+'Attribute: '+attr.get('name')+ch(']')+'</span>',
-                who
+                who,
+                ec.output.whisper
 			);
 			valid = false;
 		}
 
 		if( playerIsGM(playerid) || valid ) {
-			attr.set({current: adj});
+			attr.set({current: adjustedValue});
+            let verb = (adjustedValue < val) ? 'use' : 'gain';
 			sendMessage(
-				'<b>'+chr.get('name') + '</b> '+( (adj<val) ? 'uses' : 'gains' )+' '+Math.abs(amount)+' '+label+' and has '+adj+' remaining.',
-                who
+				`<b>${chr.get('name')}</b> ${verb}s ${Math.abs(amount)} ${label} and has ${adjustedValue} remaining.  ${overage ? `Unable to ${verb} ${overage} ${label}.`:''}`,
+                who,
+                ec.output.whisper
 			);
 			if(!valid) {
 				sendMessage(
-					'Ignoring warnings and applying adjustment anyway.  Was: '+val+'/'+max+' Now: '+adj+'/'+max,
-                    who
+					'Ignoring warnings and applying adjustment anyway.  Was: '+val+'/'+max+' Now: '+adjustedValue+'/'+max,
+                    who,
+                    ec.output.whisper
 				);
 			}
 		}
@@ -158,14 +180,11 @@ var Ammo = Ammo || (function() {
     },
 
 	HandleInput = function(msg_orig) {
-		var msg = _.clone(msg_orig),
-			args,attr,amount,chr,token,text='',label, whisper=false,
-            who;
-
-		if (msg.type !== "api") {
+		if (msg_orig.type !== "api") {
 			return;
 		}
-        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+        
+		let msg = _.clone(msg_orig);
 
 		if(_.has(msg,'inlinerolls')){
 			msg.content = _.chain(msg.inlinerolls)
@@ -179,39 +198,43 @@ var Ammo = Ammo || (function() {
 				.value();
 		}
 
-		args = msg.content.split(/\s+/);
-		switch(args[0]) {
+        let whisper = false;
+        let ignoreMissing = false;
+        let allowPartial = false;
+
+        let who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+		let attr, amount, chr, token, label;
+
+		let args = msg.content.split(/\s+/);
+        let switches = args.filter((a)=>/^--/.test(a));
+        args = args.filter((a)=>!/^--/.test(a));
+		switch(args.shift()) {
             case '!wammo':
                 whisper = true;
                 /* break; // intentional dropthrough */ /* falls through */
 
             case '!ammo':
-				if(args.length > 1) {
+				if((args.length + switches.length) > 1) {
 
-					switch(args[1]) {
-                        case '--help':
-                            return showHelp(who,msg.playerid);
+                    switches.forEach((s)=>{
+                        switch(s) {
+                            case '--help':
+                                return showHelp(who,msg.playerid);
 
-						case 'recover': // <character/token_id> <attribute_name>
-							// apply policy to put amounts back in
-						case 'check': // <character/token_id> <attribute_name>
-							// print the amount in the attribute nicely formatted
-						case 'recovery-policy': // [character/token_id] [attribute_name] <percentage>
-							// create the right entry in the state
-						case 'name': // [character/token_id] [attribute_name] <name>
-							// create the right entry in the state
+                            case '--ignore-missing':
+                                ignoreMissing = true;
+                                break;
 
-						// configs
-						case 'recovery-updates-maximum': 
-							// adjust the maximum to be whatever the current is
-						case 'create-attributes-automatically': 
-							// create the requested attribute and start using it.
-					}
+                            case '--allow-partial':
+                                allowPartial = true;
+                                break;
+                        }
+                    });
 
 
-					chr = getObj('character', args[1]);
+					chr = getObj('character', args[0]);
 					if( ! chr ) {
-						token = getObj('graphic', args[1]);
+						token = getObj('graphic', args[0]);
 						if(token) {
 							chr = getObj('character', token.get('represents'));
 						}
@@ -224,36 +247,53 @@ var Ammo = Ammo || (function() {
 						{
 							sendMessage(
                                 'You do not control the specified character: '+chr.id ,
-                                (playerIsGM(msg.playerid) ? 'gm' : (whisper ? who :false))
+                                (playerIsGM(msg.playerid) ? 'gm' : who),
+                                whisper
                             );
 							sendMessage(
-								'<b>'+getObj('player',msg.playerid).get('_displayname')+'</b> attempted to adjust attribute <b>'+args[2]+'</b> on character <b>'+chr.get('name')+'</b>.',
-								'gm'
+								'<b>'+getObj('player',msg.playerid).get('_displayname')+'</b> attempted to adjust attribute <b>'+args[1]+'</b> on character <b>'+chr.get('name')+'</b>.',
+								'gm',
+                                whisper
 							);
 							return;
 						}
 
-						attr = attrLookup(chr,args[2],false);
+						attr = attrLookup(chr,args[1],false);
 					}
-					amount=parseInt(args[3],10);
-                    label=_.rest(args,4).join(' ');
+					amount=parseInt(args[2],10);
+                    label=_.rest(args,3).join(' ');
 					if(attr) {
-						adjustAmmo(
-                            (playerIsGM(msg.playerid) ? 'gm' : (whisper ? who :false)),
-                            attr,amount,label,msg.playerid
-                        );
-					} else {
+						adjustAmmo({
+                            output: {
+                                who,
+                                playerid: msg.playerid,
+                                whisper
+                            },
+                            operation: {
+                                attr,
+                                amount,
+                                label
+                            },
+                            options: {
+                                ignoreMissing,
+                                allowPartial
+                            }
+                        });
+
+					} else if(!ignoreMissing) {
                         if(chr) {
                             sendMessage(
-                                'Attribute ['+args[2]+'] was not found.  Please verify that you have the right name.',
-                                (playerIsGM(msg.playerid) ? 'gm' : (whisper ? who :false))
+                                `Attribute [${args[1]}] was not found.  Please verify that you have the right name.`,
+                                (playerIsGM(msg.playerid) ? 'gm' : who),
+                                whisper
                             );
                         } else {
                             sendMessage(
-                                ( token ?  'Token id ['+args[1]+'] does not represent a character. ' : 'Character/Token id ['+args[1]+'] is not valid. ' ) +
+                                ( token ?  'Token id ['+args[0]+'] does not represent a character. ' : 'Character/Token id ['+args[0]+'] is not valid. ' ) +
                                 'Please be sure you are specifying it correctly, either with '+ch('@')+ch('{')+'selected|token_id'+ch('}')+
                                 ' or '+ch('@')+ch('{')+'selected|character_id'+ch('}')+'.',
-                                (playerIsGM(msg.playerid) ? 'gm' : (whisper ? who :false))
+                                (playerIsGM(msg.playerid) ? 'gm' : who),
+                                whisper
                             );
 						}
 					}
