@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.40',
-        lastUpdate = 1531789436,
+    const version = '0.8.41',
+        lastUpdate = 1537921810,
         schemaVersion = 0.3,
 
 
@@ -133,37 +133,44 @@ var TokenMod = TokenMod || (function() {
 
 		class imageOp {
 			static parseImage(input){
+                const OP_REMOVE_BY_INDEX = 1;
+                const OP_OPERATION = 2;
+                const OP_EXPLICIT_SET = 3;
+                const OP_IMAGE_URL = 4;
+                const OP_TOKEN_ID = 5;
+                const OP_TOKEN_SIDE_INDEX = 6;
+
 				let parsed = input.match(regex.imageOp);
 
 				if(parsed && parsed.length){
-					if(parsed[1]){
-						let idxs=parsed[1].slice(1);
+					if(parsed[ OP_REMOVE_BY_INDEX ]){
+						let idxs=parsed[ OP_REMOVE_BY_INDEX ].slice(1);
 						return new imageOp('-',false,
 							'*'===idxs
 								? ['*']
 								: idxs.split(/\s*,\s*/).filter(s=>s.length).map((n)=>parseInt(n,10)-1)
 							);
 					} else {
-						let op = parsed[2]||'_';
-						let set = '='===parsed[3];
-						if(parsed[4]){
-							let url=getCleanImgsrc(parsed[4]);
+						let op = parsed[ OP_OPERATION ]||'_';
+						let set = '='===parsed[ OP_EXPLICIT_SET ];
+						if(parsed[ OP_IMAGE_URL ]){
+							let url=getCleanImgsrc(parsed[ OP_IMAGE_URL ]);
 							if(url){
 								return new imageOp(op,set,[],[url]);
 							}
 						} else {
-							let id = parsed[5];
+							let id = parsed[ OP_TOKEN_ID ];
 							let t = getObj('graphic',id);
 
 							if(t){
-								if(parsed[6]){
+								if(parsed[ OP_TOKEN_SIDE_INDEX ]){
 									let sides = t.get('sides').split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
 									let urls=[];
 									let idxs;
-									if('*'===parsed[6]){
+									if('*'===parsed[ OP_TOKEN_SIDE_INDEX ]){
 										idxs=sides.reduce((m,v)=> ({ c:m.c+1, i:(v?[...m.i,m.c]:m.i) }), {c:0,i:[]}).i;
 									} else {
-										idxs=parsed[6].split(/\s*,\s*/).filter(s=>s.length).map((n)=>parseInt(n,10)-1);
+										idxs=parsed[ OP_TOKEN_SIDE_INDEX ].split(/\s*,\s*/).filter(s=>s.length).map((n)=>parseInt(n,10)-1);
 									}
 									_.each(idxs,(i)=>{
 										if(sides[i]){
@@ -261,9 +268,12 @@ var TokenMod = TokenMod || (function() {
 		class sideNumberOp {
 
 			static parseSideNumber(input){
+                const OP_FLAG = 1;
+                const OP_OPERATION = 2;
+                const OP_COUNT = 3;
 				let parsed = input.toLowerCase().match(regex.sideNumber);
 				if(parsed && parsed.length){
-					return new sideNumberOp( parsed[1], parsed[2], parsed[3] );
+					return new sideNumberOp( parsed[ OP_FLAG ], parsed[ OP_OPERATION ], parsed[ OP_COUNT ] );
 				}
 				return new sideNumberOp(false,'/');
 			}
@@ -1067,6 +1077,10 @@ var TokenMod = TokenMod || (function() {
                             _h.paragraph(`Here is setting a standard DnD 5e torch, with advanced fog of war revealed for 30.`),
                             _h.inset(
                                 _h.pre('!token-mod --set light_radius|40 light_dimradius|20 adv_fow_view_distance|30')
+                            ),
+                            _h.paragraph(`Sometimes it is convenient to have a way to set a radius if there is none, but remove it if it is set.  This allows toggling a known radius on and off, or setting a multiplier if there isn't one, but clearing it if there is.  You can preface a number with ${_h.code('!')} to toggle it${ch("'")}s value on and off.  Here is an example that will add or remove a 20${ch("'")} radius aura 1 from a token:`),
+                            _h.inset(
+                                _h.pre('!token-mod --set aura1_radius|!20')
                             )
                         ),
 
@@ -1716,6 +1730,13 @@ var TokenMod = TokenMod || (function() {
             if( _.has(update,0) && ('=' === update[0]) ){
                 return parseFloat(_.rest(update).join(''));
             }
+            if( _.has(update,0) && ('!' === update[0]) ){
+                if(''===current || 0===parseInt(current) ){
+                    return parseFloat(_.rest(update).join(''));
+                } else {
+                    return '';
+                }
+            }
 
             if(update.match(/^[+\-/*]/)){
                 op=update[0];
@@ -1765,7 +1786,7 @@ var TokenMod = TokenMod || (function() {
                     break;
 
                 case 'numberBlank':
-                    if( _.isString(args[0]) && args[0].length && args[0][0].match(/^[=+\-/*]/) ) {
+                    if( _.isString(args[0]) && args[0].length && args[0][0].match(/^[=+\-/*!]/) ) {
                         t=args[0][0];
                         args[0]=_.rest(args[0]).join('');
                     } else {
