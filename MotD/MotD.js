@@ -5,8 +5,8 @@
 const MotD = (function() {
     'use strict';
 
-    var version = '0.2.8',
-    lastUpdate = 1529324026,
+    var version = '0.2.9',
+    lastUpdate = 1534791672,
     schemaVersion = 0.2,
     motdNoteId,
     motdNoteName = 'MotD Note',
@@ -30,7 +30,10 @@ const MotD = (function() {
     showToPlayer = (p) => {
         let who = p.get('displayname');
         sendChat('MotD','/w "'+who+'" '+
-            motdText.replace(/%%NAME%%/g,who)
+            motdText
+                .replace(/%%NAME%%/g,who)
+                .replace(/<br\s*\/?>\s*\n/ig,'<br />')
+                .replace(/\n/ig,'<br />')
         );
         state.MotD.playerShownLast[p.id] = _.now();
     },
