@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.41',
-        lastUpdate = 1537921810,
+    const version = '0.8.42',
+        lastUpdate = 1548010631,
         schemaVersion = 0.3,
 
 
@@ -38,6 +38,7 @@ var TokenMod = TokenMod || (function() {
             top: {type: 'number', transform: 'screen'},
             width: {type: 'number', transform: 'screen'},
             height: {type: 'number', transform: 'screen'},
+            scale: {type: 'number', transform: 'screen'},
 
             // 360 degrees
             rotation: {type: 'degrees'},
@@ -130,6 +131,120 @@ var TokenMod = TokenMod || (function() {
 		colorOpReg = new RegExp(`^${regex.color.ops}(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i'),
 		colorReg = new RegExp(`^(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i'),
 		colorParams = /\(\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*\)/;
+
+
+        class numberOp {
+            static parse(field, str, permitBlank=true) {
+                const regexp = /^([=+\-/*!])?(\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?$/i;
+
+                if(!str.length && permitBlank){
+                    return new numberOp(field, '','','' );
+                }
+
+                let m = `${str}`.match(regexp);
+
+                if(m){
+                    let oper = m[1]||'';
+                    let num = parseFloat(m[2]);
+                    let scale = m[3]||'';
+
+                    return new numberOp(field, oper, num, scale.toLowerCase());
+                }
+                return {getMods:()=>({})};
+            }
+
+            constructor(field,op,num,rel){
+                this.field=field;
+                this.operation = op;
+                this.num = num;
+                this.relative = rel;
+            }
+
+            getMods(token){
+                let num = this.num;
+                let page = getObj('page',token.get('pageid'));
+                const unitSize = 70;
+                switch(this.field){
+
+                    case 'light_radius':
+                    case 'light_dimradius':
+                    case 'aura2_radius':
+                    case 'aura1_radius':
+                    case 'adv_fow_view_distance':
+                        // convert to scale_number relative
+                        switch(this.relative){
+                            case 'u':
+                                num*=parseFloat(page.get('scale_number'));
+                                break;
+                                
+                            case 'g':
+                                num*=(parseFloat(page.get('snapping_increment'))*parseFloat(page.get('scale_number')));
+                                break;
+
+                            default:
+                            case 'ft':
+                            case 'm':
+                            case 'km':
+                            case 'mi':
+                            case 'in':
+                            case 'cm':
+                            case 'un':
+                            case 'hex':
+                            case 'sq':
+                            case 's':
+                                break;
+                        }
+                        break;
+
+                    default:
+                    case 'left':
+                    case 'top':
+                    case 'width':
+                    case 'height':
+                        // convert to pixel relative
+                        switch(this.relative){
+                            case 'u':
+                                num*=unitSize;
+                                break;
+                            case 'g':
+                                num*=(parseFloat(page.get('snapping_increment'))*unitSize);
+                                break;
+
+                            case 'ft':
+                            case 'm':
+                            case 'km':
+                            case 'mi':
+                            case 'in':
+                            case 'cm':
+                            case 'un':
+                            case 'hex':
+                            case 'sq':
+                            case 's':
+                                num = (num/(parseFloat(page.get('scale_number'))||1))*unitSize;
+                                break;
+                            default:
+                        }
+
+                        break;
+
+                    case 'light_multiplier':
+                        break;
+
+                }
+
+                let current = parseFloat(token.get(this.field))||0;
+                switch(this.operation){
+                    default:
+                    case '=': return {[this.field]:`${num}`};
+                    case '!': return {[this.field]:`${current===0 ? num : ''}`};
+                    case '+': return {[this.field]:`${current+num}`};
+                    case '-': return {[this.field]:`${current-num}`};
+                    case '/': return {[this.field]:`${current/(num||1)}`};
+                    case '*': return {[this.field]:`${current*num}`};
+                }
+            }
+
+        }
 
 		class imageOp {
 			static parseImage(input){
@@ -1037,11 +1152,12 @@ var TokenMod = TokenMod || (function() {
                                     _h.cell('left'),
                                     _h.cell('top'),
                                     _h.cell('width'),
-                                    _h.cell('height')
+                                    _h.cell('height'),
+                                    _h.cell('scale')
                                 )
                             ),
-                            _h.paragraph( `It${ch("'")}s probably a good idea not to set the location of a token off screen or the width or height to 0.`),
-                            _h.paragraph( `Placing a token in the top left corner of the map and making it take up two a 2x2 grid section:`),
+                            _h.paragraph( `It${ch("'")}s probably a good idea not to set the location of a token off screen, or the width or height to 0.`),
+                            _h.paragraph( `Placing a token in the top left corner of the map and making it take up a 2x2 grid section:`),
                             _h.inset(
                                 _h.pre( '!token-mod --set top|0 left|0 width|140 height|140' )
                             ),
@@ -1052,6 +1168,27 @@ var TokenMod = TokenMod || (function() {
 							_h.paragraph(`You can use ${_h.code('=')} to explicity set a value.  This is the default behavior, but you might need to use it to move something to a location off the edge using a negative number but not a relative number:`),
                             _h.inset(
                                 _h.pre( '!token-mod --set top|=-140' )
+                            ),
+                            _h.paragraph( `${_h.code('scale')} is a pseudo field which adjusts both ${_h.code('width')} and ${_h.code('height')} with the same operation.  This will scale a token to twice it's current size.`),
+                            _h.inset(
+                                _h.pre( '!token-mod --set scale|*2' )
+                            ),
+                            _h.paragraph(`You can follow a number by one of ${_h.code('u')}, ${_h.code('g')}, or ${_h.code('s')} to adjust the scale that the number is applied in.`),
+                            _h.paragraph(`Use ${_h.code('u')} to use a number based on Roll20 Units, which are 70 pixels at 100% zoom.  This will set a graphic to 280x140.`),
+                            _h.inset(
+                                _h.pre( '!token-mod --set width|4u height|2u' )
+                            ),
+                            _h.paragraph(`Use ${_h.code('g')} to use a number based on the current grid size.  This will set a token to the middle of the 8th column, 4rd row grid. (.5 offset for half the center)`),
+                            _h.inset(
+                                _h.pre( '!token-mod --set left|7.5g top|3.5g' )
+                            ),
+                            _h.paragraph(`Use ${_h.code('s')} to use a number based on the current unit if measure. (ft, m, mi, etc)  This will set a token to be 25ft by 35ft (assuming ft are the unit of measure)`),
+                            _h.inset(
+                                _h.pre( '!token-mod --set width|25s height|35s' )
+                            ),
+                            _h.paragraph(`Currently, you can also use any of the default units of measure as alternatives to ${_h.code('s')}: ${_h.code('ft')}, ${_h.code('m')}, ${_h.code('km')}, ${_h.code('mi')}, ${_h.code('in')}, ${_h.code('cm')}, ${_h.code('un')}, ${_h.code('hex')}, ${_h.code('sq')}`),
+                            _h.inset(
+                                _h.pre( '!token-mod --set width|25ft height|35ft' )
                             )
                         ),
 
@@ -1081,7 +1218,12 @@ var TokenMod = TokenMod || (function() {
                             _h.paragraph(`Sometimes it is convenient to have a way to set a radius if there is none, but remove it if it is set.  This allows toggling a known radius on and off, or setting a multiplier if there isn't one, but clearing it if there is.  You can preface a number with ${_h.code('!')} to toggle it${ch("'")}s value on and off.  Here is an example that will add or remove a 20${ch("'")} radius aura 1 from a token:`),
                             _h.inset(
                                 _h.pre('!token-mod --set aura1_radius|!20')
-                            )
+                            ),
+                            _h.paragraph(`These also support the relative scale operations that ${_h.bold('Numbers')} support: ${_h.code('u')}, ${_h.code('g')}, ${_h.code('s')}`),
+                            _h.inset(
+                                _h.pre('!token-mod --set aura1_radius|3g aura2_radius|10u light_radius|25s')
+                            ),
+                            _h.paragraph(`${_h.bold('Note:')} ${_h.code('light_multiplier')} ignores these modifiers.  Additionally, the rest are already in the scale of measuring distance (${_h.code('s')}) so there is no difference between ${_h.code('25s')}, ${_h.code('25ft')}, and ${_h.code('25')}.`)
                         ),
 
 
@@ -1786,29 +1928,11 @@ var TokenMod = TokenMod || (function() {
                     break;
 
                 case 'numberBlank':
-                    if( _.isString(args[0]) && args[0].length && args[0][0].match(/^[=+\-/*!]/) ) {
-                        t=args[0][0];
-                        args[0]=_.rest(args[0]).join('');
-                    } else {
-                        t='';
-                    }
-                    t2=args[0].match(regex.numberString) ? args[0] : '' ;
-                    if( ''===t2 || !_.isNaN(parseFloat(t2)) ) {
-                        retr[cmd].push(t+t2);
-                    }
+                    retr[cmd].push(numberOp.parse(cmd,args.shift()));
                     break;
 
                 case 'number':
-                    if( args[0][0].match(/^[=+\-/*]/) ) {
-                        t=args[0][0];
-                        args[0]=_.rest(args[0]).join('');
-                    } else {
-                        t='';
-                    }
-                    t2=args[0].match(regex.numberString) ? args[0] : undefined ;
-                    if(!_.isNaN(parseFloat(t2)) ) {
-                        retr[cmd].push(t+t2);
-                    }
+                    retr[cmd].push(numberOp.parse(cmd,args.shift(),false));
                     break;
 
                 case 'degrees':
@@ -1976,6 +2100,11 @@ var TokenMod = TokenMod || (function() {
                 args=args.join('|');
                 memo.push(cmd+'_value|'+args);
                 memo.push(cmd+'_max|'+args);
+                break;
+            case 'scale':
+                args.join('|');
+                memo.push(`width|${args}`);
+                memo.push(`height|${args}`);
                 break;
             default:
                 memo.push(a);
@@ -2214,10 +2343,7 @@ var TokenMod = TokenMod || (function() {
                 case 'top':
                 case 'width':
                 case 'height':
-                    delta=getRelativeChange(token.get(k),f[0]);
-                    if(_.isNumber(delta)) {
-                        mods[k]=delta;
-                    }
+                    mods = Object.assign( mods, f[0].getMods(token));
                     break;
 
                 case 'rotation':
@@ -2241,10 +2367,7 @@ var TokenMod = TokenMod || (function() {
                 case 'aura2_radius':
                 case 'aura1_radius':
                 case 'adv_fow_view_distance':
-                    delta=getRelativeChange(token.get(k),f[0]);
-                    if(_.isNumber(delta) || '' === delta) {
-                        mods[k]=delta;
-                    }
+                    mods = Object.assign( mods, f[0].getMods(token));
                     break;
 
                 case 'bar1_reset':
