@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.42',
-        lastUpdate = 1548010631,
+    const version = '0.8.43',
+        lastUpdate = 1549336580,
         schemaVersion = 0.3,
 
 
@@ -1413,6 +1413,7 @@ var TokenMod = TokenMod || (function() {
                             _h.inset(
                                 _h.pre('!token-mod --set statusmarkers|blue:0|red:3|green|padlock:2|broken-shield:7')
                             ),
+                            _h.paragraph(`${_h.bold('Note:')} TokenMod will now show 0 on status markers everywhere that makes sense to do.`),
 
                             _h.paragraph(`The numbers following a status can be prefaced with a ${_h.code('+')} or ${_h.code('-')}, which causes their value to be applied to the current value. Here${ch("'")}s an example showing blue getting incremented by 2, and padlock getting decremented by 1.  Values will be bounded between 0 and 9.`),
                             _h.inset(
@@ -2059,12 +2060,15 @@ var TokenMod = TokenMod || (function() {
                             statparts = s.shift().match(/^(\S+?)(\[(\d*)\]|)$/)||[],
                             index = ( '[]' === statparts[2] ? statparts[2] : ( undefined !== statparts[3] ? Math.max(parseInt(statparts[3],10)-1,0) : 0 ) ),
                             stat=statparts[1]||'',
-                            op = (_.contains(['*','/','-','+','=','!','?'],stat[0]) ? stat[0] : false),
+                            op = (_.contains(['*','/','-','+','=','!','?'], stat[0]) ? stat[0] : false),
                             numraw = s.shift() || '',
                             min = Math.min(Math.max(parseInt(s.shift(),10)||0, 0),9),
                             max = Math.max(Math.min(parseInt(s.shift(),10)||9,9),0),
                             numop = (_.contains(['*','/','-','+'],numraw[0]) ? numraw[0] : false),
-                            num = Math.max(0,Math.min(9,Math.abs(parseInt(numraw,10)))) || 0;
+                            num = Math.max(0,Math.min(9,Math.abs(parseInt(numraw,10))));
+                            if(isNaN(num)){
+                                num = '';
+                            }
 
                         stat = ( op ? stat.substring(1) : stat);
 
@@ -2148,13 +2152,16 @@ var TokenMod = TokenMod || (function() {
     },
 
     decomposeStatuses = function(statuses){
-        return _.reduce(statuses.split(/,/).reverse(),function(memo,st,idx){
+        return _.reduce(statuses.split(/,/),function(memo,st,idx){
             var parts=st.split(/@/),
             entry = {
                 mark: parts[0],
-                num: parseInt(parts[1],10) || 0,
+                num: parseInt(parts[1],10),
                 idx: idx
             };
+            if(isNaN(entry.num)){
+                entry.num='';
+            }
             if(parts[0].length) {
                 memo[parts[0]] = ( memo[parts[0]] && memo[parts[0]].push(entry) && memo[parts[0]]) || [entry] ;
             }
@@ -2174,10 +2181,9 @@ var TokenMod = TokenMod || (function() {
                 return s.idx;
             })
             .map(function(s){
-                return ('dead'===s.mark ? 'dead' : ( s.mark+(s.num>0 ? '@'+s.num : '')));
+                return ('dead'===s.mark ? 'dead' : ( s.mark+(s.num!=='' ? '@'+s.num : '')));
             })
             .value()
-            .reverse()
             .join(',');
     },
 
@@ -2251,7 +2257,7 @@ var TokenMod = TokenMod || (function() {
                                         current[sm.status] = current[sm.status] || [];
                                         current[sm.status].push({
                                             mark: sm.status,
-                                            num: Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))),
+                                            num: (sm.number !=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
                                             index: statusCount++
                                         });
                                     }
@@ -2259,15 +2265,16 @@ var TokenMod = TokenMod || (function() {
                                     current[sm.status] = current[sm.status] || [];
                                     current[sm.status].push({
                                         mark: sm.status,
-                                        num: Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))),
+                                        num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
                                         index: statusCount++
                                     });
                                 }
                                 break;
                             case '?':
                                 if('[]' !== sm.index && _.has(current,sm.status) && _.has(current[sm.status],sm.index)){
-                                    current[sm.status][sm.index].num = (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number))));
-                                    if(0 === current[sm.status][sm.index].num) {
+                                    current[sm.status][sm.index].num = (sm.number !== '') ? (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number)))) : '';
+
+                                    if([0,''].includes(current[sm.status][sm.index].num)) {
                                         current[sm.status]= _.filter(current[sm.status],function(e,idx){
                                             return idx !== sm.index;
                                         });
@@ -2276,12 +2283,12 @@ var TokenMod = TokenMod || (function() {
                                 break;
                             case '+':
                                 if('[]' !== sm.index && _.has(current,sm.status) && _.has(current[sm.status],sm.index)){
-                                    current[sm.status][sm.index].num = (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number))));
+                                    current[sm.status][sm.index].num = (sm.number !== '') ? (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number)))) : '';
                                 } else {
                                     current[sm.status] = current[sm.status] || [];
                                     current[sm.status].push({
                                         mark: sm.status,
-                                        num: Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))),
+                                        num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
                                         index: statusCount++
                                     });
                                 }
@@ -2303,7 +2310,7 @@ var TokenMod = TokenMod || (function() {
                                 current[sm.status] = [];
                                 current[sm.status].push({
                                     mark: sm.status,
-                                    num: Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))),
+                                    num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
                                     index: statusCount++
                                 });
                                 break;
