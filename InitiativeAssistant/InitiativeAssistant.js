@@ -5,8 +5,8 @@
 var InitiativeAssistant = InitiativeAssistant || (function() {
     'use strict';
 
-    var version = '0.1.4',
-        lastUpdate = 1490707384,
+    var version = '0.1.5',
+        lastUpdate = 1551928364,
         schemaVersion = 0.2,
         sorters = {
             'None': function(to) {
@@ -108,7 +108,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
 
 
     keyFormat = function(text) {
-        return text.toLowerCase().replace(/\s+/,'');
+        return text.toLowerCase().replace(/\s+/g,'');
     },
 
     handleInput = function(msg_orig) {
@@ -146,7 +146,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
 
         switch(args.shift()) {
             case '!init-assist':
-                if( !args.length || _.contains(args,'--help')) {
+                if( !args.length || _.contains(args,'help')) {
                     showHelp(who);
                     return;
                 }
@@ -182,7 +182,7 @@ var InitiativeAssistant = InitiativeAssistant || (function() {
                     {}
                 );
 
-                to=JSON.parse(Campaign().get('turnorder')) || [];
+                to=JSON.parse(Campaign().get('turnorder')||'[]');
                 _.each(keys, function(k){
                     var char;
                     if(chars[k]) {
