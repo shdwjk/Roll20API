@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.43',
-        lastUpdate = 1549336580,
+    const version = '0.8.44',
+        lastUpdate = 1553014709,
         schemaVersion = 0.3,
 
 
@@ -135,7 +135,7 @@ var TokenMod = TokenMod || (function() {
 
         class numberOp {
             static parse(field, str, permitBlank=true) {
-                const regexp = /^([=+\-/*!])?(\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?$/i;
+                const regexp = /^([=+\-/*!])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?$/i;
 
                 if(!str.length && permitBlank){
                     return new numberOp(field, '','','' );
