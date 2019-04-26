@@ -2,43 +2,76 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-const MotD = (function() {
-    'use strict';
+const MotD = (() => { // eslint-disable-line no-unused-vars
 
-    var version = '0.2.9',
-    lastUpdate = 1534791672,
-    schemaVersion = 0.2,
-    motdNoteId,
-    motdNoteName = 'MotD Note',
-    motdText,
-    loginSendDelay = 10000, // 10 seconds
-    playerOnlineCooldown =  21600000, // 6 hours (6hrs * 60minutes * 60seconds * 1000miliseconds)
+    const version = '0.2.10';
+    const lastUpdate = 1556246712;
+    const schemaVersion = 0.2;
+    const loginSendDelay = 10000; // 10 seconds
+    const playerOnlineCooldown =  21600000; // 6 hours (6hrs * 60minutes * 60seconds * 1000miliseconds)
+    const motdNoteName = 'MotD Note';
 
-    loadMotDNote = function (text) {
-        motdText=text.replace(/(\r\n|\r|\n|\n<br>|<br>\n)/gi,'<br>');
-    },
+    const styles = {
+        container: 'display: block; border: 1px solid #999; border-radius: .3em; padding: 1em; background-color: white; box-shadow: 0 0 25px 2px #999; margin: 1em 0 1em 0;',
+        gmnote: 'display: block; border-top: 2px dashed #d2dc65; margin: 2em -1em -1em -1em; border-radius: 0 0 .3em .3em; padding: .3em; background-color: #F2F5D3;',
+        gmtitle: 'font-size: 2em; font-weight:bold; margin:.5em 1em 1em 1em; text-align: center;line-height:1em;',
+        image: 'display: block; width: auto; height: auto;',
+        motdLinkBox: 'display: block; text-align: center; font-size: .8em; font-weight:bold;',
+        motdLink: 'color: #07c; text-decoration: underline;',
+        links: 'color: #07c;'
+    };
 
-    createMotDNote = function() {
-        var motdNote = createObj('handout',{
+    let motdNoteId;
+    let motdText;
+    let motdGMText;
+    let motdImg;
+
+    const loadMotDNote = (text, gmText, img) => {
+        
+        gmText=('null'===gmText)?'':gmText;
+        
+        motdText=text
+            .replace(/(\r\n|\r|\n|\n<br>|<br>\n)/gi,'<br />')
+            .replace(/<br\s*\/?>\s*\n/ig,'<br />')
+            .replace(/\n/ig,'<br />')
+            .replace(/<a\s+/ig,`<a style="${styles.links}" `)
+            ;
+
+        motdGMText=(gmText||'')
+            .replace(/(\r\n|\r|\n|\n<br>|<br>\n)/gi,'<br />')
+            .replace(/<br\s*\/?>\s*\n/ig,'<br />')
+            .replace(/\n/ig,'<br />')
+            .replace(/<a\s+/ig,`<a style="${styles.links}" `)
+            ;
+  
+        motdImg = img?`<img style="${styles.image}" src="${img}">`:'';
+    };
+
+    const createMotDNote = () => {
+        let motdNote = createObj('handout',{
             name: motdNoteName
         });
         motdText='Welcome to the Game!';
+        motdGMText='';
+        motdImg='';
         motdNote.set('notes',motdText);
         motdNoteId = motdNote.id;
-    },
+    };
 
-    showToPlayer = (p) => {
+    const showToPlayer = (p) => {
         let who = p.get('displayname');
+        let text = motdText.replace(/%%NAME%%/g,who);
+
+        let textGM = (playerIsGM(p.id) && motdGMText.length) ? (`<div style="${styles.gmnote}"><div style="${styles.gmtitle}">GM Only Notes</div>${motdGMText.replace(/%%NAME%%/g,who)}</div>`) : '';
         sendChat('MotD','/w "'+who+'" '+
-            motdText
-                .replace(/%%NAME%%/g,who)
-                .replace(/<br\s*\/?>\s*\n/ig,'<br />')
-                .replace(/\n/ig,'<br />')
+           `<div style="${styles.container}">${
+            motdImg.length ? `<div>${motdImg}</div>` : ''
+           }<div>${text}</div>${textGM}</div><div style="${styles.motdLinkBox}"><a style="${styles.motdLink}" href="http://journal.roll20.net/handout/${motdNoteId}">See the ${motdNoteName} handout.</a></div>` 
         );
         state.MotD.playerShownLast[p.id] = _.now();
-    },
+    };
 
-    checkInstall = function(callback) {
+    const checkInstall = (callback) => {
         log('-=> MotD v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'MotD') || state.MotD.version !== schemaVersion) {
@@ -80,23 +113,25 @@ const MotD = (function() {
             callback();
         };
 
-        var motdNote = filterObjs(function(o){
+        let motdNote = filterObjs(function(o){
             return ( 'handout' === o.get('type') && motdNoteName === o.get('name') && false === o.get('archived'));
         })[0];
         if(motdNote) {
             motdNoteId = motdNote.id;
-            motdNote.get('notes',function(n) {
-                loadMotDNote(n);
-                callback2();
+            motdNote.get('notes',(notes) => {
+                motdNote.get('gmnotes',(gmNotes)=>{
+                    loadMotDNote(notes,gmNotes,motdNote.get('avatar'));
+                    callback2();
+                });
             });
         } else {
             createMotDNote();
             callback2();
         }
-    },
+    };
 
-    ch = function (c) {
-        var entities = {
+    const ch = (c) => {
+        const entities = {
             '<' : 'lt',
             '>' : 'gt',
             "'" : '#39',
@@ -115,41 +150,9 @@ const MotD = (function() {
             return ('&'+entities[c]+';');
         }
         return '';
-    },
+    };
 
-    _h = {
-        outer: (...o) => `<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">${o.join(' ')}</div>`,
-        title: (t,v) => `<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">${t} v${v}</div>`,
-        subhead: (...o) => `<b>${o.join(' ')}</b>`,
-        minorhead: (...o) => `<u>${o.join(' ')}</u>`,
-        optional: (...o) => `${ch('[')}${o.join(` ${ch('|')} `)}${ch(']')}`,
-        required: (...o) => `${ch('<')}${o.join(` ${ch('|')} `)}${ch('>')}`,
-        header: (...o) => `<div style="padding-left:10px;margin-bottom:3px;">${o.join(' ')}</div>`,
-        section: (s,...o) => `${_h.subhead(s)}${_h.inset(...o)}`,
-        paragraph: (...o) => `<p>${o.join(' ')}</p>`,
-        items: (o) => `<li>${o.join('</li><li>')}</li>`,
-        ol: (...o) => `<ol>${_h.items(o)}</ol>`,
-        ul: (...o) => `<ul>${_h.items(o)}</ul>`,
-        grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`,
-        cell: (o) =>  `<div style="width: 130px; padding: 0 3px; float: left;">${o}</div>`,
-        inset: (...o) => `<div style="padding-left: 10px;padding-right:20px">${o.join(' ')}</div>`,
-        pre: (...o) =>`<div style="border:1px solid #e1e1e8;border-radius:4px;padding:8.5px;margin-bottom:9px;font-size:12px;white-space:normal;word-break:normal;word-wrap:normal;background-color:#f7f7f9;font-family:monospace;overflow:auto;">${o.join(' ')}</div>`,
-        preformatted: (...o) =>_h.pre(o.join('<br>').replace(/\s/g,ch(' '))),
-        code: (...o) => `<code>${o.join(' ')}</code>`,
-        attr: {
-            bare: (o)=>`${ch('@')}${ch('{')}${o}${ch('}')}`,
-            selected: (o)=>`${ch('@')}${ch('{')}selected${ch('|')}${o}${ch('}')}`,
-            target: (o)=>`${ch('@')}${ch('{')}target${ch('|')}${o}${ch('}')}`,
-            char: (o,c)=>`${ch('@')}${ch('{')}${c||'CHARACTER NAME'}${ch('|')}${o}${ch('}')}`
-        },
-        bold: (...o) => `<b>${o.join(' ')}</b>`,
-        italic: (...o) => `<i>${o.join(' ')}</i>`,
-        font: {
-            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`
-        }
-    },
-
-    getRelativeDate = (ms) => {
+    const getRelativeDate = (ms) => {
         if(undefined === ms) {
             return 'never';
         }
@@ -201,20 +204,49 @@ const MotD = (function() {
         }
         let when = new Date(ms);
         return `${monthNames[when.getMonth()]} ${withOrd(when.getDate())}, ${when.getFullYear()}`;
-    },
+    };
 
-    getLastByPlayer = () => {
-        return _h.ul(..._.chain(findObjs({type: 'player'}))
-            .map((p)=>`${_h.bold(p.get('displayname'))}: ${
-                _h.ul(
-                    `${_h.bold('Shown:')} ${getRelativeDate(state.MotD.playerShownLast[p.id])}`,
-                    `${_h.bold('Seen:')} ${getRelativeDate(state.MotD.playerTimes[p.id])}`
-                )}`)
-            .value()
-        );
-    },
+    const _h = {
+        outer: (...o) => `<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">${o.join(' ')}</div>`,
+        title: (t,v) => `<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">${t} v${v}</div>`,
+        subhead: (...o) => `<b>${o.join(' ')}</b>`,
+        minorhead: (...o) => `<u>${o.join(' ')}</u>`,
+        optional: (...o) => `${ch('[')}${o.join(` ${ch('|')} `)}${ch(']')}`,
+        required: (...o) => `${ch('<')}${o.join(` ${ch('|')} `)}${ch('>')}`,
+        header: (...o) => `<div style="padding-left:10px;margin-bottom:3px;">${o.join(' ')}</div>`,
+        section: (s,...o) => `${_h.subhead(s)}${_h.inset(...o)}`,
+        paragraph: (...o) => `<p>${o.join(' ')}</p>`,
+        items: (o) => `<li>${o.join('</li><li>')}</li>`,
+        ol: (...o) => `<ol>${_h.items(o)}</ol>`,
+        ul: (...o) => `<ul>${_h.items(o)}</ul>`,
+        grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`,
+        cell: (o) =>  `<div style="width: 130px; padding: 0 3px; float: left;">${o}</div>`,
+        inset: (...o) => `<div style="padding-left: 10px;padding-right:20px">${o.join(' ')}</div>`,
+        pre: (...o) =>`<div style="border:1px solid #e1e1e8;border-radius:4px;padding:8.5px;margin-bottom:9px;font-size:12px;white-space:normal;word-break:normal;word-wrap:normal;background-color:#f7f7f9;font-family:monospace;overflow:auto;">${o.join(' ')}</div>`,
+        preformatted: (...o) =>_h.pre(o.join('<br>').replace(/\s/g,ch(' '))),
+        code: (...o) => `<code>${o.join(' ')}</code>`,
+        attr: {
+            bare: (o)=>`${ch('@')}${ch('{')}${o}${ch('}')}`,
+            selected: (o)=>`${ch('@')}${ch('{')}selected${ch('|')}${o}${ch('}')}`,
+            target: (o)=>`${ch('@')}${ch('{')}target${ch('|')}${o}${ch('}')}`,
+            char: (o,c)=>`${ch('@')}${ch('{')}${c||'CHARACTER NAME'}${ch('|')}${o}${ch('}')}`
+        },
+        bold: (...o) => `<b>${o.join(' ')}</b>`,
+        italic: (...o) => `<i>${o.join(' ')}</i>`,
+        font: {
+            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`
+        }
+    };
 
-    showHelp = function(playerid) {
+    const getLastByPlayer = () => _h.ul(...findObjs({type: 'player'})
+        .map((p)=>`${_h.bold(p.get('displayname'))}: ${
+            _h.ul(
+                `${_h.bold('Shown:')} ${getRelativeDate(state.MotD.playerShownLast[p.id])}`,
+                `${_h.bold('Seen:')} ${getRelativeDate(state.MotD.playerTimes[p.id])}`
+            )}`)
+    );
+
+    const showHelp = (playerid) => {
         let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
         sendChat('', '/w "'+who+'" '+
             _h.outer(
@@ -227,35 +259,88 @@ const MotD = (function() {
                     _h.font.command(
                         `!motd `,
                         _h.optional(
-                            `--help`
+                            `--help`,
+                            `--all`,
+                            `--PLAYER NAME ...`
                         )
                     ),
                     _h.ul(
-                        `${_h.bold('--help')} -- Shows the Help screen`
+                        `${_h.bold('--help')} -- Shows the Help screen`,
+                        `${_h.bold('--all')} -- Show the Message of the Day to all logged in players (including GM).`,
+                        `${_h.bold('--PLAYER NAME')} -- Player who should be shown the Message of the Day. Matches are case-insensitive and will match partial names. You can have multiple of this argument to show to multiple players.`
                     )
+                ),
+                _h.paragraph(`In the absense of any arguments, will show the Message of the Day to the current player.`),
+                _h.paragraph(`Show the Message of the day to the player named ${ch('"')}Bob the Slayer${ch('"')}:`),
+                _h.inset(
+                    _h.preformatted(
+                        '!motd --Bob the Slayer'
+                        )
+                ),
+                _h.paragraph(`Show the Message of the day to all the players with ${ch('"')}ka${ch('"')} in their name`),
+                _h.inset(
+                    _h.preformatted(
+                        '!motd --ka'
+                        )
+                ),
+                _h.paragraph(`Show the Message of the day to all the logged in players.`),
+                _h.inset(
+                    _h.preformatted(
+                        '!motd --all'
+                        )
                 ),
                 _h.minorhead('Player Interactions'),
                 getLastByPlayer()
             )
         );
-    },
+    };
 
-    handleInput = function(msg) {
-        var args;
+    const handleInput = (msg) => {
+        let args;
 
         if (msg.type !== "api") {
             return;
         }
 
-        args = msg.content.split(/\s+/);
+        args = msg.content.split(/\s+--/);
         switch(args[0]) {
             case '!motd':
-                showHelp(msg.playerid);
+                if(args.includes('help')){
+                    showHelp(msg.playerid);
+                }
+                if(1 === args.length){
+                    let player = getObj('player',msg.playerid);
+                    showToPlayer(player);
+                } else if (playerIsGM(msg.playerid)){
+                    // find players on list
+                    let names = args.slice(1);
+                    let players = findObjs({ type: 'player' });
+
+                    if(names.includes('all')){
+                        players.forEach(p=>{
+                            if(true == p.get('online')){
+                                showToPlayer(p);
+                            }
+                        });
+                    } else {
+                        args.slice(1).forEach(n=>{
+                            let key = n.toLowerCase().replace(/\s+/,'');
+                            let match = players.find((p)=>{
+                                return -1 !== p.get('displayname').toLowerCase().replace(/\s+/,'').indexOf(key);
+                            });
+                            if(match){
+                                showToPlayer(match);
+                            }
+                        });
+                    }
+
+                    // send them each the listing.
+                }
                 break;
         }
-    },
+    };
 
-    handlePlayerLogin = function(obj) {
+    const handlePlayerLogin = (obj) => {
         if( true === obj.get('online') && (
             state.MotD.playerTimes[obj.id] === undefined ||
             state.MotD.playerTimes[obj.id] < (_.now() - playerOnlineCooldown) 
@@ -265,39 +350,38 @@ const MotD = (function() {
             },loginSendDelay);
         }
         state.MotD.playerTimes[obj.id] = _.now();
-    },
+    };
 
-    handleNoteChange = function(obj) {
+    const handleNoteChange = (obj) => {
         if(obj.id === motdNoteId) {
-            obj.get('notes',function(n) {
-                loadMotDNote(n);
-            });
+            log('MotD Note changed.');
+            setTimeout(()=>{
+                obj.get('notes',(notes) => {
+                    obj.get('gmnotes',(gmNotes)=>{
+                        loadMotDNote(notes, gmNotes, obj.get('avatar'));
+                    });
+                });
+            },loginSendDelay);
         }
-    },
+    };
 
-    handleNoteDestroy = function(obj) {
+    const handleNoteDestroy = (obj) => {
         if(obj.id === motdNoteId) {
             createMotDNote();
         }
-    },
+    };
 
-    registerEventHandlers = function() {
+    const registerEventHandlers = () => {
         on('chat:message', handleInput);
         on('change:player:_online', handlePlayerLogin);
         on('change:handout', handleNoteChange);
         on('destroy:handout', handleNoteDestroy);
     };
 
-    return {
-        CheckInstall: checkInstall,
-        RegisterEventHandlers: registerEventHandlers
-    };
-}());
-
-on('ready',function() {
-    'use strict';
-
-    MotD.CheckInstall(function(){
-        MotD.RegisterEventHandlers();
+    on('ready',function() {
+        checkInstall(function(){
+            registerEventHandlers();
+        });
     });
-});
+})();
+
