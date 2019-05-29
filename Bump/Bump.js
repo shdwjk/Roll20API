@@ -5,8 +5,8 @@
 /* global GroupInitiative TokenMod */
 const Bump = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.2.14';
-    const lastUpdate = 1548610903;
+    const version = '0.2.16';
+    const lastUpdate = 1559166147;
     const schemaVersion = 0.4;
     const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
     const checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461';
@@ -407,6 +407,34 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
                 m[p]=obj.get(p);
                 return m;
             },{}));
+
+            if(pair.slave.id === obj.id) {
+                pair.slave.set(Object.assign({
+                    showplayers_name: false,
+                    showplayers_bar1: false,
+                    showplayers_bar2: false,
+                    showplayers_bar3: false,
+                    showplayers_aura1: false,
+                    showplayers_aura2: false
+                },(mirroredProps.reduce((m,p) => {
+                    m[p]=pair.slave.get(p);
+                    return m;
+                },{}))));
+            } else {
+                pair.master.set(mirroredProps.reduce((m,p) => {
+                    m[p]=pair.master.get(p);
+                    return m;
+                },{}));
+                pair.slave.set({
+                    showplayers_name: false,
+                    showplayers_bar1: false,
+                    showplayers_bar2: false,
+                    showplayers_bar3: false,
+                    showplayers_aura1: false,
+                    showplayers_aura2: false
+                });
+            }
+
             if(obj.get('layer') !== prev.layer) {
                 if(pair.master.id === obj.id) {
                     setSlaveLayer(pair.slave,prev.layer);
