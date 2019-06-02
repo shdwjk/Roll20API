@@ -5,9 +5,9 @@
 var Facing = Facing || (function() {
     'use strict';
 
-    var version = '0.1.3',
-    lastUpdate = 1490707181,
-    schemaVersion = 0.1,
+    var version = '0.1.4',
+    lastUpdate = 1559490422,
+    schemaVersion = 0.2,
     defaults = {
         image: 'https://s3.amazonaws.com/files.d20.io/images/9183999/XcViJVf7-cGOXcZq1KWp-A/thumb.png?1430541914',
         attributeName: 'facing',
@@ -20,7 +20,16 @@ var Facing = Facing || (function() {
         if( ! _.has(state,'Facing') || state.Facing.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.Facing && state.Facing.version) {
-                case 0:
+                
+                case 0.1:
+                    state.Facing.config.centering = false;
+                    /* break; // intentional dropthrough */ /* falls through */
+
+
+                case 'UpdateSchemaVersion':
+                    state.Facing.version = schemaVersion;
+                    break;
+
                 default:
                     state.Facing = {
                         version: schemaVersion,
@@ -28,7 +37,8 @@ var Facing = Facing || (function() {
                             image: defaults.image,
                             attributeName: defaults.attributeName,
                             relative: true,
-                            scale: defaults.scale
+                            scale: defaults.scale,
+                            centering: false
                         },
                         ringed: {}
                     };
@@ -188,6 +198,22 @@ var Facing = Facing || (function() {
         dim, rot;
         if(pair) {
             if(pair.master.id === obj.id) {
+
+                let loc = {
+                    top: obj.get('top'),
+                    left: obj.get('left'),
+                    width: obj.get('width'),
+                    height: obj.get('height')
+                };
+
+                if(state.Facing.config.centering &&
+                    ( loc.left !== prev.left || loc.top !== prev.top) &&
+                    ( loc.width < 70 || loc.height < 70)
+                ){
+                    loc.left = loc.left+35-(loc.width/2);
+                    loc.top = loc.top+35-(loc.height/2);
+                }
+
                 layer=( 'gmlayer' === pair.master.get('layer') ? 'gmlayer' : 'map');
                 dim=(Math.max(pair.master.get('height'),pair.master.get('width'))*state.Facing.config.scale);
 
@@ -207,15 +233,17 @@ var Facing = Facing || (function() {
 
                 pair.slave.set({
                     layer: layer,
-                    top: pair.master.get('top'),
-                    left: pair.master.get('left'),
+                    top: loc.top,
+                    left: loc.left,
                     height: dim,
                     width: dim,
                     rotation: rot
                 });
 
                 pair.master.set({
-                    rotation: 0
+                    rotation: 0,
+                    top: loc.top,
+                    left: loc.left
                 });
 
                 if('gmlayer' === layer) {
@@ -291,11 +319,25 @@ var Facing = Facing || (function() {
 
     },
 
+    getConfigOption_Centering = function() {
+        var text = (state.Facing.config.centering ? 'On' : 'Off' );
+        return '<div>'+
+            'Centering of small tokens is currently <b>'+
+                text+
+            '</b> '+
+            '<a href="!facing-config --toggle-centering">'+
+                'Toggle'+
+            '</a>'+
+        '</div>';
+
+    },
+
     getAllConfigOptions = function() {
         return getConfigOption_RingImage()+
             getConfigOption_AttributeName()+
             getConfigOption_Relative()+
-            getConfigOption_Scale();
+            getConfigOption_Scale()+
+            getConfigOption_Centering();
     },
 
     showHelp = function(who) {
@@ -426,6 +468,7 @@ var Facing = Facing || (function() {
                                 +'</div>'
                             );
                             break;
+
                         case '--toggle-relative':
                             state.Facing.config.relative=!state.Facing.config.relative;
                             sendChat('','/w "'+who+'" '
@@ -434,6 +477,16 @@ var Facing = Facing || (function() {
                                 +'</div>'
                             );
                             break;
+
+                        case '--toggle-centering':
+                            state.Facing.config.centering=!state.Facing.config.centering;
+                            sendChat('','/w "'+who+'" '
+                                +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
+                                    +getConfigOption_Centering()
+                                +'</div>'
+                            );
+                            break;
+
                         case '--set-scale':
                             if(opt.length && opt[0].length) {
                                 tmp = parseFloat(opt[0]);
