@@ -2,24 +2,29 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var Facing = Facing || (function() {
-    'use strict';
+const Facing = (() => { // eslint-disable-line no-unused-vars
 
-    var version = '0.1.4',
-    lastUpdate = 1559490422,
-    schemaVersion = 0.2,
-    defaults = {
+    const version = '0.1.5';
+    const lastUpdate = 1560010028;
+    const schemaVersion = 0.3;
+    const defaults = {
         image: 'https://s3.amazonaws.com/files.d20.io/images/9183999/XcViJVf7-cGOXcZq1KWp-A/thumb.png?1430541914',
         attributeName: 'facing',
         scale: 2.5
-    },
+    };
+    const indicatorLayers = ['map', 'objects' ];
 
-    checkInstall = function() {
+
+    const checkInstall = () => {
         log('-=> Facing v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'Facing') || state.Facing.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.Facing && state.Facing.version) {
+
+                case 0.2:
+                    state.Facing.config.indicatorLayer = 'map';
+                    /* break; // intentional dropthrough */ /* falls through */
                 
                 case 0.1:
                     state.Facing.config.centering = false;
@@ -38,16 +43,17 @@ var Facing = Facing || (function() {
                             attributeName: defaults.attributeName,
                             relative: true,
                             scale: defaults.scale,
-                            centering: false
+                            centering: false,
+                            indicatorLayer: 'map'
                         },
                         ringed: {}
                     };
                     break;
             }
         }
-    },
+    };
 
-    ch = function (c) {
+    const ch = (c) => {
         var entities = {
             '<' : 'lt',
             '>' : 'gt',
@@ -67,19 +73,19 @@ var Facing = Facing || (function() {
             return ('&'+entities[c]+';');
         }
         return '';
-    },
+    };
 
-    getCleanImgsrc = function (imgsrc) {
-        var parts = imgsrc.match(/(.*\/images\/.*)(thumb|max)(.*)$/);
-        if(parts) {
-            return parts[1]+'thumb'+parts[3];
-        }
-        return;
-    },
+	const getCleanImgsrc = (imgsrc) => {
+		let parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
+		if(parts) {
+			return parts[1]+'thumb'+parts[3]+(parts[4]?parts[4]:`?${Math.round(Math.random()*9999999)}`);
+		}
+		return;
+	};
 
-    getRingedPair = function(id) {
+    const getRingedPair = (id) => {
         var ringed;
-        _.find(state.Facing.ringed,function(slaveid,masterid){
+        _.find(state.Facing.ringed,(slaveid,masterid) => {
             if(id === masterid || id === slaveid) {
                 ringed = {
                     master: getObj('graphic',masterid),
@@ -89,18 +95,18 @@ var Facing = Facing || (function() {
                     type: 'attribute',
                     name: state.Facing.config.attributeName,
                     characterid: ringed.master && ringed.master.get('represents')
-                })[0] || {set:function(){}};
+                })[0] || {set:()=>{}};
 
                 return true;
             }
             return false;
         });
         return ringed;
-    },
+    };
 
-    getRinged = function(id) {
-        var ringed;
-        _.find(state.Facing.ringed,function(slaveid,masterid){
+    const getRinged = (id) => {
+        let ringed;
+        _.find(state.Facing.ringed,(slaveid,masterid) => {
             if(id === masterid){
                 ringed = getObj('graphic',slaveid);
                 return true;
@@ -112,18 +118,17 @@ var Facing = Facing || (function() {
             return false;
         });
         return ringed;
-    },
+    };
 
 
-    createRinged = function(id) {
+    const createRinged = (id) => {
         // get root obj
-        var master = getObj('graphic',id),
-        slave = getRinged(id),
-        layer, dim;
+        const master = getObj('graphic',id);
+        let slave = getRinged(id);
 
         if(!slave && master) {
-            layer=( 'gmlayer' === master.get('layer') ? 'gmlayer' : 'map');
-            dim=(Math.max(master.get('height'),master.get('width'))*state.Facing.config.scale);
+            let layer=( 'gmlayer' === master.get('layer') ? 'gmlayer' : state.Facing.config.indicatorLayer);
+            let dim=(Math.max(master.get('height'),master.get('width'))*state.Facing.config.scale);
             slave = createObj('graphic',{
                 imgsrc: state.Facing.config.image,
                 layer: layer,
@@ -145,21 +150,62 @@ var Facing = Facing || (function() {
             })[0] || (master.get('represents') && createObj('attribute',{
                 name: state.Facing.config.attributeName,
                 characterid: master.get('represents')
-            })) || { set: function(){} }).set({
+            })) || { set: ()=>{} }).set({
                 current: slave.get('rotation')
             });
 
 
-            if('gmlayer' === layer) {
+            if('gmlayer' === layer || 'objects' == state.Facing.config.indicatorLayer) {
                 toBack(slave);
             } else {
                 toFront(slave);
             }
             state.Facing.ringed[master.id]=slave.id;
         }
-    },
+    };
 
-    removeRinged = function(id) {
+    const fixIndicatorLayer = () => {
+        let masters = Object.keys(state.Facing.ringed);
+
+        const burndown = () => {
+            let id = masters.shift();
+            let defer = 0;
+            if(id){
+                let m = getObj('graphic',id);
+                let s = getObj('graphic',state.Facing.ringed[id]);
+                if(s){
+                    let layer = m.get('layer');
+                    let sLayer = s.get('layer');
+                    switch(layer){
+                        case 'gmlayer':
+                            if(sLayer !== 'gmlayer'){
+                                s.set({ layer: 'gmlayer'});
+                                toBack(s);
+                                defer = 50;
+                            }
+                            break;
+
+                        default:
+                            if(sLayer !== state.Facing.config.indicatorLayer) {
+                                s.set({ layer: state.Facing.config.indicatorLayer });
+                                if( 'objects' == state.Facing.config.indicatorLayer) {
+                                    toBack(s);
+                                    defer = 50;
+                                } else {
+                                    toFront(s);
+                                    defer = 1000;
+                                }
+                            }
+                            break;
+                    }
+                }
+                setTimeout(burndown,defer);
+            }
+        };
+        setTimeout(burndown,0);
+    };
+
+    const removeRinged = (id) => {
         var pair=getRingedPair(id);
         if(pair) {
             if(id === pair.master.id ) {
@@ -167,35 +213,33 @@ var Facing = Facing || (function() {
             }
             delete state.Facing.ringed[pair.master.id];
         }
-    },
+    };
 
-    zeroToken = function(id) {
+    const zeroToken = (id) => {
         var pair=getRingedPair(id);
         if(pair) {
             pair.slave.set({
                 rotation: 0
             });
         }
-    },
+    };
 
-    facingToken = function(id) {
+    const facingToken = (id) => {
         var pair=getRingedPair(id);
         if(pair) {
             removeRinged(id);
         } else {
             createRinged(id);
         }
-    },
+    };
 
-    handleRemoveToken = function(obj) {
+    const handleRemoveToken = (obj) => {
         // special handling for deleting slaves?
         removeRinged(obj.id);
-    },
+    };
 
-    handleTokenChange = function(obj,prev) {
-        var pair = getRingedPair(obj.id),
-        layer,
-        dim, rot;
+    const handleTokenChange = (obj,prev) => {
+        let pair = getRingedPair(obj.id);
         if(pair) {
             if(pair.master.id === obj.id) {
 
@@ -214,10 +258,10 @@ var Facing = Facing || (function() {
                     loc.top = loc.top+35-(loc.height/2);
                 }
 
-                layer=( 'gmlayer' === pair.master.get('layer') ? 'gmlayer' : 'map');
-                dim=(Math.max(pair.master.get('height'),pair.master.get('width'))*state.Facing.config.scale);
+                let layer=( 'gmlayer' === pair.master.get('layer') ? 'gmlayer' : state.Facing.config.indicatorLayer );
+                let dim=(Math.max(pair.master.get('height'),pair.master.get('width'))*state.Facing.config.scale);
 
-                rot=pair.master.get('rotation');
+                let rot=pair.master.get('rotation');
 
                 if(rot !== prev.rotation ) {
                     if(state.Facing.config.relative) {
@@ -246,7 +290,7 @@ var Facing = Facing || (function() {
                     left: loc.left
                 });
 
-                if('gmlayer' === layer) {
+                if('gmlayer' === layer || 'objects' == state.Facing.config.indicatorLayer) {
                     toBack(pair.slave);
                 } else {
                     toFront(pair.slave);
@@ -267,9 +311,9 @@ var Facing = Facing || (function() {
                 });
             }
         }
-    },
+    };
 
-    getConfigOption_RingImage = function() {
+    const getConfigOption_RingImage = () => {
         var text = state.Facing.config.image;
         return '<div>'+
             'Direction Indicator:'+
@@ -281,8 +325,9 @@ var Facing = Facing || (function() {
                 'Default'+
             '</a>'+
         '</div>';
-    },
-    getConfigOption_AttributeName = function() {
+    };
+
+    const getConfigOption_AttributeName = () => {
         var text = state.Facing.config.attributeName;
         return '<div>'+
             'Attribute Name to set facing value: <b>'+
@@ -291,9 +336,9 @@ var Facing = Facing || (function() {
                 'Set Name'+
             '</a>'+
         '</div>';
-    },
+    };
 
-    getConfigOption_Relative = function() {
+    const getConfigOption_Relative = () => {
         var text = (state.Facing.config.relative ? 'On' : 'Off' );
         return '<div>'+
             'Relative Rotation is currently <b>'+
@@ -304,9 +349,9 @@ var Facing = Facing || (function() {
             '</a>'+
         '</div>';
 
-    },
+    };
 
-    getConfigOption_Scale = function() {
+    const getConfigOption_Scale = () => {
         var text = state.Facing.config.scale;
         return '<div>'+
             'Scale is currently <b>'+
@@ -317,9 +362,9 @@ var Facing = Facing || (function() {
             '</a>'+
         '</div>';
 
-    },
+    };
 
-    getConfigOption_Centering = function() {
+    const getConfigOption_Centering = () => {
         var text = (state.Facing.config.centering ? 'On' : 'Off' );
         return '<div>'+
             'Centering of small tokens is currently <b>'+
@@ -329,18 +374,32 @@ var Facing = Facing || (function() {
                 'Toggle'+
             '</a>'+
         '</div>';
+    };
 
-    },
+    const getConfigOption_IndicatorLayer = () => {
+        return '<div>'+
+            'Layer to display the visible facing indicator <b>'+
+            state.Facing.config.indicatorLayer +
+            '</b> '+
+            `<a href="!facing-config --set-indicator-layer|?{Layer|${
+                state.Facing.config.indicatorLayer
+            }|${indicatorLayers.filter(l=>l != state.Facing.config.indicatorLayer).join('|')}}">`+
+                'Select'+
+            '</a>'+
+        '</div>';
 
-    getAllConfigOptions = function() {
+    };
+
+    const getAllConfigOptions = () => {
         return getConfigOption_RingImage()+
             getConfigOption_AttributeName()+
             getConfigOption_Relative()+
             getConfigOption_Scale()+
-            getConfigOption_Centering();
-    },
+            getConfigOption_Centering()+
+            getConfigOption_IndicatorLayer();
+    };
 
-    showHelp = function(who) {
+    const showHelp = (who) => {
 
         sendChat('','/w "'+who+'" '
             +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
@@ -376,9 +435,9 @@ var Facing = Facing || (function() {
             +getAllConfigOptions()
             +'</div>'
         );
-    },
+    };
 
-    handleInput = function(msg) {
+    const handleInput = (msg) => {
         var args, who;
 
         if (msg.type !== "api" ) {
@@ -393,7 +452,7 @@ var Facing = Facing || (function() {
                     showHelp(who);
                     return;
                 }
-                _.each(msg.selected,function(s){
+                _.each(msg.selected,(s) => {
                     facingToken(s._id,who);
                 });
                 break;
@@ -402,7 +461,7 @@ var Facing = Facing || (function() {
                     showHelp(who);
                     return;
                 }
-                _.each(msg.selected,function(s){
+                _.each(msg.selected,(s) => {
                     zeroToken(s._id,who);
                 });
                 break;
@@ -432,7 +491,7 @@ var Facing = Facing || (function() {
                     );
                     return;
                 }
-                _.each(args,function(a){
+                _.each(args,(a) => {
                     var opt=a.split(/\|/),
                     tmp,omsg='';
                     switch(opt.shift()) {
@@ -487,6 +546,21 @@ var Facing = Facing || (function() {
                             );
                             break;
 
+                        case '--set-indicator-layer':
+                            if(opt.length && opt[0].length &&  indicatorLayers.includes(opt[0].toLowerCase()) ) {
+                                if(state.Facing.config.indicatorLayer !== opt[0].toLowerCase()){
+                                    state.Facing.config.indicatorLayer = opt[0].toLowerCase();
+                                    fixIndicatorLayer();
+                                }
+                            
+                                sendChat('','/w "'+who+'" '
+                                    +'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'
+                                        +getConfigOption_IndicatorLayer()
+                                    +'</div>'
+                                );
+                            }
+                            break;
+
                         case '--set-scale':
                             if(opt.length && opt[0].length) {
                                 tmp = parseFloat(opt[0]);
@@ -516,26 +590,17 @@ var Facing = Facing || (function() {
 
                 break;
         }
-    },
+    };
 
-    registerEventHandlers = function() {
+    const registerEventHandlers = () => {
         on('chat:message', handleInput);
         on('change:graphic', handleTokenChange);
         on('destroy:graphic', handleRemoveToken);
     };
 
-    return {
-        CheckInstall: checkInstall,
-        RegisterEventHandlers: registerEventHandlers
-    };
+    on('ready', () => {
+        checkInstall();
+        registerEventHandlers();
+    });
     
-}());
-
-on('ready',function() {
-    'use strict';
-
-    Facing.CheckInstall();
-    Facing.RegisterEventHandlers();
-});
-
-
+})();
