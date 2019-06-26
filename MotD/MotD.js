@@ -4,8 +4,8 @@
 
 const MotD = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.2.10';
-    const lastUpdate = 1556246712;
+    const version = '0.2.11';
+    const lastUpdate = 1561517731;
     const schemaVersion = 0.2;
     const loginSendDelay = 10000; // 10 seconds
     const playerOnlineCooldown =  21600000; // 6 hours (6hrs * 60minutes * 60seconds * 1000miliseconds)
@@ -25,6 +25,56 @@ const MotD = (() => { // eslint-disable-line no-unused-vars
     let motdText;
     let motdGMText;
     let motdImg;
+
+    const extractInlineRolls = (str) => {
+
+        let rolls=[],
+            bracketCount=0,
+            rollStart=0,
+            accumulator='';
+
+        for(let position = 0; position < str.length; ++position) {
+            if('[' === str[position]) {
+                if(bracketCount){
+                    accumulator='[';
+                    rollStart=position-1;
+                    while(bracketCount>0 && position<str.length){
+                        switch(str[position]){
+                            case '[': ++bracketCount; break;
+                            case ']': --bracketCount; break;
+                        }
+                        accumulator+=str[position];
+                        ++position;
+                    }
+                    if(!bracketCount){
+                        rolls.push({
+                            start: rollStart,
+                            end: rollStart+accumulator.length,
+                            roll: accumulator
+                        });
+                    }
+                } else {
+                    ++bracketCount;
+                }
+            } else {
+                bracketCount=0;
+            }
+        }
+        return rolls;
+    };
+
+    const restoreEntities = (text)=> text
+        .replace(/&lt;/,'<')
+        .replace(/&#60;/,'<')
+        .replace(/&gt;/,'>')
+        .replace(/&#62;/,'>')
+        .replace(/&#38;/,'&')
+        .replace(/&amp;/,'&')
+        ;
+
+    const replaceAt = (text,start,end,replacement) => `${text.slice(0,start)}${replacement}${text.slice(end)}`;
+    const applyToInlines = (text,f)=> extractInlineRolls(text).reverse().reduce((t,o)=>replaceAt(t,o.start,o.end,f(o.roll)),text);
+
 
     const loadMotDNote = (text, gmText, img) => {
         
@@ -60,9 +110,10 @@ const MotD = (() => { // eslint-disable-line no-unused-vars
 
     const showToPlayer = (p) => {
         let who = p.get('displayname');
-        let text = motdText.replace(/%%NAME%%/g,who);
+        let text = applyToInlines(motdText.replace(/%%NAME%%/g,who),restoreEntities);
+        let gmText =applyToInlines(motdGMText.replace(/%%NAME%%/g,who),restoreEntities);
 
-        let textGM = (playerIsGM(p.id) && motdGMText.length) ? (`<div style="${styles.gmnote}"><div style="${styles.gmtitle}">GM Only Notes</div>${motdGMText.replace(/%%NAME%%/g,who)}</div>`) : '';
+        let textGM = (playerIsGM(p.id) && motdGMText.length) ? (`<div style="${styles.gmnote}"><div style="${styles.gmtitle}">GM Only Notes</div>${gmText}</div>`) : '';
         sendChat('MotD','/w "'+who+'" '+
            `<div style="${styles.container}">${
             motdImg.length ? `<div>${motdImg}</div>` : ''
