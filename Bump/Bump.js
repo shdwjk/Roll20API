@@ -5,8 +5,8 @@
 /* global GroupInitiative TokenMod */
 const Bump = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.2.16';
-    const lastUpdate = 1559166147;
+    const version = '0.2.17';
+    const lastUpdate = 1563495499;
     const schemaVersion = 0.4;
     const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
     const checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461';
@@ -356,9 +356,7 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
     const removeMirrored = (id) => {
         var pair=getMirroredPair(id);
         if(pair) {
-            if(id === pair.master.id ) {
-                pair.slave.remove();
-            }
+            pair.slave.remove();
             delete state.Bump.mirrored[pair.master.id];
         }
     };
@@ -554,7 +552,14 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
                     _h.paragraph( `Using !bump on a token in Bump causes it to swap with it${ch("'")}s counterpart on the other layer.`),
                     _h.ul(
                         `${_h.bold('--help')} -- Shows the Help screen.`
-                    )
+                    ),
+                    _h.font.command(
+                        `!bump-unslave`,
+                        _h.optional(
+                            `--help`
+                        )
+                    ),
+                    _h.paragraph( 'Removes the selected tokens from Bump, removing their slave tokens.')
                 ),
                 _h.subhead('Description'),
                 _h.inset(
@@ -597,6 +602,14 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
                     return;
                 }
                 msg.selected.forEach( (s) => createMirrored(s._id, args.includes('--push'), who) );
+                break;
+
+            case '!bump-unslave':
+                if(!msg.selected || args.includes('--help')) {
+                    showHelp(msg.playerid);
+                    return;
+                }
+                msg.selected.forEach( (s) => removeMirrored(s._id) );
                 break;
 
 
