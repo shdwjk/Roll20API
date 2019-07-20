@@ -5,15 +5,14 @@
 var Torch = Torch || (function() {
     'use strict';
 
-    var version = '0.8.11',
-        lastUpdate = 1490871046,
+    var version = '0.8.12',
+        lastUpdate = 1563585897,
         schemaVersion = 0.1,
 		flickerURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
 		flickerPeriod = 400,
 		flickerDeltaLocation = 2,
 		flickerDeltaRadius = 0.1,
 		flickerDeltaAngle = 5,
-		flickerInterval = false,
 
 	ch = function (c) {
 		var entities = {
@@ -184,12 +183,13 @@ var Torch = Torch || (function() {
 	},
 	
 	handleInput = function(msg) {
-		var args, radius, dim_radius, arc_angle=360, other_players, page, obj, objs=[],who;
+		var args, radius, dim_radius, arc_angle=360, other_players, page, objs=[],who,whoChar;
 
 		if (msg.type !== "api") {
 			return;
 		}
-        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+        whoChar = (getObj('player',msg.playerid)||{get:()=>'API'});
+        who=whoChar.get('_displayname');
 
 		args = msg.content.split(" ");
 		switch(args[0]) {
@@ -271,12 +271,7 @@ var Torch = Torch || (function() {
 					return;
 				}
 				if(playerIsGM(msg.playerid)) {
-					if(msg.selected) {
-						obj=getObj('graphic', msg.selected[0]._id);
-					} else if(args[1]) {
-						obj=getObj('graphic', args[1]);
-					}
-					page = getObj('page', (obj && obj.get('pageid')) || Campaign().get('playerpageid'));
+                    page = getObj('page', whoChar.get('lastpage'));
 
 					if(page) {
 						page.set({
@@ -293,12 +288,7 @@ var Torch = Torch || (function() {
 					return;
 				}
 				if(playerIsGM(msg.playerid)) {
-					if(msg.selected) {
-						obj=getObj('graphic',msg.selected[0]._id);
-					} else if(args[1]) {
-						obj=getObj('graphic', args[1]);
-					}
-					page = getObj('page', (obj && obj.get('pageid')) || Campaign().get('playerpageid'));
+                    page = getObj('page', whoChar.get('lastpage'));
 
 					if(page) {
 						page.set({
@@ -315,12 +305,7 @@ var Torch = Torch || (function() {
 					return;
 				}
 				if(playerIsGM(msg.playerid)) {
-					if(msg.selected) {
-						obj=getObj('graphic', msg.selected[0]._id);
-					} else if(args[1]) {
-						obj=getObj('graphic', args[1]);
-					}
-					page = getObj('page', (obj && obj.get('pageid')) || Campaign().get('playerpageid'));
+                    page = getObj('page', whoChar.get('lastpage'));
 
 					if(page) {
 						page.set({
@@ -387,9 +372,22 @@ var Torch = Torch || (function() {
 				break;
 
 		}
-	},
-	animateFlicker = function() {
-		var pages = _.union([Campaign().get('playerpageid')], _.values(Campaign().get('playerspecificpages')));
+	};
+
+    const getActivePages = () => [...new Set([
+        Campaign().get('playerpageid'),
+        ...Object.values(Campaign().get('playerspecificpages')),
+        ...findObjs({
+                type: 'player',
+                online: true
+            })
+            .filter((p)=>playerIsGM(p.id))
+            .map((p)=>p.get('lastpage'))
+        ])
+    ];
+
+	const animateFlicker = function() {
+		var pages = getActivePages();
 
 		_.chain(state.Torch.flickers)
 			.where({active:true})
@@ -448,7 +446,7 @@ var Torch = Torch || (function() {
 			};
 		}
 
-		flickerInterval = setInterval(animateFlicker,flickerPeriod);
+		setInterval(animateFlicker,flickerPeriod);
 	},
 
 	registerEventHandlers = function() {
