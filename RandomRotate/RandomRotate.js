@@ -5,30 +5,8 @@
 var RandomRotate = RandomRotate || (function(){
 	'use strict';
 
-	var version = '0.2.1',
-        lastUpdate = 1427604262,
-
-	ch = function (c) {
-		var entities = {
-			'<' : 'lt',
-			'>' : 'gt',
-			"'" : '#39',
-			'@' : '#64',
-			'{' : '#123',
-			'|' : '#124',
-			'}' : '#125',
-			'[' : '#91',
-			']' : '#93',
-			'"' : 'quot',
-			'-' : 'mdash',
-			' ' : 'nbsp'
-		};
-
-		if(_.has(entities,c) ){
-			return ('&'+entities[c]+';');
-		}
-		return '';
-	},
+	var version = '0.2.2',
+        lastUpdate = 1564442879,
 
 	checkInstall = function(){
         log('-=> RandomRotate v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
@@ -100,10 +78,10 @@ var RandomRotate = RandomRotate || (function(){
 						return 'token' === o.get('subtype');
 					})
 					.map(function(o){
-						lx=Math.min(lx,o.get('left'));
-						ly=Math.min(ly,o.get('top'));
-						hx=Math.max(hx,o.get('left'));
-						hy=Math.max(hy,o.get('top'));
+						lx=Math.min(lx,o.get('left')) || 0;
+						ly=Math.min(ly,o.get('top')) || 0;
+						hx=Math.max(hx,o.get('left')) || 0;
+						hy=Math.max(hy,o.get('top')) || 0;
 						return o;
 					})
 					.each(function(o){
