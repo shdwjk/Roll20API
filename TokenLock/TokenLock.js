@@ -2,37 +2,38 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var TokenLock = TokenLock || (function() {
-    'use strict';
+const TokenLock = (() => { // eslint-disable-line no-unused-vars
 
-    var version = '0.2.6',
-        lastUpdate = 1490870700,
-    	schemaVersion = 0.2,
+    const  version = '0.2.7';
+    const lastUpdate = 1566254659;
+    const schemaVersion = 0.2;
 
-	ch = function (c) {
-		var entities = {
-			'<' : 'lt',
-			'>' : 'gt',
-			"'" : '#39',
-			'@' : '#64',
-			'{' : '#123',
-			'|' : '#124',
-			'}' : '#125',
-			'[' : '#91',
-			']' : '#93',
-			'"' : 'quot',
-			'-' : 'mdash',
-			' ' : 'nbsp'
-		};
+    const ch = (c) => {
+        const entities = {
+            '<' : 'lt',
+            '>' : 'gt',
+            "'" : '#39',
+            '@' : '#64',
+            '{' : '#123',
+            '|' : '#124',
+            '}' : '#125',
+            '[' : '#91',
+            ']' : '#93',
+            '"' : 'quot',
+            '*' : 'ast',
+            '/' : 'sol',
+            ' ' : 'nbsp'
+        };
 
-		if(_.has(entities,c) ){
-			return ('&'+entities[c]+';');
-		}
-		return '';
-	},
+        if( entities.hasOwnProperty(c) ){
+            return `&${entities[c]};`;
+        }
+        return '';
+    };
 
-    getCommandOption_ToggleLock = function() {
-        var text = (state.TokenLock.locked ? '<span style="color: #990000;">Locked</span>' : '<span style="color: #009900;">Unlocked</span>' );
+
+    const getCommandOption_ToggleLock = () => {
+        const text = (state.TokenLock.locked ? '<span style="color: #990000;">Locked</span>' : '<span style="color: #009900;">Unlocked</span>' );
         return '<div>'+
             'Tokens are now <b>'+
                 text+
@@ -42,10 +43,10 @@ var TokenLock = TokenLock || (function() {
             '</a>'+
         '</div>';
         
-    },
+    };
 
-    getConfigOption_AllowMoveOnTurn = function() {
-        var text = (state.TokenLock.config.allowMoveOnTurn ? 'On' : 'Off' );
+    const getConfigOption_AllowMoveOnTurn = () => {
+        const text = (state.TokenLock.config.allowMoveOnTurn ? 'On' : 'Off' );
         return '<div>'+
             'Allow Move on Turn is currently <b>'+
                 text+
@@ -55,11 +56,11 @@ var TokenLock = TokenLock || (function() {
             '</a>'+
         '</div>';
         
-    },
+    };
 
-	showHelp = function(who) {
-		var stateColor = (state.TokenLock.locked) ? ('#990000') : ('#009900'),
-		    stateName  = (state.TokenLock.locked) ? ('Locked') : ('Unlocked');
+	const showHelp = (who) => {
+		const stateColor = (state.TokenLock.locked) ? ('#990000') : ('#009900');
+		const stateName  = (state.TokenLock.locked) ? ('Locked') : ('Unlocked');
 
         sendChat('',
             '/w "'+who+'" '+
@@ -78,7 +79,7 @@ var TokenLock = TokenLock || (function() {
 		'GM can freely move the token at any point.  If there is any entry in '+
 		'<b>controlled by</b>, the token can only be moved when TokenLock is '+
 		'unlocked. </p>'+
-		 '<p>Moving of player controlled cards is still permissible. </p>'+
+        '<p>Moving of player controlled cards is still permissible. </p>'+
 	'</div>'+
 	'<b>Commands</b>'+
 	'<div style="padding-left:10px;"><b><span style="font-family: serif;">!tl</span></b>'+
@@ -112,20 +113,19 @@ var TokenLock = TokenLock || (function() {
     getConfigOption_AllowMoveOnTurn()+
 '</div>'
             );
-    },
+    };
 
-	handleInput = function(msg) {
-		var args,who;
+	const handleInput = (msg) => {
 
-		if (msg.type !== "api" || !playerIsGM(msg.playerid) ) {
+		if (msg.type !== "api" || !(playerIsGM(msg.playerid) || msg.playerid==='API') ) {
 			return;
 		}
-        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+        let who = (getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
-		args = msg.content.split(/\s+/);
+		let args = msg.content.split(/\s+/);
 		switch(args.shift()) {
             case '!tl':
-                if(_.contains(args,'--help')) {
+                if(args.includes('--help')) {
                     showHelp(who);
                     return;
                 }
@@ -159,7 +159,7 @@ var TokenLock = TokenLock || (function() {
                 break;
 
             case '!tl-config':
-                if(_.contains(args,'--help')) {
+                if(args.includes('--help')) {
                     showHelp(who);
                     return;
                 }
@@ -174,8 +174,8 @@ var TokenLock = TokenLock || (function() {
                     );
                     return;
                 }
-                _.each(args,function(a){
-                    var opt=a.split(/\|/);
+                args.forEach((a) => {
+                    let opt=a.split(/\|/);
 
                     switch(opt.shift()) {
                         case '--toggle-allowmoveonturn':
@@ -196,39 +196,54 @@ var TokenLock = TokenLock || (function() {
                 break;
 		}
 
-	},
+	};
 
-	handleMove = function(obj,prev) {
+	const handleMove = (obj,prev) => {
 
 		if(state.TokenLock.locked &&
             'token' === obj.get('subtype') &&
             ( !state.TokenLock.config.allowMoveOnTurn ||
-                (( (((JSON.parse(Campaign().get('turnorder'))||[])[0])||{id:false}).id) !== obj.id) ) &&
+                (( (((JSON.parse(Campaign().get('turnorder')||"[]"))[0])||{id:false}).id) !== obj.id) ) &&
                 ( obj.get('left') !== prev.left || obj.get('top') !== prev.top || obj.get('rotation') !== prev.rotation )
 		) {
+            sendChat('TokenLock','/w gm '
+                +(obj.get('Name')||(getObj('character',obj.get('represents'))||{get:()=>'Unknown'}).get('name'))
+                +' just tried to move:'
+                +(obj.get('left') !== prev.left ? ' X: '+Math.round((obj.get('left')-prev.left)/70) : '' )
+                +(obj.get('top') !== prev.top ? ' Y: '+Math.round((obj.get('top')-prev.top)/70) : '' )
+                +(obj.get('rotation') !== prev.rotation ? ' º: '+(obj.get('rotation')-prev.rotation) : '' )
+            );
+
 			if('' !== obj.get('controlledby')) {
 				obj.set({left: prev.left, top: prev.top, rotation: prev.rotation});	
 			} else if('' !== obj.get('represents') ) {
-				var character = getObj('character',obj.get('represents'));
+				let character = getObj('character',obj.get('represents'));
 				if( character && character.get('controlledby') ) {
 					obj.set({left: prev.left, top: prev.top, rotation: prev.rotation});	
 				}
 			}
 		}
-	},
+	};
 
-    checkInstall = function() {    
+    const checkInstall = () => {    
         log('-=> TokenLock v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
-        if( ! _.has(state,'TokenLock') || state.TokenLock.version !== schemaVersion) {
+        if( ! state.hasOwnProperty('TokenLock') || state.TokenLock.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.TokenLock && state.TokenLock.version) {
+
+                /* falls through */
                 case 0.1:
                     state.TokenLock.config={
                         allowMoveOnTurn: false
                     };
                     state.TokenLock.version=schemaVersion;
+
+                /* falls through */
+                case 'UpdateSchemaVersion':
+                    state.TokenLock.version = schemaVersion;
                     break;
+
 
                 default:
                     state.TokenLock = {
@@ -240,22 +255,18 @@ var TokenLock = TokenLock || (function() {
                     };
             }
 		} 
-	},
+	};
 
-	registerEventHandlers = function() {
+	const registerEventHandlers = () => {
 		on('chat:message', handleInput);
 		on('change:graphic', handleMove);
 	};
 
-	return {
-		RegisterEventHandlers: registerEventHandlers,
-		CheckInstall: checkInstall
-	};
-}());
+    on("ready", () => {
+        checkInstall(); 
+        registerEventHandlers();
+    });
 
-on("ready",function(){
-	'use strict';
+	return { };
+})();
 
-	TokenLock.CheckInstall(); 
-	TokenLock.RegisterEventHandlers();
-});
