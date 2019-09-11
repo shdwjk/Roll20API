@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.44',
-        lastUpdate = 1553014709,
+    const version = '0.8.45',
+        lastUpdate = 1568161133,
         schemaVersion = 0.3,
 
 
@@ -91,6 +91,10 @@ var TokenMod = TokenMod || (function() {
             defaulttoken: {type: 'defaulttoken'}
         },
 
+        reportTypes = [
+            'gm', 'player', 'all', 'control', 'token', 'character'
+        ],
+
         filters = {
             hasArgument: function(a) {
                 return a.match(/.+[|#]/) || 'defaulttoken'===a ;
@@ -174,11 +178,11 @@ var TokenMod = TokenMod || (function() {
                         // convert to scale_number relative
                         switch(this.relative){
                             case 'u':
-                                num*=parseFloat(page.get('scale_number'));
+                                num*=(parseFloat(page.get('scale_number'))*(1/parseFloat(page.get('snapping_increment'))||1));
                                 break;
                                 
                             case 'g':
-                                num*=(parseFloat(page.get('snapping_increment'))*parseFloat(page.get('scale_number')));
+                                num*=parseFloat(page.get('scale_number'));
                                 break;
 
                             default:
@@ -980,6 +984,7 @@ var TokenMod = TokenMod || (function() {
         header: (...o) => `<div style="padding-left:10px;margin-bottom:3px;">${o.join(' ')}</div>`,
         section: (s,...o) => `${_h.subhead(s)}${_h.inset(...o)}`,
         paragraph: (...o) => `<p>${o.join(' ')}</p>`,
+        experimental: () => `<div style="display:inline-block;padding: .1em 1em; border: 1px solid #993333; border-radius:.5em;background-color:#cccccc;color:#ff0000;">Experimental</div>`,
         items: (o) => `<li>${o.join('</li><li>')}</li>`,
         ol: (...o) => `<ol>${_h.items(o)}</ol>`,
         ul: (...o) => `<ul>${_h.items(o)}</ul>`,
@@ -1026,7 +1031,9 @@ var TokenMod = TokenMod || (function() {
                             `--on`,
                             `--off`,
                             `--flip`,
-                            `--set`
+                            `--set`,
+                            `--report`,
+                            `--order`
                         ),
                         _h.required(`parameter`),
                         _h.optional(`${_h.required(`parameter`)} ...`),
@@ -1058,7 +1065,7 @@ var TokenMod = TokenMod || (function() {
                         )
                     ),
                     _h.ul(
-                        `${_h.bold('--help')} -- Displayes this help`,
+                        `${_h.bold('--help')} -- Displays this help`,
                         `${_h.bold('--ignore-selected')} -- Prevents modifications to the selected tokens (only modifies tokens passed with --ids).`,
                         `${_h.bold('--current-page')} -- Only modifies tokens on the calling player${ch("'")}s current page.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
                         `${_h.bold('--active-pages')} -- Only modifies tokens on pages where there is a player or the GM.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
@@ -1068,6 +1075,7 @@ var TokenMod = TokenMod || (function() {
                         `${_h.bold('--flip')} -- Flips the value of any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
                         `${_h.bold('--set')} -- Each parameter is treated as a key and value, divided by a ${_h.code('|')} character.  Sets the key to the value.  If the value has spaces, you must enclose it ${_h.code(ch("'"))} or ${_h.code(ch('"'))}. See below for specific value handling logic.`,
                         `${_h.bold('--order')} -- Changes the ordering of tokens.  Specify one of ${_h.code('tofront')}, ${_h.code('front')}, ${_h.code('f')}, ${_h.code('top')} to bring something to the front or ${_h.code('toback')}, ${_h.code('back')}, ${_h.code('b')}, ${_h.code('bottom')} to push it to the back.`,
+                        `${_h.bold('--report')} -- Displays a report of what changed for each token. ${_h.experimental()}`,
                         `${_h.bold('--ids')} -- Each parameter is a Token ID, usually supplied with something like ${_h.attr.target(`Target 1${ch('|')}token_id`)}. By default, only a GM can use this argument.  You can enable players to use it as well with ${_h.bold('--config players-can-ids|on')}.`
                     )
                 ),
@@ -1823,6 +1831,58 @@ var TokenMod = TokenMod || (function() {
                     ) // END: Additional special formats
                 ),
 
+                // SECTION: --report
+                _h.section('Report',
+                    _h.paragraph(`${_h.experimental()} ${_h.italic('--report')} provides feedback about the changes that were made to each token that a command affects.  Arguments to the ${_h.italic('--report')} command are ${_h.code('|')} separated pairs of Who to tell, and what to tell them, with the following format:`),
+                    _h.inset(
+                        _h.pre(`!token-mod --report Who[:Who ...]|Message`)
+                    ),
+                    _h.paragraph(`You can specify multiple different Who arguments by separating them with a ${_h.code(':')}.  Be sure you have no spaces.`),
+                    _h.minorhead('Available options for Who'),
+                    _h.inset(
+                        _h.ul(
+                            `${_h.code('player')} will whisper the report to the player who issued the command.`,
+                            `${_h.code('gm')} will whisper the report to the gm.`,
+                            `${_h.code('all')} will send the report publicly to chat for everyone to see.`,
+                            `${_h.code('token')} will whisper to whomever controls the token.`,
+                            `${_h.code('character')} will whisper to whomever controls the character the token represents.`,
+                            `${_h.code('control')} will whisper to whomever can control the token from either the token or character controlledby list.  This is equivalent to specifying ${_h.code('token:character')}.`
+                        )
+                    ),
+                    _h.paragraph(`The Message must be enclosed in quotes if it has spaces in it. The Message can contain any of the properties of the of the token, enclosed in ${_h.code('{ }')}, and they will be replaced with the final value of that property.  Additionally, each property may have a modifier to select slightly different information:`),
+                    _h.minorhead('Available options for Property Modifiers'),
+                    _h.inset(
+                        _h.ul(
+                            `${_h.code('before')} -- Show the value of the property before a change was applied.`,
+                            `${_h.code('change')} -- Show the change that was applied to the property. (Only works on numeric fields, will result in 0 on things like name or imagsrc.)`
+                        )
+                    ),
+                    _h.paragraph(`Showing the amount of damage done to a token.`),
+                    _h.inset(
+                        _h.preformatted(
+                            '!token-mod {{',
+                            '  --set',
+                            `    bar1_value|-${ch('[')}${ch('[')}2d6+8${ch(']')}${ch(']')}`,
+                            '  --report',
+                            '    all|"{name} takes {bar1_value:change} points of damage."',
+                            '}}'
+                        )
+                    ),
+                    _h.paragraph(`Showing everyone the results of the hit, but only the gm and the controlling players the actual damage and original hit point value.`),
+                    _h.inset(
+                        _h.preformatted(
+                            '!token-mod {{',
+                            '  --set',
+                            `    bar1_value|-${ch('[')}${ch('[')}2d6+8${ch(']')}${ch(']')}`,
+                            '  --report',
+                            '    all|"{name} takes a vicious wound leaving them at {bar1_value}hp out of {bar1_max}hp."',
+                            '    gm:control|"{name} damage: {bar1_value:change}hp, was at {bar1_value:before}hp"',
+                            '}}'
+                        )
+                    )
+                ),
+
+
 
                 // SECTION: --config, etc
                 _h.section('Configuration',
@@ -1839,6 +1899,7 @@ var TokenMod = TokenMod || (function() {
                         : ''
                     )
                 ),
+
 
                 // SECTION: .ObserveTokenChange(), etc
                 _h.section('API Notifications',
@@ -2151,6 +2212,24 @@ var TokenMod = TokenMod || (function() {
             .value();
     },
 
+    parseReportArguments = (list,base) =>
+        list
+            .filter(filters.hasArgument)
+            .reduce((m,a)=>{
+                let args=a.replace(/(\|#|##)/g,'|%%HASHMARK%%').split(/[|#]/).map((v)=>v.replace('%%HASHMARK%%','#'));
+                let whose=args.shift().toLowerCase().split(/:/);
+                let msg = args.shift();
+                if(/^(".*")|('.*')$/.test(msg)){
+                    msg=msg.slice(1,-1);
+                }
+                whose = whose.filter((w)=>reportTypes.includes(w));
+                if(whose.length){
+                    m.push({who:whose,msg});
+                }
+                return m;
+            },base)
+    ,
+
     decomposeStatuses = function(statuses){
         return _.reduce(statuses.split(/,/),function(memo,st,idx){
             var parts=st.split(/@/),
@@ -2188,8 +2267,13 @@ var TokenMod = TokenMod || (function() {
     },
 
     applyModListToToken = function(modlist, token) {
-        var mods={},
-            delta, cid, prev=JSON.parse(JSON.stringify(token)),
+        let ctx={
+              token: token,
+              prev: JSON.parse(JSON.stringify(token))
+            },
+            mods={},
+            delta,
+            cid,
             repChar,
             controlList = (modlist.set && (modlist.set.controlledby || modlist.set.defaulttoken)) ? (function(){
                 let list;
@@ -2419,9 +2503,96 @@ var TokenMod = TokenMod || (function() {
         });
         mods.statusmarkers=composeStatuses(current);
         token.set(mods);
-        notifyObservers('tokenChange',token,prev);
+        notifyObservers('tokenChange',token,ctx.prev);
+        return ctx;
     },
 
+    getWho = (()=> {
+        let cache={};
+        return (ids) => {
+            let names = [];
+            ids.forEach(id=>{
+                if(cache.hasOwnProperty(id)){
+                    names.push(cache[id]);
+                } else {
+                    if('all'===id){
+                        cache.all = 'all';
+                        names.push('all');
+                    } else {
+                        let p = findObjs({ type: 'player', id})[0];
+                        if(p){
+                            cache[id]=p.get('displayname');
+                            names.push(cache[id]);
+                        }
+                    }
+                }
+            });
+            if(names.includes('all')){
+                return ['all'];
+            }
+            if(0===names.length){
+                return ['gm'];
+            }
+            return names;
+        };
+    })(),
+
+    doReports = (ctx,reports,callerWho) => {
+        reports.forEach( r =>{
+            let pmsg = r.msg.replace(/\{(.+?)\}/g, (m,n)=>{
+                let parts=n.toLowerCase().split(/:/);
+                let prop=parts[0];
+                let mod=parts[1];
+
+                switch(mod){
+                    case 'before':
+                        return ctx.prev[prop];
+
+                    case 'change':
+                        return (parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0));
+
+                    default:
+                        return ctx.token.get(prop);
+                }
+            });
+
+            let whoList = r.who.reduce((m, w)=>{
+                switch(w){
+                    case 'gm':
+                        return [...new Set([...m,'gm'])];
+
+                    case 'player':
+                        return [...new Set([...m,callerWho])];
+
+                    case 'all':
+                        return [...new Set([...m,'all'])];
+
+                    case 'token':
+                        return [...new Set([...m, ...getWho(ctx.token.get('controlledby').split(/,/))])];
+
+                    case 'character': {
+                            let c = getObj('character',ctx.token.get('represents')) || {get:()=>''};
+                            return [...new Set([...m, ...getWho(c.get('controlledby').split(/,/))])];
+                        }
+
+                    case 'control': {
+                            let c = getObj('character',ctx.token.get('represents')) || {get:()=>''};
+                            return [...new Set([
+                                ...m,
+                                ...getWho(ctx.token.get('controlledby').split(/,/)),
+                                ...getWho(c.get('controlledby').split(/,/))
+                            ])];
+                        }
+                }
+            }, []);
+
+            if(whoList.includes('all')){
+                sendChat('',`${pmsg}`);
+            } else {
+                whoList.forEach(w=>sendChat('',`/w "${w}" ${pmsg}`));
+            }
+        });
+    },
 
     handleConfig = function(config, id) {
         var args, cmd, who=(getObj('player',id)||{get:()=>'API'}).get('_displayname');
@@ -2468,6 +2639,7 @@ var TokenMod = TokenMod || (function() {
      handleInput = function(msg_orig) {
         try {
             var msg = _.clone(msg_orig),
+                who=(getObj('player',msg_orig.playerid)||{get:()=>'API'}).get('_displayname'),
                 args, cmds, ids=[],
                 ignoreSelected = false,
                 pageRestriction=[],
@@ -2477,7 +2649,8 @@ var TokenMod = TokenMod || (function() {
                     off: [],
                     set: {},
                     order: []
-                };
+                },
+                reports=[];
 
             if (msg.type !== "api") {
                 return;
@@ -2544,6 +2717,9 @@ var TokenMod = TokenMod || (function() {
                             case 'order':
                                 modlist.order=parseOrderArguments(cmds,modlist.order);
                                 break;
+                            case 'report':
+                                reports= parseReportArguments(cmds,reports);
+                                break;
 
                             case 'ignore-selected':
                                 ignoreSelected=true;
@@ -2598,7 +2774,8 @@ var TokenMod = TokenMod || (function() {
                         .reject(_.isUndefined)
                         .filter(pageFilter)
                         .each(function(t) {
-                            applyModListToToken(modlist,t);
+                            let ctx = applyModListToToken(modlist,t);
+                            doReports(ctx,reports,who);
                         });
                     }
                 }
