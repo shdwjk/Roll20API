@@ -5,24 +5,29 @@
 var RecursiveTable = RecursiveTable || (function() {
 	'use strict';
 
-	var version = '0.2.4',
-	lastUpdate = 1515686203,
+	var version = '0.2.5',
+	lastUpdate = 1571360894,
 	schemaVersion = 0.1,
 	clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
 	defaults = {
 		maxdepth: 10,
 		delimiter: ', ',
+        echo: false,
+        prefix: '',
+        suffix: '',
 		dropempty: true,
 		sort: false,
 		prefaceuniquespace: false,
 		showicons: false,
 		iconlabel: true,
 		emptydefault: '',
+        iconscale: '5em',
 		who: ''
 	},
 	regex = {
 		rtCmd: /^(!rt)(?:\[([^\]]*)\])?(?:\s+|$)/,
-		inlineRoll: /\[\[.*\]\]/
+		inlineRoll: /\[\[.*\]\]/,
+        cssSize: /^(auto|0)$|^[+-]?[0-9]+.?([0-9]+)?(px|em|ex|%|in|cm|mm|pt|pc)$/
 
 	},
 
@@ -38,7 +43,7 @@ var RecursiveTable = RecursiveTable || (function() {
 	},
 	sendChatP = function(msg){
 		return new Promise((resolve) =>{
-			sendChat('',msg.replace(/\[\[\s+/,'[[').replace(/\[\[\s+\[\[/,'[[[['),(res)=>{
+			sendChat('',msg.replace(/\[\[\s+/g,'[['),(res)=>{
 				resolve(res[0]);
 			});
 		});
@@ -138,7 +143,7 @@ var RecursiveTable = RecursiveTable || (function() {
         bold: (...o) => `<b>${o.join(' ')}</b>`,
         italic: (...o) => `<i>${o.join(' ')}</i>`,
         font: {
-            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`,
+            command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`
         }
     },
 
@@ -175,7 +180,8 @@ var RecursiveTable = RecursiveTable || (function() {
                         `${_h.bold('Sort')} -- Causes table items to be sorted before being joined by the delimiter.  Note that this happens at a single layer of recursion, so if you have table items made of of lists of table items, the sorting will only be at each level. ${_h.bold('Default: off (Boolean)')}`,
                         `${_h.bold('PrefaceUniqueSpace')} -- Causes the final message to have a unique number of spaces inserted after each ${_h.code(ch('{')+ch('{'))}. This is useful if you${ch("'")}re building Roll Templates and might have multiple lines with the same label. ${_h.bold('Default: off (Boolean)')}`,
                         `${_h.bold('ShowIcons')} -- Adds table avatars as inline icons, if they exist. ${_h.bold('Default: off (Boolean)')}`,
-                        `${_h.bold('IconLabel')} -- When table icons are shown, the text for the row is shown as a label below it. ${_h.bold('Default: on (Boolean)')}`
+                        `${_h.bold('IconLabel')} -- When table icons are shown, the text for the row is shown as a label below it. ${_h.bold('Default: on (Boolean)')}`,
+                        `${_h.bold('IconScale')} -- When table icons are shown, they are restricted to the provided scale. Any valid CSS size setting will work. ${_h.bold('Default: 5em')}`
                     ),
 
                     _h.section('Examples'),
@@ -226,19 +232,27 @@ var RecursiveTable = RecursiveTable || (function() {
 			c=tok.shift().toLowerCase(),
 			a=tok.join(':')||true;
 			switch(c){
-                case 'iconsize':
 				case 'maxdepth':
 					a=parseInt(a,10)||defaults[c];
 					break;
+                case 'iconscale':{
+                        if(! regex.cssSize.test(a)){
+                            a=defaults[c];
+                        }
+                    }
+                    break;
 				case 'showicons':
 				case 'iconlabel':
 				case 'dropempty':
 				case 'sort':
 				case 'prefaceuniquespace':
+                case 'echo':
 					a=getAsBoolean(a,defaults[c]);
 					break;
 				case 'emptydefault':
-					break;
+                    break;
+                case 'prefix':
+                case 'suffix':
 				case 'delimiter':
 					switch(a.toLowerCase()){
 						case 'br':
@@ -296,8 +310,8 @@ var RecursiveTable = RecursiveTable || (function() {
 				'margin': '.1em'
 			},
 			i: {
-				'max-width':  '5em',
-				'max-height': '5em'
+				'max-width':  opts.iconscale,
+				'max-height': opts.iconscale
 			},
 			t: {
 				'border-top': '1px solid #aaa',
@@ -319,7 +333,7 @@ var RecursiveTable = RecursiveTable || (function() {
 				((x)=>_.map(x,formatPart)),
 				(opts.sort ? (x)=>_.sortBy(x,'text') : _.identity),
 				(opts.dropempty ?  (x)=>_.filter(x,(v)=>`${v.text}${opts.showicons?v.avatar:''}`.trim().length) : _.identity)
-			)(parts).join(opts.delimiter);
+			)(parts).map((o)=>`${opts.prefix}${o}${opts.suffix}`).join(opts.delimiter);
 		
 		return new Promise((returnSubs)=>{
 			let subOpts = _.clone(opts),
@@ -419,6 +433,9 @@ var RecursiveTable = RecursiveTable || (function() {
 			if(_.has(msg,'rolltemplate') && _.isString(msg.rolltemplate) && msg.rolltemplate.length){
 				msg.content = msg.content.replace(/\{\{/,'&{template:'+msg.rolltemplate+'} {{');
 			}
+            if(opts.echo && !(/^\/w\s+gm\s+/.test(msg.content) && playerIsGM(msg.playerid))){
+               sendChat(`${msg.who} [echo]`,`/w "${opts.who}" ${msg.content.replace(/^\/w\s+(?:"[^"]*"|'[^']'|\S+)\s*/,'')}`);
+            }
 			sendChat(msg.who||'[BLANK]',msg.content);
 		})
 		.catch((e)=>{
