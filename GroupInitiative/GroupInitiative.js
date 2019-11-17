@@ -5,9 +5,9 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.29',
-        lastUpdate = 1520955646,
-        schemaVersion = 1.1,
+    var version = '0.9.30',
+        lastUpdate = 1574009437,
+        schemaVersion = 1.2,
         bonusCache = {},
         observers = {
                 turnOrderChange: []
@@ -239,12 +239,25 @@ var GroupInitiative = GroupInitiative || (function() {
                 },
                 desc: 'Rounds up to the nearest integer.'
             },
-            'bounded': {
-                func: function(v) {
-                    return v;
+            'token_bar': {
+                func: function(v,t) {
+                    return parseFloat(t.get(`bar${v}_value`))||0;
                 },
-                desc: '<b>DEPREICATED - will not work with expresions.</b>'
+                desc: 'Takes the bonus from the numbered bar on the token. Use 1,2, or 3.  Defaults to 0 in the absense of a number.'
+            },
+            'token_bar_max': {
+                func: function(v,t) {
+                    return parseFloat(t.get(`bar${v}_max`))||0;
+                },
+                desc: 'Takes the bonus from the max value of the numbered bar on the token. Use 1,2, or 3.  Defaults to 0 in the absense of a number.'
+            },
+            'token_aura': {
+                func: function(v,t) {
+                    return parseFloat(t.get(`aura${v}_radius`))||0;
+                },
+                desc: 'Takes the bonus from the radius of the token aura. Use 1 or 2.  Defaults to 0 in the absense of a number.'
             }
+
         },
 
         buildInitDiceExpression = function(s){
@@ -256,7 +269,7 @@ var GroupInitiative = GroupInitiative || (function() {
                     return '('+stat+')d'+state.GroupInitiative.config.dieSize;
                 }
             } 
-            return state.GroupInitiative.config.diceCount+'d'+state.GroupInitiative.config.dieSize;
+            return state.GroupInitiative.config.diceCount+'d'+state.GroupInitiative.config.dieSize+state.GroupInitiative.config.diceMod;
         },
 
         rollers = {
@@ -359,6 +372,10 @@ var GroupInitiative = GroupInitiative || (function() {
                     state.GroupInitiative.savedTurnOrders =[];
                     /* break; // intentional dropthrough */ /* falls through */
 
+                case 1.1:
+                    state.GroupInitiative.config.diceMod='';
+                    /* break; // intentional dropthrough */ /* falls through */
+
                 case 'UpdateSchemaVersion':
                     state.GroupInitiative.version = schemaVersion;
                     break;
@@ -381,6 +398,7 @@ var GroupInitiative = GroupInitiative || (function() {
                             diceCount: 1,
                             maxDecimal: 2,
                             diceCountAttribute: '',
+                            diceMod: '',
                             autoOpenInit: true,
                             sortOption: 'Descending',
                             announcer: 'Partial'
@@ -498,6 +516,18 @@ var GroupInitiative = GroupInitiative || (function() {
         '</div>';
     },
 
+    getConfigOption_DiceMod = function() {
+        var text = (state.GroupInitiative.config.diceMod.length ? state.GroupInitiative.config.diceMod : 'DISABLED');
+        return '<div>'+
+            'Dice Mod String: <b>'+
+                text+
+            '</b> '+
+            '<a href="!group-init-config --set-dice-mod|?{Modifiers to initiative dice rolled (Blank to disable):|'+state.GroupInitiative.config.diceMod+'}">'+
+                'Set Dice Modifiers'+
+            '</a>'+
+        '</div>';
+    },
+
     getConfigOption_AutoOpenInit = function() {
         var text = (state.GroupInitiative.config.autoOpenInit ? 'On' : 'Off' );
         return '<div>'+
@@ -561,6 +591,7 @@ var GroupInitiative = GroupInitiative || (function() {
             getConfigOption_DieSize() +
             getConfigOption_DiceCount() +
             getConfigOption_DiceCountAttribute() +
+            getConfigOption_DiceMod() +
             getConfigOption_MaxDecimal() +
             getConfigOption_AutoOpenInit() +
             getConfigOption_ReplaceRoll() +
@@ -841,7 +872,7 @@ var GroupInitiative = GroupInitiative || (function() {
         return stext;
     },
 
-    findInitiativeBonus = function(charObj,/*eslint-disable no-unused-vars*/token/*eslint-enable no-unused-vars*/) {
+    findInitiativeBonus = function(charObj, token) {
         var bonus = '';
         if(_.has(bonusCache,charObj.id)) {
             return bonusCache[charObj.id];
@@ -863,7 +894,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                 args.unshift(memo);
                                 func=statAdjustments[adjustment].func;
                                 if(_.isFunction(func)) {
-                                    memo =func.apply({},args);
+                                    memo =func.apply({},[...args,token]);
                                 }
                             }
                             return memo;
@@ -1623,6 +1654,21 @@ var GroupInitiative = GroupInitiative || (function() {
                                 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                                     omsg+
                                     getConfigOption_DiceCountAttribute()+
+                                '</div>'
+                            );
+                            break;
+
+                        case 'set-dice-mod':
+                            if(opt[0]) {
+                               state.GroupInitiative.config.diceMod=opt[0];
+                            } else {
+                                state.GroupInitiative.config.diceMod='';
+                                omsg='<div>Cleared Dice Modifiers.</div>';
+                            }
+                            sendChat('','/w gm '+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    omsg+
+                                    getConfigOption_DiceMod()+
                                 '</div>'
                             );
                             break;

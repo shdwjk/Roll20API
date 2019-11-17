@@ -4,8 +4,8 @@
 
 const Walls = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.3.5';
-    const lastUpdate = 1569122819;
+    const version = '0.3.6';
+    const lastUpdate = 1574009665;
     const schemaVersion = 0.4;
     const regex = {
         colors: /^(?:#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?|transparent)$/
@@ -37,7 +37,7 @@ const Walls = (() => { // eslint-disable-line no-unused-vars
     const checkInstall = () => {
         log('-=> Walls v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
-        if( ! state.hasOwnProperty('Walls') || state.Walls.schemaVersion !== schemaVersion) {
+        if( ! state.hasOwnProperty('Walls') || state.Walls.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
 
             state.Walls = {
