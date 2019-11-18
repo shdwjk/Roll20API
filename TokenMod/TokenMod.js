@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.45',
-        lastUpdate = 1568161133,
+    const version = '0.8.46',
+        lastUpdate = 1574116037,
         schemaVersion = 0.3,
 
 
@@ -239,12 +239,12 @@ var TokenMod = TokenMod || (function() {
                 let current = parseFloat(token.get(this.field))||0;
                 switch(this.operation){
                     default:
-                    case '=': return {[this.field]:`${num}`};
-                    case '!': return {[this.field]:`${current===0 ? num : ''}`};
-                    case '+': return {[this.field]:`${current+num}`};
-                    case '-': return {[this.field]:`${current-num}`};
-                    case '/': return {[this.field]:`${current/(num||1)}`};
-                    case '*': return {[this.field]:`${current*num}`};
+                    case '=': return {[this.field]:num};
+                    case '!': return {[this.field]:(current===0 ? num : '')};
+                    case '+': return {[this.field]:(current+num)};
+                    case '-': return {[this.field]:(current-num)};
+                    case '/': return {[this.field]:(current/(num||1))};
+                    case '*': return {[this.field]:(current*num)};
                 }
             }
 
