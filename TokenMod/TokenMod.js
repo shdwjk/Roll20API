@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.46',
-        lastUpdate = 1574116037,
+    const version = '0.8.47',
+        lastUpdate = 1574294283,
         schemaVersion = 0.3,
 
 
@@ -2463,11 +2463,13 @@ var TokenMod = TokenMod || (function() {
 
                 case 'bar1_reset':
                 case 'bar2_reset':
-                case 'bar3_reset':
-                    delta = token.get(k.replace(/_reset$/,'_max'));
-                    if(!_.isUndefined(delta)) {
-                        mods[k.replace(/_reset$/,'_value')]=delta;
-                    }
+                case 'bar3_reset': {
+						let field = k.replace(/_reset$/,'_max');
+						delta = mods[field] || token.get(field);
+						if(!_.isUndefined(delta)) {
+							mods[k.replace(/_reset$/,'_value')]=delta;
+						}
+					}
                     break;
 
                 case 'bar1_value':
