@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.47',
-        lastUpdate = 1574294283,
+    const version = '0.8.48',
+        lastUpdate = 1576473641,
         schemaVersion = 0.3,
 
 
@@ -54,6 +54,9 @@ var TokenMod = TokenMod || (function() {
             aura2_radius: {type: 'numberBlank'},
 
             // text or numbers
+            bar1_current: {type: 'text'},
+            bar2_current: {type: 'text'},
+            bar3_current: {type: 'text'},
             bar1_value: {type: 'text'},
             bar2_value: {type: 'text'},
             bar3_value: {type: 'text'},
@@ -119,7 +122,7 @@ var TokenMod = TokenMod || (function() {
             stripSingleQuotes: /'([^']+(?='))'/g,
             stripDoubleQuotes: /"([^"]+(?="))"/g,
             layers: /^(?:gmlayer|objects|map|walls)$/,
-            statuses: /^(?:red|blue|green|brown|purple|pink|yellow|dead|skull|sleepy|half-heart|half-haze|interdiction|snail|lightning-helix|spanner|chained-heart|chemical-bolt|death-zone|drink-me|edge-crack|ninja-mask|stopwatch|fishing-net|overdrive|strong|fist|padlock|three-leaves|fluffy-wing|pummeled|tread|arrowed|aura|back-pain|black-flag|bleeding-eye|bolt-shield|broken-heart|cobweb|broken-shield|flying-flag|radioactive|trophy|broken-skull|frozen-orb|rolling-bomb|white-tower|grab|screaming|grenade|sentry-gun|all-for-one|angel-outfit|archery-target)$/,
+
             imgsrc: /(.*\/images\/.*)(thumb|med|original|max)(.*)$/,
 			imageOp: /^(?:(-(?:\d*(?:\s*,\s*\d+)*|\*)$)|(\+))?(=?)(?:(https?:\/\/.*$)|([-\d\w]*))(?::(.*))?$/,
 			sideNumber: /^(\?)?([-+=*])?(\d*)$/,
@@ -136,6 +139,11 @@ var TokenMod = TokenMod || (function() {
 		colorReg = new RegExp(`^(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i'),
 		colorParams = /\(\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*\)/;
 
+
+
+        ////////////////////////////////////////////////////////////
+        // Number Operations
+        ////////////////////////////////////////////////////////////
 
         class numberOp {
             static parse(field, str, permitBlank=true) {
@@ -249,6 +257,10 @@ var TokenMod = TokenMod || (function() {
             }
 
         }
+
+        ////////////////////////////////////////////////////////////
+        // Image Operations
+        ////////////////////////////////////////////////////////////
 
 		class imageOp {
 			static parseImage(input){
@@ -383,6 +395,9 @@ var TokenMod = TokenMod || (function() {
 			}
 		}
 
+        ////////////////////////////////////////////////////////////
+        // Side Numbers
+        ////////////////////////////////////////////////////////////
 
 		class sideNumberOp {
 
@@ -452,6 +467,11 @@ var TokenMod = TokenMod || (function() {
 				
 			}
 		}
+
+
+        ////////////////////////////////////////////////////////////
+        // Colors
+        ////////////////////////////////////////////////////////////
 
 		class Color {
 			static hsv2rgb(h, s, v) {
@@ -739,6 +759,310 @@ var TokenMod = TokenMod || (function() {
 
 		}
 
+        ////////////////////////////////////////////////////////////
+        // StatusMarkers
+        ////////////////////////////////////////////////////////////
+
+        class TokenMarker {
+            constructor( name, tag, url ) {
+                this.name = name;
+                this.tag = tag;
+                this.url = url;
+            }
+
+            getName() {
+                return this.name;
+            }
+            getTag() {
+                return this.tag;
+            }
+
+            getHTML(scale = 1.4){
+                return `<div style="width: ${scale}em; vertical-align: middle; height: ${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; padding:0;background-image: url('${this.url}');background-repeat:no-repeat; background-size: auto ${scale}em;"></div>`;
+            }
+        }
+
+        class ColorDotTokenMarker extends TokenMarker {
+            constructor( name, color ) {
+                super(name,name);
+                this.color = color;
+            }
+
+            getHTML(scale = 1.4){
+                return `<div style="width: ${scale*.9}em; height: ${scale*.9}em; border-radius:${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; background-color: ${this.color}"></div>`;
+            }
+        }
+
+        class ColorTextTokenMarker extends TokenMarker {
+            constructor( name, letter, color ) {
+                super(name,name);
+                this.color = color;
+                this.letter = letter;
+            }
+
+            getHTML(scale = 1.4){
+                return `<div style="width: 1em; height: ${scale}em; font-size: ${scale}em; display:inline-block; margin: 0; border:0; font-weight: bold; color: ${this.color}">${this.letter}</div>`;
+            }
+        }
+
+        // legacy
+        class ImageStripTokenMarker extends TokenMarker {
+            constructor( name, offset){
+                super(name, name);
+                this.offset = offset;
+            }
+
+            getHTML(scale = 1.4){
+                const ratio = 2.173913;
+                const statusSheet = 'https://app.roll20.net/images/statussheet.png';
+
+                return `<div style="width: ${scale}em; height: ${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; padding:0;background-image: url('${statusSheet}');background-repeat:no-repeat;background-position: ${(ratio*(this.offset))}% 0; background-size: auto ${scale}em;"></div>`;
+            }
+        }
+
+        class StatusMarkers {
+
+            static init(){
+                let tokenMarkers = {};
+                let orderedLookup = new Set();
+                let reverseLookup = {};
+
+                const insertTokenMarker = (tm) => {
+                    tokenMarkers[tm.getTag()] = tm;
+                    orderedLookup.add(tm.getTag());
+
+                    reverseLookup[tm.getName()] = reverseLookup[tm.getName()]||[];
+                    reverseLookup[tm.getName()].push(tm.getTag()); 
+                };
+
+                const buildStaticMarkers = () => {
+                    insertTokenMarker(new ColorDotTokenMarker('red', '#C91010'));
+                    insertTokenMarker(new ColorDotTokenMarker(`blue`, '#1076c9'));
+                    insertTokenMarker(new ColorDotTokenMarker(`green`, '#2fc910'));
+                    insertTokenMarker(new ColorDotTokenMarker(`brown`, '#c97310'));
+                    insertTokenMarker(new ColorDotTokenMarker(`purple`, '#9510c9'));
+                    insertTokenMarker(new ColorDotTokenMarker(`pink`, '#eb75e1'));
+                    insertTokenMarker(new ColorDotTokenMarker(`yellow`, '#e5eb75'));
+
+                    insertTokenMarker(new ColorTextTokenMarker('dead', 'X', '#cc1010'));
+                };
+
+                const buildLegacyMarkers = () => {
+                    const legacyNames = [
+                        'skull', 'sleepy', 'half-heart', 'half-haze', 'interdiction',
+                        'snail', 'lightning-helix', 'spanner', 'chained-heart',
+                        'chemical-bolt', 'death-zone', 'drink-me', 'edge-crack',
+                        'ninja-mask', 'stopwatch', 'fishing-net', 'overdrive', 'strong',
+                        'fist', 'padlock', 'three-leaves', 'fluffy-wing', 'pummeled',
+                        'tread', 'arrowed', 'aura', 'back-pain', 'black-flag',
+                        'bleeding-eye', 'bolt-shield', 'broken-heart', 'cobweb',
+                        'broken-shield', 'flying-flag', 'radioactive', 'trophy',
+                        'broken-skull', 'frozen-orb', 'rolling-bomb', 'white-tower',
+                        'grab', 'screaming', 'grenade', 'sentry-gun', 'all-for-one',
+                        'angel-outfit', 'archery-target'
+                    ];
+                    legacyNames.forEach( (n,i)=>insertTokenMarker(new ImageStripTokenMarker(n,i)));
+                };
+
+                const readTokenMarkers = () => {
+                    JSON.parse(Campaign().get('_token_markers')||'[]').forEach( tm => insertTokenMarker(new TokenMarker(tm.name, tm.tag, tm.url)));
+                };
+
+                StatusMarkers.getStatus = (keyOrName) => {
+                    if(tokenMarkers.hasOwnProperty(keyOrName)){
+                        return tokenMarkers[keyOrName];
+                    }
+                    if(reverseLookup.hasOwnProperty(keyOrName)){
+                        return tokenMarkers[reverseLookup[keyOrName][0]]; // returning first one...
+                    }
+                    // maybe return a null status marker object?
+                };
+
+                StatusMarkers.getOrderedList = () => {
+                    return [...orderedLookup].map( key => tokenMarkers[key]);
+                };
+
+                const simpleObj = o => JSON.parse(JSON.stringify(o||'{}'));
+
+
+                buildStaticMarkers();
+                if(simpleObj(Campaign()).hasOwnProperty('_token_markers')){
+                    readTokenMarkers();
+                } else {
+                    buildLegacyMarkers();
+                }
+            }
+        }
+
+        class statusOp {
+
+            static decomposeStatuses(statuses){
+                return _.reduce(statuses.split(/,/),function(memo,st,idx){
+                    var parts=st.split(/@/),
+                    entry = {
+                        mark: parts[0],
+                        num: parseInt(parts[1],10),
+                        idx: idx
+                    };
+                    if(isNaN(entry.num)){
+                        entry.num='';
+                    }
+                    if(parts[0].length) {
+                        memo[parts[0]] = ( memo[parts[0]] && memo[parts[0]].push(entry) && memo[parts[0]]) || [entry] ;
+                    }
+                    return memo;
+                },{});
+            }
+
+            static composeStatuses(statuses){
+                return _.chain(statuses)
+                .reduce(function(m,s){
+                    _.each(s,function(sd){
+                        m.push(sd);
+                    });
+                    return m;
+                },[])
+                .sortBy(function(s){
+                    return s.idx;
+                })
+                .map(function(s){
+                    return ('dead'===s.mark ? 'dead' : ( s.mark+(s.num!=='' ? '@'+s.num : '')));
+                })
+                .value()
+                .join(',');
+            }
+
+            static parse(status) {
+                let s = status.split(/:/);
+                if(s.hasOwnProperty(1) && 0 === s[1].length){
+                    s = [`${s[0]}::${s[2]}`,...s.slice(3)];
+                }
+                let statparts = s.shift().match(/^(\S+?)(\[(\d*)\]|)$/)||[];
+                let index = ( '[]' === statparts[2] ? statparts[2] : ( undefined !== statparts[3] ? Math.max(parseInt(statparts[3],10)-1,0) : 0 ) );
+
+                let stat=statparts[1]||'';
+                let op = (_.contains(['*','/','-','+','=','!','?'], stat[0]) ? stat[0] : false);
+                let numraw = s.shift() || '';
+                let min = Math.min(Math.max(parseInt(s.shift(),10)||0, 0),9);
+                let max = Math.max(Math.min(parseInt(s.shift(),10)||9,9),0);
+                let numop = (_.contains(['*','/','-','+'],numraw[0]) ? numraw[0] : false);
+                let num = Math.max(0,Math.min(9,Math.abs(parseInt(numraw,10))));
+
+                if(isNaN(num)){
+                    num = '';
+                }
+
+                stat = ( op ? stat.substring(1) : stat);
+
+                let tokenMarker = StatusMarkers.getStatus(stat);
+
+                if(tokenMarker) {
+                    return new statusOp(
+                        tokenMarker,
+                        {
+                            status: tokenMarker.getTag(),
+                            number: num,
+                            index: index,
+                            sign: numop,
+                            min: (min<max?min:max),
+                            max: (max>min?max:min),
+                            operation: op || '+'
+                        });
+                }
+
+                return {getMods:(c)=>({statusmarkers:c})};
+            }
+
+            constructor(tm, ops) {
+                this.tokenMarker = tm;
+                this.ops = ops;
+            }
+
+            getMods(statuses='') {
+                let current = statusOp.decomposeStatuses(statuses);
+                let statusCount=(statuses).split(/,/).length;
+                let sm = this.ops;
+
+                switch(sm.operation){
+                    case '!':
+                        if('[]' !== sm.index && _.has(current,sm.status) ){
+                            if( _.has(current[sm.status],sm.index) ) {
+                                current[sm.status]= _.filter(current[sm.status],function(e,idx){
+                                    return idx !== sm.index;
+                                });
+                            } else {
+                                current[sm.status] = current[sm.status] || [];
+                                current[sm.status].push({
+                                    mark: sm.status,
+                                    num: (sm.number !=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
+                                    index: statusCount++
+                                });
+                            }
+                        } else {
+                            current[sm.status] = current[sm.status] || [];
+                            current[sm.status].push({
+                                mark: sm.status,
+                                num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
+                                index: statusCount++
+                            });
+                        }
+                        break;
+                    case '?':
+                        if('[]' !== sm.index && _.has(current,sm.status) && _.has(current[sm.status],sm.index)){
+                            current[sm.status][sm.index].num = (sm.number !== '') ? (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number)))) : '';
+
+                            if([0,''].includes(current[sm.status][sm.index].num)) {
+                                current[sm.status]= _.filter(current[sm.status],function(e,idx){
+                                    return idx !== sm.index;
+                                });
+                            }
+                        }
+                        break;
+                    case '+':
+                        if('[]' !== sm.index && _.has(current,sm.status) && _.has(current[sm.status],sm.index)){
+                            current[sm.status][sm.index].num = (sm.number !== '') ? (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number)))) : '';
+                        } else {
+                            current[sm.status] = current[sm.status] || [];
+                            current[sm.status].push({
+                                mark: sm.status,
+                                num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
+                                index: statusCount++
+                            });
+                        }
+                        break;
+                    case '-':
+                        if('[]' !== sm.index && _.has(current,sm.status)){
+                            if( _.has(current[sm.status],sm.index )) {
+                                current[sm.status]= _.filter(current[sm.status],function(e,idx){
+                                    return idx !== sm.index;
+                                });
+                            }
+                        } else {
+                            current[sm.status] = current[sm.status] || [];
+                            current[sm.status].pop();
+                        }
+                        break;
+                    case '=':
+                        current = {};
+                        current[sm.status] = [];
+                        current[sm.status].push({
+                            mark: sm.status,
+                            num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
+                            index: statusCount++
+                        });
+                    break;
+                }
+                return {
+                    statusmarkers: statusOp.composeStatuses(current)
+                };
+            }
+        }
+
+        ////////////////////////////////////////////////////////////
+
+
+
+
 
 
         let observers = {
@@ -846,6 +1170,7 @@ var TokenMod = TokenMod || (function() {
             }
         }
         checkGlobalConfig();
+        StatusMarkers.init();
     },
 
     observeTokenChange = function(handler){
@@ -934,45 +1259,6 @@ var TokenMod = TokenMod || (function() {
         '</div>';
 
     },
-    statusImg = (name) => {
-        const statusSheet = 'https://app.roll20.net/images/statussheet.png',
-        ratio = 2.173913,
-        scale = 1.4,
-		statuses = [
-            'red', 'blue', 'green', 'brown', 'purple', 'pink', 'yellow', // 0-6
-			'dead',
-            'skull', 'sleepy', 'half-heart', 'half-haze', 'interdiction',
-            'snail', 'lightning-helix', 'spanner', 'chained-heart',
-            'chemical-bolt', 'death-zone', 'drink-me', 'edge-crack',
-            'ninja-mask', 'stopwatch', 'fishing-net', 'overdrive', 'strong',
-            'fist', 'padlock', 'three-leaves', 'fluffy-wing', 'pummeled',
-            'tread', 'arrowed', 'aura', 'back-pain', 'black-flag',
-            'bleeding-eye', 'bolt-shield', 'broken-heart', 'cobweb',
-            'broken-shield', 'flying-flag', 'radioactive', 'trophy',
-            'broken-skull', 'frozen-orb', 'rolling-bomb', 'white-tower',
-            'grab', 'screaming', 'grenade', 'sentry-gun', 'all-for-one',
-            'angel-outfit', 'archery-target'
-        ],
-        statusColormap = [
-			'#C91010', // red
-			'#1076c9', // blue
-			'#2fc910', // green
-			'#c97310', // brown
-			'#9510c9', // purple
-			'#eb75e1', // pink
-			'#e5eb75', // yellow
-			'#cc1010'  // dead
-		];
-
-        let i=_.indexOf(statuses,name);
-        if(i<7) {
-            return `<div style="width: ${scale*.9}em; height: ${scale*.9}em; border-radius:${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; background-color: ${statusColormap[i]}"></div>`;
-        } 
-		if(7===i) {
-            return `<div style="width: 1em; height: ${scale}em; font-size: ${scale}em; display:inline-block; margin: 0; border:0; font-weight: bold; color: ${statusColormap[i]}">X</div>`;
-		}
-        return `<div style="width: ${scale}em; height: ${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; padding:0;background-image: url('${statusSheet}');background-repeat:no-repeat;background-position: ${(ratio*(i-8))}% 0; background-size: auto ${scale}em;"></div>`;
-    },
 
     _h = {
         outer: (...o) => `<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">${o.join(' ')}</div>`,
@@ -988,9 +1274,12 @@ var TokenMod = TokenMod || (function() {
         items: (o) => `<li>${o.join('</li><li>')}</li>`,
         ol: (...o) => `<ol>${_h.items(o)}</ol>`,
         ul: (...o) => `<ul>${_h.items(o)}</ul>`,
-        grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`,
+        grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`, 
         cell: (o) =>  `<div style="width: 130px; padding: 0 3px; float: left;">${o}</div>`,
-        statusCell: (o) =>  `<div style="width: 130px; padding: 0 3px; height: 1.5em; float: left;">${statusImg(o)}${o}</div>`,
+        statusCell: (o) =>  {
+            let text = `${o.getName()}${o.getName()!==o.getTag()?` [${o.getTag()}]`:''}`;
+            return `<div style="width: auto; padding: .2em; margin: .1em .25em; border: 1px solid #ccc; border-radius: .25em; background-color: #eee; line-height:1.5em; height: 1.5em;float:left;">${o.getHTML()}${text}</div>`;
+        },
         inset: (...o) => `<div style="padding-left: 10px;padding-right:20px">${o.join(' ')}</div>`,
         pre: (...o) =>`<div style="border:1px solid #e1e1e8;border-radius:4px;padding:8.5px;margin-bottom:9px;font-size:12px;white-space:normal;word-break:normal;word-wrap:normal;background-color:#f7f7f9;font-family:monospace;overflow:auto;">${o.join(' ')}</div>`,
         preformatted: (...o) =>_h.pre(o.join('<br>').replace(/\s/g,ch(' '))),
@@ -1350,6 +1639,9 @@ var TokenMod = TokenMod || (function() {
                                     _h.cell('bar1_value'),
                                     _h.cell('bar2_value'),
                                     _h.cell('bar3_value'),
+                                    _h.cell('bar1_current'),
+                                    _h.cell('bar2_current'),
+                                    _h.cell('bar3_current'),
                                     _h.cell('bar1_max'),
                                     _h.cell('bar2_max'),
                                     _h.cell('bar3_max'),
@@ -1482,61 +1774,7 @@ var TokenMod = TokenMod || (function() {
                             _h.minorhead('Available Status Markers:'),
                             _h.inset(
                                 _h.grid(
-                                    _h.statusCell('red'),
-                                    _h.statusCell('blue'),
-                                    _h.statusCell('green'),
-                                    _h.statusCell('brown'),
-                                    _h.statusCell('purple'),
-                                    _h.statusCell('pink'),
-                                    _h.statusCell('yellow'),
-                                    _h.statusCell('dead'),
-                                    _h.statusCell('skull'),
-                                    _h.statusCell('sleepy'),
-                                    _h.statusCell('half-heart'),
-                                    _h.statusCell('half-haze'),
-                                    _h.statusCell('interdiction'),
-                                    _h.statusCell('snail'),
-                                    _h.statusCell('lightning-helix'),
-                                    _h.statusCell('spanner'),
-                                    _h.statusCell('chained-heart'),
-                                    _h.statusCell('chemical-bolt'),
-                                    _h.statusCell('death-zone'),
-                                    _h.statusCell('drink-me'),
-                                    _h.statusCell('edge-crack'),
-                                    _h.statusCell('ninja-mask'),
-                                    _h.statusCell('stopwatch'),
-                                    _h.statusCell('fishing-net'),
-                                    _h.statusCell('overdrive'),
-                                    _h.statusCell('strong'),
-                                    _h.statusCell('fist'),
-                                    _h.statusCell('padlock'),
-                                    _h.statusCell('three-leaves'),
-                                    _h.statusCell('fluffy-wing'),
-                                    _h.statusCell('pummeled'),
-                                    _h.statusCell('tread'),
-                                    _h.statusCell('arrowed'),
-                                    _h.statusCell('aura'),
-                                    _h.statusCell('back-pain'),
-                                    _h.statusCell('black-flag'),
-                                    _h.statusCell('bleeding-eye'),
-                                    _h.statusCell('bolt-shield'),
-                                    _h.statusCell('broken-heart'),
-                                    _h.statusCell('cobweb'),
-                                    _h.statusCell('broken-shield'),
-                                    _h.statusCell('flying-flag'),
-                                    _h.statusCell('radioactive'),
-                                    _h.statusCell('trophy'),
-                                    _h.statusCell('broken-skull'),
-                                    _h.statusCell('frozen-orb'),
-                                    _h.statusCell('rolling-bomb'),
-                                    _h.statusCell('white-tower'),
-                                    _h.statusCell('grab'),
-                                    _h.statusCell('screaming'),
-                                    _h.statusCell('grenade'),
-                                    _h.statusCell('sentry-gun'),
-                                    _h.statusCell('all-for-one'),
-                                    _h.statusCell('angel-outfit'),
-                                    _h.statusCell('archery-target')
+                                    ...StatusMarkers.getOrderedList().map(tm=>_h.statusCell(tm))
                                 )
                             ),
 
@@ -1972,6 +2210,7 @@ var TokenMod = TokenMod || (function() {
         }
         return update;
     },
+
     parseArguments = function(a) {
         var args=a.replace(/(\|#|##)/g,'|%%HASHMARK%%').split(/[|#]/).map((v)=>v.replace('%%HASHMARK%%','#')),
             cmd=args.shift().toLowerCase(),
@@ -2117,33 +2356,7 @@ var TokenMod = TokenMod || (function() {
 
                 case 'status':
                     _.each(args, function(a) {
-                        var s = a.split(/:/),
-                            statparts = s.shift().match(/^(\S+?)(\[(\d*)\]|)$/)||[],
-                            index = ( '[]' === statparts[2] ? statparts[2] : ( undefined !== statparts[3] ? Math.max(parseInt(statparts[3],10)-1,0) : 0 ) ),
-                            stat=statparts[1]||'',
-                            op = (_.contains(['*','/','-','+','=','!','?'], stat[0]) ? stat[0] : false),
-                            numraw = s.shift() || '',
-                            min = Math.min(Math.max(parseInt(s.shift(),10)||0, 0),9),
-                            max = Math.max(Math.min(parseInt(s.shift(),10)||9,9),0),
-                            numop = (_.contains(['*','/','-','+'],numraw[0]) ? numraw[0] : false),
-                            num = Math.max(0,Math.min(9,Math.abs(parseInt(numraw,10))));
-                            if(isNaN(num)){
-                                num = '';
-                            }
-
-                        stat = ( op ? stat.substring(1) : stat);
-
-                        if(stat.match(regex.statuses)) {
-                            retr[cmd].push({
-                                status: stat,
-                                number: num,
-                                index: index,
-                                sign: numop,
-                                min: (min<max?min:max),
-                                max: (max>min?max:min),
-                                operation: op || '+'
-                            });
-                        }
+                        retr[cmd].push(statusOp.parse(a));
                     });
                     break;
 
@@ -2230,48 +2443,15 @@ var TokenMod = TokenMod || (function() {
             },base)
     ,
 
-    decomposeStatuses = function(statuses){
-        return _.reduce(statuses.split(/,/),function(memo,st,idx){
-            var parts=st.split(/@/),
-            entry = {
-                mark: parts[0],
-                num: parseInt(parts[1],10),
-                idx: idx
-            };
-            if(isNaN(entry.num)){
-                entry.num='';
-            }
-            if(parts[0].length) {
-                memo[parts[0]] = ( memo[parts[0]] && memo[parts[0]].push(entry) && memo[parts[0]]) || [entry] ;
-            }
-            return memo;
-        },{});
-    },
-
-    composeStatuses = function(statuses){
-        return _.chain(statuses)
-            .reduce(function(m,s){
-                _.each(s,function(sd){
-                    m.push(sd);
-                });
-                return m;
-            },[])
-            .sortBy(function(s){
-                return s.idx;
-            })
-            .map(function(s){
-                return ('dead'===s.mark ? 'dead' : ( s.mark+(s.num!=='' ? '@'+s.num : '')));
-            })
-            .value()
-            .join(',');
-    },
 
     applyModListToToken = function(modlist, token) {
         let ctx={
               token: token,
               prev: JSON.parse(JSON.stringify(token))
             },
-            mods={},
+            mods={
+              statusmarkers: token.get('statusmarkers')
+            },
             delta,
             cid,
             repChar,
@@ -2281,9 +2461,7 @@ var TokenMod = TokenMod || (function() {
 
                 list = (repChar ? repChar.get('controlledby') : token.get('controlledby'));
                 return (list ? list.split(/,/) : []);
-            }()) : [],
-            current=decomposeStatuses(token.get('statusmarkers')||''),
-            statusCount=(token.get('statusmarkers')||'').split(/,/).length;
+            }()) : [];
 
         _.each(modlist.order,function(f){
             switch(f){
@@ -2321,84 +2499,17 @@ var TokenMod = TokenMod || (function() {
                         mods[k]=controlList.join(',');
                     }
                     break;
+
                 case 'defaulttoken':
                     if(repChar){
-                        mods.statusmarkers=composeStatuses(current);
                         token.set(mods);
                         setDefaultTokenForCharacter(repChar,token);
                     }
                     break;
+
                 case 'statusmarkers':
                     _.each(f, function (sm){
-                        switch(sm.operation){
-                            case '!':
-                                if('[]' !== sm.index && _.has(current,sm.status) ){
-                                    if( _.has(current[sm.status],sm.index) ) {
-                                        current[sm.status]= _.filter(current[sm.status],function(e,idx){
-                                            return idx !== sm.index;
-                                        });
-                                    } else {
-                                        current[sm.status] = current[sm.status] || [];
-                                        current[sm.status].push({
-                                            mark: sm.status,
-                                            num: (sm.number !=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
-                                            index: statusCount++
-                                        });
-                                    }
-                                } else {
-                                    current[sm.status] = current[sm.status] || [];
-                                    current[sm.status].push({
-                                        mark: sm.status,
-                                        num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
-                                        index: statusCount++
-                                    });
-                                }
-                                break;
-                            case '?':
-                                if('[]' !== sm.index && _.has(current,sm.status) && _.has(current[sm.status],sm.index)){
-                                    current[sm.status][sm.index].num = (sm.number !== '') ? (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number)))) : '';
-
-                                    if([0,''].includes(current[sm.status][sm.index].num)) {
-                                        current[sm.status]= _.filter(current[sm.status],function(e,idx){
-                                            return idx !== sm.index;
-                                        });
-                                    }
-                                }
-                                break;
-                            case '+':
-                                if('[]' !== sm.index && _.has(current,sm.status) && _.has(current[sm.status],sm.index)){
-                                    current[sm.status][sm.index].num = (sm.number !== '') ? (Math.max(sm.min,Math.min(sm.max,getRelativeChange(current[sm.status][sm.index].num, sm.sign+sm.number)))) : '';
-                                } else {
-                                    current[sm.status] = current[sm.status] || [];
-                                    current[sm.status].push({
-                                        mark: sm.status,
-                                        num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
-                                        index: statusCount++
-                                    });
-                                }
-                                break;
-                            case '-':
-                                if('[]' !== sm.index && _.has(current,sm.status)){
-                                    if( _.has(current[sm.status],sm.index )) {
-                                        current[sm.status]= _.filter(current[sm.status],function(e,idx){
-                                            return idx !== sm.index;
-                                        });
-                                    }
-                                } else {
-                                    current[sm.status] = current[sm.status] || [];
-                                    current[sm.status].pop();
-                                }
-                                break;
-                            case '=':
-                                current = {};
-                                current[sm.status] = [];
-                                current[sm.status].push({
-                                    mark: sm.status,
-                                    num: (sm.number!=='' ? Math.max(sm.min,Math.min(sm.max,getRelativeChange(0, sm.sign+sm.number))):''),
-                                    index: statusCount++
-                                });
-                                break;
-                        }
+                        mods.statusmarkers = sm.getMods(mods.statusmarkers).statusmarkers;
                     });
                     break;
 
@@ -2472,6 +2583,9 @@ var TokenMod = TokenMod || (function() {
 					}
                     break;
 
+                case 'bar1_current':
+                case 'bar2_current':
+                case 'bar3_current':
                 case 'bar1_value':
                 case 'bar2_value':
                 case 'bar3_value':
@@ -2503,7 +2617,6 @@ var TokenMod = TokenMod || (function() {
                     break;
             }
         });
-        mods.statusmarkers=composeStatuses(current);
         token.set(mods);
         notifyObservers('tokenChange',token,ctx.prev);
         return ctx;
@@ -2802,6 +2915,7 @@ var TokenMod = TokenMod || (function() {
 
     registerEventHandlers = function() {
         on('chat:message', handleInput);
+        on('change:campaign:_token_markers',()=>StatusMarkers.init());
     };
 
     return {

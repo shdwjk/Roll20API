@@ -5,8 +5,8 @@
 var TableExport = TableExport || (function() {
 	'use strict';
 
-	var version  = '0.2.3',
-        lastUpdate = 1453209012,
+	var version  = '0.2.4',
+        lastUpdate = 1576529132,
         tableCache = {},
         escapes = {
             '['   : '<%%91%%>',
@@ -26,6 +26,8 @@ var TableExport = TableExport || (function() {
 			'>' : 'gt',
 			"'" : '#39',
 			'@' : '#64',
+            '*' : 'ast',
+            '`' : '#96',
 			'{' : '#123',
 			'|' : '#124',
 			'}' : '#125',
@@ -54,7 +56,7 @@ var TableExport = TableExport || (function() {
 		+'TableExport v'+version
 	+'</div>'
 	+'<div style="padding-left:10px;margin-bottom:3px;">'
-		+'<p>This script dumps commands to the chat for reconstructing a rollable table on another campaign.  While this can be done on your own campaigns via the transmogrifyer, this script allows you to pass those commands to a friend and thus share your own creative works with others.<p>'
+		+'<p>This script dumps commands to the chat for reconstructing a rollable table on another campaign.  While this can be done on your own campaigns via the transmogrifier, this script allows you to pass those commands to a friend and thus share your own creative works with others.<p>'
 		+'<p><b>Caveat:</b> Avatar images that are not in your own library will be ignored by the API on import, but will not prevent creation of the table and table items.</p>'
 	+'</div>'
 	+'<b>Commands</b>'

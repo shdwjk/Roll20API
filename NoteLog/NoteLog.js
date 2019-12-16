@@ -2,17 +2,21 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var NoteLog = NoteLog || (function() {
-    'use strict';
+const NoteLog = (() => {
 
-    var version = '0.1.2',
-        lastUpdate = 1476642083,
+    let version = '0.1.3',
+        lastUpdate = 1576528439,
         schemaVersion = 0.1,
         noteLogName = 'Log',
         bulletChar = '&bullet;',
 
+	defaults = {
+        expandlinks: true,
+        logname: 'Log'
+	},
+
     createNoteLog = function() {
-    	var noteLog = createObj('handout',{
+        const noteLog = createObj('handout',{
 			name: noteLogName
 		});
 		noteLog.set('notes', '<h3>Log</h3>');
@@ -20,7 +24,7 @@ var NoteLog = NoteLog || (function() {
 	},
 
     getNoteLog = function() {
-		var noteLog = filterObjs(function(o){
+		const noteLog = filterObjs(function(o){
 			return ( 'handout' === o.get('type') && noteLogName === o.get('name') && false === o.get('archived'));
 		})[0];
 
@@ -41,20 +45,54 @@ var NoteLog = NoteLog || (function() {
         }
     },
 
+	getAsBoolean = function(val,defVal){
+		let isTrue = _.isBoolean(val) ? val : _.contains(['on','yes','y','true'],(`${val}`||'true').toLowerCase()),
+		isFalse =  _.isBoolean(val) ? !val : _.contains(['off','no','n','false'],(`${val}`||'true').toLowerCase());
+		if(isTrue || isFalse){
+			return !isFalse;
+		}
+		return !_.isUndefined(defVal) ? defVal : val;
+	},
+    getAsText = function(val, defVal) {
+        return (_.isString(val) && val.length) ? val : defVal;
+    },
+
+	parseOptions = function(cmdOpts){
+		return _.chain((cmdOpts||'').replace(/((?:\\.|[^|])*)\|/g,'$1\n').replace(/\\/,'').split(/\n/))
+		.filter((a)=>a.length)
+		.reduce((m,o)=>{
+			let tok=o.split(/(?:%%|:)/),
+			c=tok.shift().toLowerCase(),
+			a=tok.join(':')||true;
+			switch(c){
+                case 'logname':
+                    a=getAsText(a,defaults[c]);
+                    break;
+				case 'expandlinks':
+					a=getAsBoolean(a,defaults[c]);
+					break;
+			}
+
+			m[c]=a;
+			return m;
+		},_.clone(defaults))
+		.value();
+	},
+
     handleInput = function(msg_orig) {
-        var args,
+        let args,
             nl,
             longtext,
             msg = _.clone(msg_orig);
 
-        if (msg.type !== "api" && !playerIsGM(msg.playerid)) {
+        if (msg.type !== "api" || !playerIsGM(msg.playerid)) {
             return;
         }
 
 		if(_.has(msg,'inlinerolls')){
 			msg.content = _.chain(msg.inlinerolls)
 				.reduce(function(m,v,k){
-                    var ti=_.reduce(v.results.rolls,function(m2,v2){
+                    let ti=_.reduce(v.results.rolls,function(m2,v2){
                         if(_.has(v2,'table')){
                             m2.push(_.reduce(v2.results,function(m3,v3){
                                 m3.push(v3.tableItem.name);
@@ -115,7 +153,7 @@ var NoteLog = NoteLog || (function() {
         RegisterEventHandlers: registerEventHandlers
     };
     
-}());
+})();
 
 on('ready',function() {
     'use strict';

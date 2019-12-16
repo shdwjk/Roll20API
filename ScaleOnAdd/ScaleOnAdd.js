@@ -5,8 +5,8 @@
 var ScaleOnAdd = ScaleOnAdd || (function() {
     'use strict';
 
-    var version = '0.1.2',
-        lastUpdate = 1490870610,
+    var version = '0.1.3',
+        lastUpdate = 1515684866,
         schemaVersion = 0.1,
         lastAddId = null,
 
@@ -116,8 +116,9 @@ var ScaleOnAdd = ScaleOnAdd || (function() {
         );
     },
 
-    handleInput = function(msg) {
+    handleInput = function(msg_orig) {
         var args,
+            msg=_.clone(msg_orig),
             who;
 
         if (msg.type !== "api") {
