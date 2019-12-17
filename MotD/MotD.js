@@ -4,7 +4,7 @@
 
 const MotD = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.2.11';
+    const version = '0.2.12';
     const lastUpdate = 1561517731;
     const schemaVersion = 0.2;
     const loginSendDelay = 10000; // 10 seconds

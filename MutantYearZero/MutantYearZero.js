@@ -5,8 +5,8 @@
 var MutantYearZero = MutantYearZero || (function() {
     'use strict';
 
-    var version = '0.1.10',
-        lastUpdate = 1491217452,
+    var version = '0.1.11',
+        lastUpdate = 1549423753,
         schemaVersion = 0.4,
         symbols = {
             biohazard: '&#'+'9763;',
@@ -57,6 +57,7 @@ var MutantYearZero = MutantYearZero || (function() {
 
                 optionalMsg: {
                     'font-size': '.6em',
+                    'color': '#000000',
                     'border': '.1em solid #a2521f',
                     'border-radius': '.5em',
                     'background-color': '#c3701b',
@@ -520,10 +521,12 @@ var MutantYearZero = MutantYearZero || (function() {
                        makeErrorMsg('Do not adjust the number of dice when pushing.')
                     );
                 }
-                /* falls through */
-                /* break; // intentional drop thru */
 
+			/* falls through */
+			/* break; // intentional drop thru */
+			/* eslint-disable no-fallthrough */
             case 'gm':
+			/* eslint-enable no-fallthrough */
                 if(playerIsGM(playerid)){
                     sendChat('','/w gm '+
                         makeErrorMsg('Cannot adjust the number of dice in a Push attempt.')
