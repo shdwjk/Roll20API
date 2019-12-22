@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.8',
-        lastUpdate = 1533040966,
+    var version = '0.3.9',
+        lastUpdate = 1577050938,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -83,7 +83,7 @@ var Ammo = Ammo || (function() {
 		}
 
 		if( playerIsGM(playerid) || valid ) {
-			attr.set({current: adjustedValue});
+			attr.setWithWorker({current: adjustedValue});
             let verb = (adjustedValue < val) ? 'use' : 'gain';
 			sendMessage(
 				`<b>${chr.get('name')}</b> ${verb}s ${Math.abs(amount)} ${label} and has ${adjustedValue} remaining.  ${overage ? `Unable to ${verb} ${overage} ${label}.`:''}`,
