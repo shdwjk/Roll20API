@@ -5,324 +5,327 @@
 var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
-    var version = '0.9.30',
-        lastUpdate = 1574009437,
-        schemaVersion = 1.2,
-        bonusCache = {},
-        observers = {
-                turnOrderChange: []
-            },
-        sorters = {
-            'None': function(to) {
-                return to;
-            },
-            'Ascending': function(to){
-                var last=0;
-                return _.sortBy(to,function(i){
-                    let val=(parseFloat(i.pr));
-                    val = _.isNaN(val) ? last : val;
-                    last=val;
-                    return val;
-                });
-            },
-            'Descending': function(to){
-                var last=100000;
-                return _.sortBy(to,function(i){
-                    let val=(-(parseFloat(i.pr)));
-                    val = _.isNaN(val) ? last : val;
-                    last=val;
-                    return val;
-                });
-            }
-        },
-        esRE = function (s) {
-          var escapeForRegexp = /(\\|\/|\[|\]|\(|\)|\{|\}|\?|\+|\*|\||\.|\^|\$)/g;
-          return s.replace(escapeForRegexp,"\\$1");
-        },
+    const isString = (s)=>'string'===typeof s || s instanceof String;
 
-        HE = (function(){
-          var entities={
-                  //' ' : '&'+'nbsp'+';',
-                  '<' : '&'+'lt'+';',
-                  '>' : '&'+'gt'+';',
-                  "'" : '&'+'#39'+';',
-                  '@' : '&'+'#64'+';',
-                  '{' : '&'+'#123'+';',
-                  '|' : '&'+'#124'+';',
-                  '}' : '&'+'#125'+';',
-                  '[' : '&'+'#91'+';',
-                  ']' : '&'+'#93'+';',
-                  '"' : '&'+'quot'+';'
-              },
-              re=new RegExp('('+_.map(_.keys(entities),esRE).join('|')+')','g');
-          return function(s){
-            return s.replace(re, function(c){ return entities[c] || c; });
-          };
-        }()),
+    const version = '0.9.31';
+    const lastUpdate = 1578365441;
+    const schemaVersion = 1.2;
 
-        observeTurnOrderChange = function(handler){
-            if(handler && _.isFunction(handler)){
-                observers.turnOrderChange.push(handler);
-            }
+    let bonusCache = {};
+
+    let observers = {
+        turnOrderChange: []
+    };
+
+    const sorters = {
+        'None': function(to) {
+            return to;
         },
-        notifyObservers = function(event,obj,prev){
-            _.each(observers[event],function(handler){
-                handler(obj,prev);
+        'Ascending': function(to){
+            var last=0;
+            return _.sortBy(to,function(i){
+                let val=(parseFloat(i.pr));
+                val = _.isNaN(val) ? last : val;
+                last=val;
+                return val;
             });
         },
+        'Descending': function(to){
+            var last=100000;
+            return _.sortBy(to,function(i){
+                let val=(-(parseFloat(i.pr)));
+                val = _.isNaN(val) ? last : val;
+                last=val;
+                return val;
+            });
+        }
+    };
 
-        formatDieRoll = function(rollData) {
-            var critFail = _.reduce(rollData.rolls,function(m,r){
-                        return m || _.contains(r.rolls,1);
-                    },false),
-                critSuccess = _.reduce(rollData.rolls,function(m,r){
-                        return m || _.contains(r.rolls,r.sides);
-                    },false),
-                highlight = ( (critFail && critSuccess) ?
-                    '#4A57ED' :
-                    ( critFail ?
-                        '#B31515' :
-                        ( critSuccess ?
-                            '#3FB315' :
-                            '#FEF68E'
-                        )
+
+    const HE = (() => {
+        const esRE = (s) => s.replace(/(\\|\/|\[|\]|\(|\)|\{|\}|\?|\+|\*|\||\.|\^|\$)/g,'\\$1');
+        const e = (s) => `&${s};`;
+        const entities = {
+            '<' : e('lt'),
+            '>' : e('gt'),
+            "'" : e('#39'),
+            '@' : e('#64'),
+            '{' : e('#123'),
+            '|' : e('#124'),
+            '}' : e('#125'),
+            '[' : e('#91'),
+            ']' : e('#93'),
+            '"' : e('quot')
+        };
+        const re = new RegExp(`(${Object.keys(entities).map(esRE).join('|')})`,'g');
+        return (s) => s.replace(re, (c) => (entities[c] || c) );
+    })();
+
+
+    const observeTurnOrderChange = function(handler){
+        if(handler && _.isFunction(handler)){
+            observers.turnOrderChange.push(handler);
+        }
+    };
+
+    const notifyObservers = function(event,obj,prev){
+        _.each(observers[event],function(handler){
+            handler(obj,prev);
+        });
+    };
+
+    const formatDieRoll = function(rollData) {
+        var critFail = _.reduce(rollData.rolls,function(m,r){
+                    return m || _.contains(r.rolls,1);
+                },false),
+            critSuccess = _.reduce(rollData.rolls,function(m,r){
+                    return m || _.contains(r.rolls,r.sides);
+                },false),
+            highlight = ( (critFail && critSuccess) ?
+                '#4A57ED' :
+                ( critFail ?
+                    '#B31515' :
+                    ( critSuccess ?
+                        '#3FB315' :
+                        '#FEF68E'
                     )
-                ),
-                dicePart = _.reduce(rollData.rolls, function(m,r){
-                    _.reduce(r.rolls,function(dm,dr){
-                        var dielight=( 1 === dr ?
-                            '#ff0000' :
-                                ( r.sides === dr ?
-                                    '#00ff00' :
-                                    'white'
-                                )
-                            );
-                        dm.push('<span style="font-weight:bold;color:'+dielight+';">'+dr+'</span>');
-                        return dm;
-                    },m);
-                    return m;
-                },[]).join(' + ');
-
-            return '<span class="inlinerollresult showtip tipsy" style="min-width:1em;display: inline-block; border: 2px solid '+
-                highlight+
-                '; background-color: #FEF68E;color: #404040; font-weight:bold;padding: 0px 3px;cursor: help"'+
-                ' title="'+
-                HE(HE(
-                    '<span style="color:white;">'+
-                        dicePart+' [init] '+
-                        (rollData.bonus>=0 ? '+' :'-')+' <span style="font-weight:bold;">'+Math.abs(rollData.bonus)+'</span> [bonus]'+
-                    '</span>'
-                ))+'">'+
-                    rollData.total+
-                '</span>';
-        },
-
-        buildAnnounceGroups = function(l) {
-            var groupColors = {
-                npc: '#eef',
-                character: '#efe',
-                gmlayer: '#aaa'
-            };
-            return _.reduce(l,function(m,s){
-                var type= ('gmlayer' === s.token.get('layer') ?
-                    'gmlayer' : (
-                        (s.character && _.filter(s.character.get('controlledby').split(/,/),function(c){ 
-                            return 'all' === c || ('' !== c && !playerIsGM(c) );
-                        }).length>0) || false ?
-                            'character' :
-                            'npc'
-                    ));
-                if('graphic'!==s.token.get('type') || 'token' !==s.token.get('subtype')) {
-                    return m;
-                }
-                m[type].push('<div style="float: left;display: inline-block;border: 1px solid #888;border-radius:5px; padding: 1px 3px;background-color:'+groupColors[type]+';">'+
-                    '<div style="font-weight:bold; font-size: 1.3em;">'+
-                        '<img src="'+(s.token && s.token.get('imgsrc'))+'" style="height: 2.5em;float:left;margin-right:2px;">'+
-                        ((s.token && s.token.get('name')) || (s.character && s.character.get('name')) || '(Creature)')+
-                    '</div>'+
-                    '<div>'+
-                        formatDieRoll(s.rollResults)+
-                    '</div>'+
-                    '<div style="clear: both;"></div>'+
-                '</div>');
+                )
+            ),
+            dicePart = _.reduce(rollData.rolls, function(m,r){
+                _.reduce(r.rolls,function(dm,dr){
+                    var dielight=( 1 === dr ?
+                        '#ff0000' :
+                            ( r.sides === dr ?
+                                '#00ff00' :
+                                'white'
+                            )
+                        );
+                    dm.push('<span style="font-weight:bold;color:'+dielight+';">'+dr+'</span>');
+                    return dm;
+                },m);
                 return m;
-            },{npc:[],character:[],gmlayer:[]});
-        },
+            },[]).join(' + ');
 
-        announcers = {
-            'None': function() {
-            },
-            'Hidden': function(l) {
-                var groups=buildAnnounceGroups(l);
-                if(groups.npc.length || groups.character.length || groups.gmlayer.length){
-                    sendChat('GroupInit','/w gm '+
-                        '<div>'+
-                            groups.character.join('')+
-                            groups.npc.join('')+
-                            groups.gmlayer.join('')+
-                            '<div style="clear:both;"></div>'+
-                        '</div>');
-                }
-            },
-            'Partial': function(l) {
-                var groups=buildAnnounceGroups(l);
-                if(groups.character.length){
-                    sendChat('GroupInit','/direct '+
-                        '<div>'+
-                            groups.character.join('')+
-                            '<div style="clear:both;"></div>'+
-                        '</div>');
-                }
-                if(groups.npc.length || groups.gmlayer.length){
-                    sendChat('GroupInit','/w gm '+
-                        '<div>'+
-                            groups.npc.join('')+
-                            groups.gmlayer.join('')+
-                            '<div style="clear:both;"></div>'+
-                        '</div>');
-                }
-            },
-            'Visible': function(l) {
-                var groups=buildAnnounceGroups(l);
-                if(groups.npc.length || groups.character.length){
-                    sendChat('GroupInit','/direct '+
-                        '<div>'+
-                            groups.character.join('')+
-                            groups.npc.join('')+
-                            '<div style="clear:both;"></div>'+
-                        '</div>');
-                }
-                if(groups.gmlayer.length){
-                    sendChat('GroupInit','/w gm '+
-                        '<div>'+
-                            groups.gmlayer.join('')+
-                            '<div style="clear:both;"></div>'+
-                        '</div>');
-                }
+        return '<span class="inlinerollresult showtip tipsy" style="min-width:1em;display: inline-block; border: 2px solid '+
+            highlight+
+            '; background-color: #FEF68E;color: #404040; font-weight:bold;padding: 0px 3px;cursor: help"'+
+            ' title="'+
+            HE(HE(
+                '<span style="color:white;">'+
+                    dicePart+' [init] '+
+                    (rollData.bonus>=0 ? '+' :'-')+' <span style="font-weight:bold;">'+Math.abs(rollData.bonus)+'</span> [bonus]'+
+                '</span>'
+            ))+'">'+
+                rollData.total+
+            '</span>';
+    };
+
+    const buildAnnounceGroups = function(l) {
+        var groupColors = {
+            npc: '#eef',
+            character: '#efe',
+            gmlayer: '#aaa'
+        };
+        return _.reduce(l,function(m,s){
+            var type= ('gmlayer' === s.token.get('layer') ?
+                'gmlayer' : (
+                    (s.character && _.filter(s.character.get('controlledby').split(/,/),function(c){ 
+                        return 'all' === c || ('' !== c && !playerIsGM(c) );
+                    }).length>0) || false ?
+                        'character' :
+                        'npc'
+                ));
+            if('graphic'!==s.token.get('type') || 'token' !==s.token.get('subtype')) {
+                return m;
+            }
+            m[type].push('<div style="float: left;display: inline-block;border: 1px solid #888;border-radius:5px; padding: 1px 3px;background-color:'+groupColors[type]+';">'+
+                '<div style="font-weight:bold; font-size: 1.3em;">'+
+                    '<img src="'+(s.token && s.token.get('imgsrc'))+'" style="height: 2.5em;float:left;margin-right:2px;">'+
+                    ((s.token && s.token.get('name')) || (s.character && s.character.get('name')) || '(Creature)')+
+                '</div>'+
+                '<div>'+
+                    formatDieRoll(s.rollResults)+
+                '</div>'+
+                '<div style="clear: both;"></div>'+
+            '</div>');
+            return m;
+        },{npc:[],character:[],gmlayer:[]});
+    };
+
+    const announcers = {
+        'None': function() {
+        },
+        'Hidden': function(l) {
+            var groups=buildAnnounceGroups(l);
+            if(groups.npc.length || groups.character.length || groups.gmlayer.length){
+                sendChat('GroupInit','/w gm '+
+                    '<div>'+
+                        groups.character.join('')+
+                        groups.npc.join('')+
+                        groups.gmlayer.join('')+
+                        '<div style="clear:both;"></div>'+
+                    '</div>');
             }
         },
-
-        statAdjustments = {
-            'stat-dnd': {
-                func: function(v) {
-                    return 'floor((('+v+')-10)/2)';
-                },
-                desc: 'Calculates the bonus as if the value were a DnD Stat.'
-            },
-            'negative': {
-                func: function(v) {
-                    return '(-1*('+v+'))';
-                },
-                desc: 'Returns the negative version of the stat'
-            },
-            'bare': {
-                func: function(v) {
-                    return v;
-                },
-                desc: 'No Adjustment.'
-            },
-            'floor': {
-                func: function(v) {
-                    return 'floor('+v+')';
-                },
-                desc: 'Rounds down to the nearest integer.'
-            },
-            'tie-breaker': {
-                func: function(v) {
-                    return '(0.01*('+v+'))';
-                },
-                desc: 'Adds the accompanying attribute as a decimal (0.01)'
-            },
-            'ceiling': {
-                func: function(v) {
-                    return 'ceil('+v+')';
-                },
-                desc: 'Rounds up to the nearest integer.'
-            },
-            'token_bar': {
-                func: function(v,t) {
-                    return parseFloat(t.get(`bar${v}_value`))||0;
-                },
-                desc: 'Takes the bonus from the numbered bar on the token. Use 1,2, or 3.  Defaults to 0 in the absense of a number.'
-            },
-            'token_bar_max': {
-                func: function(v,t) {
-                    return parseFloat(t.get(`bar${v}_max`))||0;
-                },
-                desc: 'Takes the bonus from the max value of the numbered bar on the token. Use 1,2, or 3.  Defaults to 0 in the absense of a number.'
-            },
-            'token_aura': {
-                func: function(v,t) {
-                    return parseFloat(t.get(`aura${v}_radius`))||0;
-                },
-                desc: 'Takes the bonus from the radius of the token aura. Use 1 or 2.  Defaults to 0 in the absense of a number.'
+        'Partial': function(l) {
+            var groups=buildAnnounceGroups(l);
+            if(groups.character.length){
+                sendChat('GroupInit','/direct '+
+                    '<div>'+
+                        groups.character.join('')+
+                        '<div style="clear:both;"></div>'+
+                    '</div>');
             }
-
-        },
-
-        buildInitDiceExpression = function(s){
-            var stat=(''!== state.GroupInitiative.config.diceCountAttribute && s.character && getAttrByName(s.character.id, state.GroupInitiative.config.diceCountAttribute, 'current'));
-            if(stat ) {
-                stat = (_.isString(stat) ? stat : stat+'');
-                if('0' !== stat) {
-                    stat = stat.replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{'+(s.character.get('name'))+'|$1}');
-                    return '('+stat+')d'+state.GroupInitiative.config.dieSize;
-                }
-            } 
-            return state.GroupInitiative.config.diceCount+'d'+state.GroupInitiative.config.dieSize+state.GroupInitiative.config.diceMod;
-        },
-
-        rollers = {
-            'Least-All-Roll':{
-                mutator: function(l){
-                    var min=_.reduce(l,function(m,r){
-                        if(!m || (r.total < m.total)) {
-                            return r;
-                        } 
-                        return m;
-                    },false);
-                    return _.times(l.length, function(){
-                        return min;
-                    });
-                },
-                func: function(s){
-                    return buildInitDiceExpression(s);
-                },
-                desc: 'Sets the initiative to the lowest of all initiatives rolled for the group.'
-            },
-            'Mean-All-Roll':{
-                mutator: function(l){
-                    var mean = l[Math.round((l.length/2)-0.5)];
-                    return _.times(l.length, function(){
-                        return mean;
-                    });
-                },
-                func: function(s){
-                    return buildInitDiceExpression(s);
-                },
-                desc: 'Sets the initiative to the mean (average) of all initiatives rolled for the group.'
-            },
-            'Individual-Roll': {
-                mutator: function(l){
-                    return l;
-                },
-                func: function(s){
-                    return buildInitDiceExpression(s);
-                },
-                desc: 'Sets the initiative individually for each member of the group.'
-            },
-            'Constant-By-Stat': {
-                mutator: function(l){
-                    return l;
-                },
-                func: function(){
-                    return '0';
-                },
-                desc: 'Sets the initiative individually for each member of the group to their bonus with no roll.'
+            if(groups.npc.length || groups.gmlayer.length){
+                sendChat('GroupInit','/w gm '+
+                    '<div>'+
+                        groups.npc.join('')+
+                        groups.gmlayer.join('')+
+                        '<div style="clear:both;"></div>'+
+                    '</div>');
             }
         },
+        'Visible': function(l) {
+            var groups=buildAnnounceGroups(l);
+            if(groups.npc.length || groups.character.length){
+                sendChat('GroupInit','/direct '+
+                    '<div>'+
+                        groups.character.join('')+
+                        groups.npc.join('')+
+                        '<div style="clear:both;"></div>'+
+                    '</div>');
+            }
+            if(groups.gmlayer.length){
+                sendChat('GroupInit','/w gm '+
+                    '<div>'+
+                        groups.gmlayer.join('')+
+                        '<div style="clear:both;"></div>'+
+                    '</div>');
+            }
+        }
+    };
 
-    checkInstall = function() {    
+    const statAdjustments = {
+        'stat-dnd': {
+            func: function(v) {
+                return 'floor((('+v+')-10)/2)';
+            },
+            desc: 'Calculates the bonus as if the value were a DnD Stat.'
+        },
+        'negative': {
+            func: function(v) {
+                return '(-1*('+v+'))';
+            },
+            desc: 'Returns the negative version of the stat'
+        },
+        'bare': {
+            func: function(v) {
+                return v;
+            },
+            desc: 'No Adjustment.'
+        },
+        'floor': {
+            func: function(v) {
+                return 'floor('+v+')';
+            },
+            desc: 'Rounds down to the nearest integer.'
+        },
+        'tie-breaker': {
+            func: function(v) {
+                return '(0.01*('+v+'))';
+            },
+            desc: 'Adds the accompanying attribute as a decimal (0.01)'
+        },
+        'ceiling': {
+            func: function(v) {
+                return 'ceil('+v+')';
+            },
+            desc: 'Rounds up to the nearest integer.'
+        },
+        'token_bar': {
+            func: function(v,t) {
+                return parseFloat(t.get(`bar${v}_value`))||0;
+            },
+            desc: 'Takes the bonus from the numbered bar on the token. Use 1,2, or 3.  Defaults to 0 in the absense of a number.'
+        },
+        'token_bar_max': {
+            func: function(v,t) {
+                return parseFloat(t.get(`bar${v}_max`))||0;
+            },
+            desc: 'Takes the bonus from the max value of the numbered bar on the token. Use 1,2, or 3.  Defaults to 0 in the absense of a number.'
+        },
+        'token_aura': {
+            func: function(v,t) {
+                return parseFloat(t.get(`aura${v}_radius`))||0;
+            },
+            desc: 'Takes the bonus from the radius of the token aura. Use 1 or 2.  Defaults to 0 in the absense of a number.'
+        }
+
+    };
+
+    const buildInitDiceExpression = function(s){
+        var stat=(''!== state.GroupInitiative.config.diceCountAttribute && s.character && getAttrByName(s.character.id, state.GroupInitiative.config.diceCountAttribute, 'current'));
+        if(stat ) {
+            stat = (_.isString(stat) ? stat : stat+'');
+            if('0' !== stat) {
+                stat = stat.replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{'+(s.character.get('name'))+'|$1}');
+                return '('+stat+')d'+state.GroupInitiative.config.dieSize;
+            }
+        } 
+        return state.GroupInitiative.config.diceCount+'d'+state.GroupInitiative.config.dieSize+state.GroupInitiative.config.diceMod;
+    };
+
+    const rollers = {
+        'Least-All-Roll':{
+            mutator: function(l){
+                var min=_.reduce(l,function(m,r){
+                    if(!m || (r.total < m.total)) {
+                        return r;
+                    } 
+                    return m;
+                },false);
+                return _.times(l.length, function(){
+                    return min;
+                });
+            },
+            func: function(s){
+                return buildInitDiceExpression(s);
+            },
+            desc: 'Sets the initiative to the lowest of all initiatives rolled for the group.'
+        },
+        'Mean-All-Roll':{
+            mutator: function(l){
+                var mean = l[Math.round((l.length/2)-0.5)];
+                return _.times(l.length, function(){
+                    return mean;
+                });
+            },
+            func: function(s){
+                return buildInitDiceExpression(s);
+            },
+            desc: 'Sets the initiative to the mean (average) of all initiatives rolled for the group.'
+        },
+        'Individual-Roll': {
+            mutator: function(l){
+                return l;
+            },
+            func: function(s){
+                return buildInitDiceExpression(s);
+            },
+            desc: 'Sets the initiative individually for each member of the group.'
+        },
+        'Constant-By-Stat': {
+            mutator: function(l){
+                return l;
+            },
+            func: function(){
+                return '0';
+            },
+            desc: 'Sets the initiative individually for each member of the group to their bonus with no roll.'
+        }
+    };
+
+    const checkInstall = function() {    
         log('-=> GroupInitiative v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'GroupInitiative') || state.GroupInitiative.version !== schemaVersion) {
@@ -407,10 +410,10 @@ var GroupInitiative = GroupInitiative || (function() {
                     break;
             }
         }
-    },
+    };
 
-    ch = function (c) {
-        var entities = {
+    const ch = (c) => {
+        const entities = {
             '<' : 'lt',
             '>' : 'gt',
             "'" : '#39',
@@ -421,18 +424,18 @@ var GroupInitiative = GroupInitiative || (function() {
             '[' : '#91',
             ']' : '#93',
             '"' : 'quot',
-            '-' : 'mdash',
+            '*' : 'ast',
+            '/' : 'sol',
             ' ' : 'nbsp'
         };
 
-        if(_.has(entities,c) ){
-            return ('&'+entities[c]+';');
+        if( entities.hasOwnProperty(c) ){
+            return `&${entities[c]};`;
         }
         return '';
-    },
+    };
 
-
-    buildBonusStatGroupRows = function() {
+    const buildBonusStatGroupRows = function() {
         return _.reduce(state.GroupInitiative.bonusStatGroups, function(memo,bsg){
             return memo + '<li><span style="border: 1px solid #999;background-color:#eee;padding: 0px 3px;">'+_.chain(bsg)
             .map(function(s){
@@ -448,15 +451,15 @@ var GroupInitiative = GroupInitiative || (function() {
             .join('</span> + <span style="border: 1px solid #999;background-color:#eee;padding: 0px 3px;">') +
             '</span></li>';
         },"");
-    },
+    };
 
-    buildStatAdjustmentRows = function() {
+    const buildStatAdjustmentRows = function() {
         return _.reduce(statAdjustments,function(memo,r,n){
             return memo+"<li><b>"+n+"</b> — "+r.desc+"</li>";
         },"");
-    },
+    };
 
-    getConfigOption_SortOptions = function() {
+    const getConfigOption_SortOptions = function() {
         var text = state.GroupInitiative.config.sortOption;
         return '<div>'+
             'Sort Options is currently <b>'+
@@ -470,8 +473,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 }).join(' ')+
             '</div>'+
         '</div>';
-    },
-    getConfigOption_DieSize = function() {
+    };
+
+    const getConfigOption_DieSize = function() {
         return '<div>'+
             'Initiative Die size is currently <b>'+
                 state.GroupInitiative.config.dieSize+
@@ -480,9 +484,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 'Set Die Size'+
             '</a>'+
         '</div>';
-    },
+    };
 
-    getConfigOption_DiceCount = function() {
+    const getConfigOption_DiceCount = function() {
         return '<div>'+
             'Initiative Dice Count is currently <b>'+
                 state.GroupInitiative.config.diceCount+
@@ -491,9 +495,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 'Set Dice Count'+
             '</a>'+
         '</div>';
-    },
+    };
 
-    getConfigOption_MaxDecimal = function() {
+    const getConfigOption_MaxDecimal = function() {
         return '<div>'+
             'Max decimal places <b>'+
                 state.GroupInitiative.config.maxDecimal+
@@ -502,9 +506,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 'Set Max Decimal'+
             '</a>'+
         '</div>';
-    },
+    };
 
-    getConfigOption_DiceCountAttribute = function() {
+    const getConfigOption_DiceCountAttribute = function() {
         var text = (state.GroupInitiative.config.diceCountAttribute.length ? state.GroupInitiative.config.diceCountAttribute : 'DISABLED');
         return '<div>'+
             'Dice Count Attribute: <b>'+
@@ -514,9 +518,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 'Set Attribute'+
             '</a>'+
         '</div>';
-    },
+    };
 
-    getConfigOption_DiceMod = function() {
+    const getConfigOption_DiceMod = function() {
         var text = (state.GroupInitiative.config.diceMod.length ? state.GroupInitiative.config.diceMod : 'DISABLED');
         return '<div>'+
             'Dice Mod String: <b>'+
@@ -526,9 +530,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 'Set Dice Modifiers'+
             '</a>'+
         '</div>';
-    },
+    };
 
-    getConfigOption_AutoOpenInit = function() {
+    const getConfigOption_AutoOpenInit = function() {
         var text = (state.GroupInitiative.config.autoOpenInit ? 'On' : 'Off' );
         return '<div>'+
             'Auto Open Init is currently <b>'+
@@ -539,9 +543,9 @@ var GroupInitiative = GroupInitiative || (function() {
             '</a>'+
         '</div>';
         
-    },
+    };
 
-    getConfigOption_ReplaceRoll = function() {
+    const getConfigOption_ReplaceRoll = function() {
         var text = (state.GroupInitiative.config.replaceRoll ? 'On' : 'Off' );
         return '<div>'+
             'Replace Roll is currently <b>'+
@@ -553,8 +557,9 @@ var GroupInitiative = GroupInitiative || (function() {
             '<p>Sets whether initative scores for selected tokens replace their current scores.</p>'+
         '</div>';
         
-    },
-    getConfigOption_RollerOptions = function() {
+    };
+    
+    const getConfigOption_RollerOptions = function() {
         var text = state.GroupInitiative.config.rollType;
         return '<div>'+
             'Roller is currently <b>'+
@@ -568,8 +573,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 }).join(' ')+
             '</div>'+
         '</div>';
-    },
-    getConfigOption_AnnounceOptions = function() {
+    };
+
+    const getConfigOption_AnnounceOptions = function() {
         var text = state.GroupInitiative.config.announcer;
         return '<div>'+
             'Announcer is currently <b>'+
@@ -583,9 +589,9 @@ var GroupInitiative = GroupInitiative || (function() {
                 }).join(' ')+
             '</div>'+
         '</div>';
-    },
+    };
 
-    getAllConfigOptions = function() {
+    const getAllConfigOptions = function() {
         return getConfigOption_RollerOptions() +
             getConfigOption_SortOptions() +
             getConfigOption_DieSize() +
@@ -596,9 +602,9 @@ var GroupInitiative = GroupInitiative || (function() {
             getConfigOption_AutoOpenInit() +
             getConfigOption_ReplaceRoll() +
             getConfigOption_AnnounceOptions();
-    },
+    };
 
-    showHelp = function() {
+    const showHelp = function() {
         var rollerRows=_.reduce(rollers,function(memo,r,n){
             var selected=((state.GroupInitiative.config.rollType === n) ? 
             '<div style="float:right;width:90px;border:1px solid black;background-color:#ffc;text-align:center;"><span style="color: red; font-weight:bold; padding: 0px 4px;">Selected</span></div>'
@@ -639,6 +645,14 @@ var GroupInitiative = GroupInitiative || (function() {
                         '<p>This command uses the configured Roller to '+
                         'determine the initiative order for all selected '+
                         'tokens.</p>'+
+                    '</div>'+
+                '</div>'+
+
+                '<div style="padding-left:10px;">'+
+                    '<b><span style="font-family: serif;">!group-init <i>--ids <id> [<id> ...]</i></span></b>'+
+                    '<div style="padding-left: 10px;padding-right:20px">'+
+                        '<p>This command uses the configured Roller to '+
+                        'determine the initiative order for all tokens whose ids are specified.</p>'+
                     '</div>'+
                 '</div>'+
 
@@ -845,9 +859,9 @@ var GroupInitiative = GroupInitiative || (function() {
 
             '</div>'
         );
-    },
+    };
 
-    parseEmbeddedStatReferences = function(stat,charObj){
+    const parseEmbeddedStatReferences = function(stat,charObj){
         let charName=charObj.get('name'),
             stext=(stat+'').replace(/@{[^}]*}/g,(s)=>{
                 let parts=_.rest(s.match(/@{([^|}]*)\|?([^|}]*)\|?([^|}]*)}/)),
@@ -870,9 +884,9 @@ var GroupInitiative = GroupInitiative || (function() {
             })
             .replace(/&{tracker}/,'');
         return stext;
-    },
+    };
 
-    findInitiativeBonus = function(charObj, token) {
+    const findInitiativeBonus = function(charObj, token) {
         var bonus = '';
         if(_.has(bonusCache,charObj.id)) {
             return bonusCache[charObj.id];
@@ -914,28 +928,159 @@ var GroupInitiative = GroupInitiative || (function() {
         });
         bonusCache[charObj.id]=bonus;
         return bonus;
-    },
+    };
 
-    handleInput = function(msg_orig) {
+    const rollForTokenIDsExternal = (ids,options) => {
+        setTimeout(()=>makeRollsForIDs(ids,{
+            isReroll: false,
+            prev: Campaign().get('turnorder'),
+            manualBonus: parseFloat(options.manualBonus)||0
+        }), 0);
+    };
+
+    const makeRollsForIDs = (ids,options={}) => {
+        bonusCache = {};
+        let turnorder = Campaign().get('turnorder');
+
+        turnorder = ('' === turnorder) ? [] : JSON.parse(turnorder);
+        if(state.GroupInitiative.config.replaceRoll || options.isReroll) {
+            turnorder = turnorder.filter(e => !ids.includes(e.id));
+        }
+
+        let turnorderIDS = turnorder.map(e=>e.id);
+
+        let initFunc=rollers[state.GroupInitiative.config.rollType].func;
+
+        let rollSetup = ids
+            .filter( id => !turnorderIDS.includes(id))
+            .map(id => getObj('graphic',id))
+            .filter( g => undefined !== g)
+            .map(g => ({
+                token: g,
+                character: getObj('character', g.get('represents'))
+            }))
+            .map(g => {
+                g.roll=[];
+                if(g.character) {
+                    let bonus=findInitiativeBonus(g.character,g.token);
+                    bonus = (isString(bonus) ? (bonus.trim().length ? bonus : '0') : bonus);
+                    g.roll.push(bonus);
+                }
+                if(options.manualBonus){
+                    g.roll.push( options.manualBonus );
+                }
+                g.roll.push( initFunc(g) );
+                return g;
+            });
+
+        let pageid = (rollSetup[0]||{token:{get:()=>{}}}).token.get('pageid');
+
+
+        let initRolls = _.map(rollSetup,function(rs,i){
+            return {
+                index: i,
+                roll: ('[[('+ _.reject(rs.roll,function(r){
+                    return _.isString(r) && _.isEmpty(r);
+                })
+                .join(') + (')+')]]')
+                .replace(/\[\[\[/g, "[[ [")
+            };
+        });
+
+        let turnEntries = [];
+        let finalize = _.after(initRolls.length,function(){
+            turnEntries = _.sortBy(turnEntries,'order');
+            turnEntries = rollers[state.GroupInitiative.config.rollType].mutator(turnEntries);
+
+            Campaign().set({
+                turnorder: JSON.stringify(
+                    sorters[state.GroupInitiative.config.sortOption](
+                        turnorder.concat(
+                            _.chain(rollSetup)
+                            .map(function(s){
+                                s.rollResults=turnEntries.shift();
+                                return s;
+                            })
+                            .tap(announcers[state.GroupInitiative.config.announcer])
+                            .map(function(s){
+                                return {
+                                    id: s.token.id,
+                                    pr: s.rollResults.total,
+                                    custom: ''
+                                };
+                            })
+                            .value()
+                        )
+                    )
+                )
+            });
+            notifyObservers('turnOrderChange',Campaign().get('turnorder'), options.prev);
+
+            if(state.GroupInitiative.config.autoOpenInit && !Campaign().get('initativepage')) {
+                Campaign().set({
+                    initiativepage: pageid
+                });
+            }
+        });
+
+        _.each(initRolls, function(ir){
+            sendChat('',ir.index+':'+ir.roll.replace(/\[\[\s+/,'[[') ,function(msg){
+                var parts = msg[0].content.split(/:/),
+                ird = msg[0].inlinerolls[parts[1].match(/\d+/)],
+                rdata = {
+                    order: parseInt(parts[0],10),
+                    total: (ird.results.total%1===0 ?
+                        ird.results.total :
+                        parseFloat(ird.results.total.toFixed(state.GroupInitiative.config.maxDecimal))),
+                        rolls: _.reduce(ird.results.rolls,function(m,rs){
+                            if('R' === rs.type) {
+                                m.push({
+                                    sides: rs.sides,
+                                    rolls: _.pluck(rs.results,'v')
+                                });
+                            }
+                            return m;
+                        },[])
+                };
+
+                rdata.bonus = (ird.results.total - (_.reduce(rdata.rolls,function(m,r){
+                    m+=_.reduce(r.rolls,function(s,dieroll){
+                        return s+dieroll;
+                    },0);
+                    return m;
+                },0)));
+
+                rdata.bonus = (rdata.bonus%1===0 ?
+                    rdata.bonus :
+                    parseFloat(rdata.bonus.toFixed(state.GroupInitiative.config.maxDecimal)));
+
+                    turnEntries.push(rdata);
+
+                    finalize();
+            });
+        });
+
+    };
+
+    const handleInput = (msg_orig) => {
         var msg = _.clone(msg_orig),
             prev=Campaign().get('turnorder'),
             args,
             cmds,
             workgroup,
             workvar,
-            turnorder,
-            pageid=false,
             error=false,
-            initFunc,
-            rollSetup,
-            initRolls,
             cont=false,
             manualBonus=0,
             manualBonusMin=0,
-            turnEntries,
-            finalize,
             isReroll=false
             ;
+
+        let ids =[];
+
+        if(msg.selected){
+            ids = [...ids, ...msg.selected.map(o=>o._id)];
+        }
 
         if (msg.type !== "api" ) {
             return;
@@ -965,6 +1110,13 @@ var GroupInitiative = GroupInitiative || (function() {
                                 return;
                             }
                             showHelp();
+                            break;
+
+                        case 'ids':
+                            if(playerIsGM(msg.playerid) || msg.playerid === 'api' ){
+                                ids = [...new Set([...ids, ...cmds.slice(1)])];
+                                cont = true;
+                            }
                             break;
 
                         case 'add-group':
@@ -1280,7 +1432,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                 );
                             } else {
                                 sendChat('!group-init --del-group', '/w gm ' +
-                                    '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                    '<div style="padding:1px 3px;bhttps://raytheon.benefitcenter.com/v3/client_docs/en_us/rth/HealthAdvocate_Top_Ten_Reasons.pdforder: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
                                         'Please specify one of the following by number:'+
                                         '<ol>'+
                                             buildBonusStatGroupRows()+
@@ -1305,21 +1457,18 @@ var GroupInitiative = GroupInitiative || (function() {
                                 });
                             }
                             break;
+
                         case 'reroll':
                             isReroll=true;
                             if(cmds[1] && cmds[1].match(/^[-+]?\d+(\.\d+)?$/)){
                                 manualBonus=parseFloat(cmds[1])||0;
                             }
-                            msg.selected= _.chain(JSON.parse(Campaign().get('turnorder'))||[])
-                                .filter(function(e){
-                                    return '-1' !== e.id;
-                                })
-                                .map(function(e){
-                                    return {_type: 'graphic', _id: e.id};
-                                })
-                                .value();
+
+                            ids = JSON.parse(Campaign().get('turnorder')||'[]')
+                                .filter(e=> '-1' !== e.id)
+                                .map(e=>e.id);
+
                             cont=true;
-                            notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                             break;
 
                         case 'sort':
@@ -1433,132 +1582,8 @@ var GroupInitiative = GroupInitiative || (function() {
                 }
 
                 if(cont) {
-                    if(_.has(msg,'selected')) {
-                        bonusCache = {};
-                        turnorder = Campaign().get('turnorder');
-                        turnorder = ('' === turnorder) ? [] : JSON.parse(turnorder);
-                        if(state.GroupInitiative.config.replaceRoll || isReroll) {
-                            turnorder=_.reject(turnorder,function(i){
-                                return _.contains(_.pluck(msg.selected, '_id'),i.id);
-                            });
-                        }
-
-                        initFunc=rollers[state.GroupInitiative.config.rollType].func;
-
-                        rollSetup = _.chain(msg.selected)
-                            .map(function(s){
-                                return getObj(s._type,s._id);
-                            })
-                            .reject(_.isUndefined)
-                            .reject(function(s){
-                                return _.contains(_.pluck(turnorder,'id'),s.id);
-                            })
-                            .map(function(s){
-                                pageid=pageid || s.get('pageid');
-                                return {
-                                    token: s,
-                                    character: getObj('character',s.get('represents'))
-                                };
-                            })
-                            .map(function(s){
-                                s.roll=[];
-                                if(s.character) {
-                                    let bonus=findInitiativeBonus(s.character,s.token);
-                                    bonus = (_.isString(bonus) ? (bonus.trim().length ? bonus : '0') : bonus);
-                                    s.roll.push( bonus );
-                                }
-                                if(manualBonus) {
-                                    s.roll.push( manualBonus );
-                                }
-                                s.roll.push( initFunc(s) );
-                                return s;
-                            })
-                            .value();
-
-                        initRolls = _.map(rollSetup,function(rs,i){
-                                return {
-                                    index: i,
-                                    roll: ('[[('+ _.reject(rs.roll,function(r){
-                                                return _.isString(r) && _.isEmpty(r);
-                                            })
-                                            .join(') + (')+')]]')
-                                            .replace(/\[\[\[/g, "[[ [")
-                                };
-                            });
-
-
-    turnEntries = [];
-    finalize = _.after(initRolls.length,function(){
-        turnEntries = _.sortBy(turnEntries,'order');
-        turnEntries = rollers[state.GroupInitiative.config.rollType].mutator(turnEntries);
-
-        Campaign().set({
-            turnorder: JSON.stringify(
-                sorters[state.GroupInitiative.config.sortOption](
-                    turnorder.concat(
-                        _.chain(rollSetup)
-                        .map(function(s){
-                            s.rollResults=turnEntries.shift();
-                            return s;
-                        })
-                        .tap(announcers[state.GroupInitiative.config.announcer])
-                        .map(function(s){
-                            return {
-                                id: s.token.id,
-                                pr: s.rollResults.total,
-                                custom: ''
-                            };
-                        })
-                        .value()
-                    )
-                )
-            )
-        });
-        notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
-
-        if(state.GroupInitiative.config.autoOpenInit && !Campaign().get('initativepage')) {
-            Campaign().set({
-                initiativepage: pageid
-            });
-        }
-    });
-
-    _.each(initRolls, function(ir){
-        sendChat('',ir.index+':'+ir.roll.replace(/\[\[\s+/,'[[') ,function(msg){
-            var parts = msg[0].content.split(/:/),
-                ird = msg[0].inlinerolls[parts[1].match(/\d+/)],
-                rdata = {
-                    order: parseInt(parts[0],10),
-                    total: (ird.results.total%1===0 ?
-                        ird.results.total :
-                            parseFloat(ird.results.total.toFixed(state.GroupInitiative.config.maxDecimal))),
-                    rolls: _.reduce(ird.results.rolls,function(m,rs){
-                        if('R' === rs.type) {
-                            m.push({
-                                sides: rs.sides,
-                                rolls: _.pluck(rs.results,'v')
-                            });
-                        }
-                        return m;
-                    },[])
-                };
-
-            rdata.bonus = (ird.results.total - (_.reduce(rdata.rolls,function(m,r){
-                m+=_.reduce(r.rolls,function(s,dieroll){
-                    return s+dieroll;
-                },0);
-                return m;
-            },0)));
-
-            rdata.bonus = (rdata.bonus%1===0 ?
-                rdata.bonus :
-                parseFloat(rdata.bonus.toFixed(state.GroupInitiative.config.maxDecimal)));
-
-            turnEntries.push(rdata);
-
-            finalize();
-        });
-    });
+                    if(ids.length) {
+                        makeRollsForIDs(ids,{isReroll,manualBonus,prev});
                     } else {
                         showHelp();
                     }
@@ -1730,25 +1755,24 @@ var GroupInitiative = GroupInitiative || (function() {
                 break;
         }
 
-    },
+    };
 
 
-    registerEventHandlers = function() {
+    const registerEventHandlers = function() {
         on('chat:message', handleInput);
     };
 
+    on("ready",() => {
+        checkInstall();
+        registerEventHandlers();
+    });
+
     return {
-        RegisterEventHandlers: registerEventHandlers,
         ObserveTurnOrderChange: observeTurnOrderChange,
-        CheckInstall: checkInstall
+        RollForTokenIDs: rollForTokenIDsExternal
     };
+
 }());
 
-on("ready",function(){
-    'use strict';
-
-        GroupInitiative.CheckInstall();
-        GroupInitiative.RegisterEventHandlers();
-});
 
 
