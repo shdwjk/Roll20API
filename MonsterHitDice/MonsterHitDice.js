@@ -6,8 +6,8 @@ var globalconfig = globalconfig || undefined;
 var MonsterHitDice = MonsterHitDice || (function() {
     'use strict';
 
-    var version = '0.3.6',
-        lastUpdate = 1471266501,
+    var version = '0.3.7',
+        lastUpdate = 1579217450,
         schemaVersion = 0.2,
         tokenIds = [],
 
@@ -53,7 +53,7 @@ var MonsterHitDice = MonsterHitDice || (function() {
         }
     },
     checkInstall = function() {
-    	log('-=> MonsterHitDice v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+        log('-=> MonsterHitDice v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'MonsterHitDice') || state.MonsterHitDice.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
@@ -66,36 +66,40 @@ var MonsterHitDice = MonsterHitDice || (function() {
                 case 'UpdateSchemaVersion':
                     state.MonsterHitDice.version = schemaVersion;
                     break;
-				
-				default:
-					state.MonsterHitDice = {
-						version: schemaVersion,
-						globalconfigCache: {lastsaved:0},
-						config: {
-							bar: 3,
-							hitDiceAttribute: 'npc_HP_hit_dice',
-							findSRDFormula: false,
-							useConBonus: true,
-							conBonusAttribute: 'npc_constitution',
-							conBonusIsStat: true
-						}
-					};
-			}
+
+                default:
+                    state.MonsterHitDice = {
+                        version: schemaVersion,
+                        globalconfigCache: {lastsaved:0},
+                        config: {
+                            bar: 3,
+                            hitDiceAttribute: 'npc_HP_hit_dice',
+                            findSRDFormula: false,
+                            useConBonus: true,
+                            conBonusAttribute: 'npc_constitution',
+                            conBonusIsStat: true
+                        }
+                    };
+            }
         }
         checkGlobalConfig();
     },
 
     handleInput = function(msg) {
-        var args;
 
-        if (msg.type !== "api") {
-            return;
-        }
-
-        args = msg.content.split(/\s+/);
-        switch(args[0]) {
-            case '!mhd':
-                break;
+        if (msg.type === "api" && /^!mhd(\b|$)/i.test(msg.content) && playerIsGM(msg.playerid) ) {
+            let who = (getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+            let count = 0;
+            (msg.selected || [])
+                .map(o=>getObj('graphic',o._id))
+                .filter(g=>undefined !== g)
+                .forEach( o => {
+                    ++count;
+                    tokenIds.push(o.id);
+                    rollHitDice(o);
+                })
+                ;
+            sendChat('',`/w "${who}" Rolling hit dice for ${count} token(s).`);
         }
     },
 
