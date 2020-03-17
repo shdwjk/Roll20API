@@ -6,12 +6,11 @@ var GroupInitiative = GroupInitiative || (function() {
     'use strict';
 
     const isString = (s)=>'string'===typeof s || s instanceof String;
+    const isFunction = (f)=>'function'===typeof f;
 
-    const version = '0.9.31';
-    const lastUpdate = 1578366460;
+    const version = '0.9.32';
+    const lastUpdate = 1584411623;
     const schemaVersion = 1.2;
-
-    let bonusCache = {};
 
     let observers = {
         turnOrderChange: []
@@ -205,58 +204,72 @@ var GroupInitiative = GroupInitiative || (function() {
         }
     };
 
+    const adjustments = {
+        STAT: 'stat',
+        TOKEN: 'token'
+    };
+
     const statAdjustments = {
         'stat-dnd': {
+            type: adjustments.STAT,
             func: function(v) {
                 return 'floor((('+v+')-10)/2)';
             },
             desc: 'Calculates the bonus as if the value were a DnD Stat.'
         },
         'negative': {
+            type: adjustments.STAT,
             func: function(v) {
                 return '(-1*('+v+'))';
             },
             desc: 'Returns the negative version of the stat'
         },
         'bare': {
+            type: adjustments.STAT,
             func: function(v) {
                 return v;
             },
             desc: 'No Adjustment.'
         },
         'floor': {
+            type: adjustments.STAT,
             func: function(v) {
                 return 'floor('+v+')';
             },
             desc: 'Rounds down to the nearest integer.'
         },
         'tie-breaker': {
+            type: adjustments.STAT,
             func: function(v) {
                 return '(0.01*('+v+'))';
             },
             desc: 'Adds the accompanying attribute as a decimal (0.01)'
         },
         'ceiling': {
+            type: adjustments.STAT,
             func: function(v) {
                 return 'ceil('+v+')';
             },
             desc: 'Rounds up to the nearest integer.'
         },
         'token_bar': {
-            func: function(v,t) {
-                return parseFloat(t.get(`bar${v}_value`))||0;
+            type: adjustments.TOKEN,
+            func: function(t,idx) {
+                return parseFloat(t.get(`bar${idx}_value`))||0;
             },
-            desc: 'Takes the bonus from the numbered bar on the token. Use 1,2, or 3.  Defaults to 0 in the absense of a number.'
+            desc: 'Takes the bonus from the numbered bar on the token. Use 1, 2, or 3.  Defaults to 0 in the absense of a number.'
         },
         'token_bar_max': {
-            func: function(v,t) {
-                return parseFloat(t.get(`bar${v}_max`))||0;
+            type: adjustments.TOKEN,
+            func: function(t,idx) {
+                return parseFloat(t.get(`bar${idx}_max`))||0;
             },
-            desc: 'Takes the bonus from the max value of the numbered bar on the token. Use 1,2, or 3.  Defaults to 0 in the absense of a number.'
+            desc: 'Takes the bonus from the max value of the numbered bar on the token. Use 1, 2, or 3.  Defaults to 0 in the absense of a number.'
         },
         'token_aura': {
-            func: function(v,t) {
-                return parseFloat(t.get(`aura${v}_radius`))||0;
+            type: adjustments.TOKEN,
+            func: function(t,idx) {
+                return parseFloat(t.get(`aura${idx}_radius`))||0;
             },
             desc: 'Takes the bonus from the radius of the token aura. Use 1 or 2.  Defaults to 0 in the absense of a number.'
         }
@@ -720,7 +733,7 @@ var GroupInitiative = GroupInitiative || (function() {
                 '</div>'+
 
                 '<div style="padding-left:10px;">'+
-                    '<b><span style="font-family: serif;">!group-init <i>--toggle-turnorder</i> '+ch('[')+'bonus'+ch(']')+'</span></b>'+
+                    '<b><span style="font-family: serif;">!group-init <i>--toggle-turnorder</i></span></b>'+
                     '<div style="padding-left: 10px;padding-right:20px">'+
                         '<p>Opens or closes the Turnorder window.</p>'+
                     '</div>'+
@@ -887,37 +900,47 @@ var GroupInitiative = GroupInitiative || (function() {
     };
 
     const findInitiativeBonus = function(charObj, token) {
-        var bonus = '';
-        if(_.has(bonusCache,charObj.id)) {
-            return bonusCache[charObj.id];
-        }
+        let bonus = '';
         _.find(state.GroupInitiative.bonusStatGroups, function(group){
             bonus = _.chain(group)
                 .map(function(details){
-                    
-                    var stat=getAttrByName(charObj.id,details.attribute, details.type||'current');
-                    if( ! _.isUndefined(stat) && !_.isNull(stat) && 
-                        _.isNumber(stat) || (_.isString(stat) && stat.length)
-                    ) {
+                    let stat=getAttrByName(charObj.id,details.attribute, details.type||'current');
+
+                    if( undefined === stat || null === stat){
+						stat = undefined;
+					} else if(!Number.isNaN(Number(stat))){
+                        stat = parseFloat(stat);
+					} else if(isString(stat)) {
                         stat = parseEmbeddedStatReferences(stat,charObj);
-                        stat = _.reduce(details.adjustments || [],function(memo,a){
-                            var args,adjustment,func;
-                            if(memo) {
-                                args=a.split(':');
-                                adjustment=args.shift().toLowerCase();
-                                args.unshift(memo);
-                                func=statAdjustments[adjustment].func;
-                                if(_.isFunction(func)) {
-                                    memo =func.apply({},[...args,token]);
-                                }
-                            }
-                            return memo;
-                        },stat);
-                        return stat;
-                    }
-                    return undefined;
+						stat = stat.length ? stat : 0;
+					} else {
+						stat = undefined;
+					}
+
+					return _.reduce(details.adjustments || [],function(memo,a){
+						let args = a.split(':');
+						let adjustment = args.shift().toLowerCase();
+						let func=statAdjustments[adjustment].func;
+						let adjType=statAdjustments[adjustment].type;
+						if(isFunction(func)) {
+							switch(adjType){
+								case adjustments.STAT:
+									if(undefined !== stat){
+                                        args.unshift(memo);
+										memo = func.apply({},[...args]);
+									}
+									break;
+								case adjustments.TOKEN:
+									memo = func.apply({},[token,details.attribute]);
+
+									break;
+							}
+						}
+						return memo;
+					},stat);
                 })
                 .value();
+
 
             if(_.contains(bonus,undefined) || _.contains(bonus,null) || _.contains(bonus,NaN)) {
                 bonus='';
@@ -926,7 +949,6 @@ var GroupInitiative = GroupInitiative || (function() {
             bonus = bonus.join('+');
             return true;
         });
-        bonusCache[charObj.id]=bonus;
         return bonus;
     };
 
@@ -941,7 +963,6 @@ var GroupInitiative = GroupInitiative || (function() {
     };
 
     const makeRollsForIDs = (ids,options={}) => {
-        bonusCache = {};
         let turnorder = Campaign().get('turnorder');
 
         turnorder = ('' === turnorder) ? [] : JSON.parse(turnorder);
@@ -1134,7 +1155,7 @@ var GroupInitiative = GroupInitiative || (function() {
                                 parameter=argParts[0].split(/:/);
                                 parameter[0]=parameter[0].toLowerCase();
 
-                                if(_.has(statAdjustments,parameter[0])) {
+                                if(_.has(statAdjustments, parameter[0])) {
                                     if('bare' !== parameter[0]) {
                                         if(!_.has(workvar,'adjustments')) {
                                             workvar.adjustments=[];
@@ -1454,8 +1475,12 @@ var GroupInitiative = GroupInitiative || (function() {
                                 });
                             } else {
                                 let player = (getObj('player',msg.playerid)||{get: ()=>true});
+                                let pid = player.get('_lastpage');
+                                if(!pid){
+                                    pid = Campaign().get('playerpageid');
+                                }
                                 Campaign().set({
-                                    initiativepage: player.get('_lastpage')
+                                    initiativepage: pid
                                 });
                             }
                             break;
