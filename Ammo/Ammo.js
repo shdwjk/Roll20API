@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.9',
-        lastUpdate = 1577050938,
+    var version = '0.3.10',
+        lastUpdate = 1584729310,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -46,7 +46,7 @@ var Ammo = Ammo || (function() {
 
 		const chr = getObj('character',attr.get('characterid'));
 		const val = parseInt(attr.get('current'),10)||0;
-		const max = parseInt(attr.get('max'),10)||10000;
+		const max = parseInt(attr.get('max'),10)||Number.MAX_SAFE_INTEGER;
 
 		let adjustedValue = (val+amount);
         let overage = 0;
