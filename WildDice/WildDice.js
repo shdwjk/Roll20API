@@ -2,39 +2,39 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var WildDice = WildDice || (function() {
-    'use strict';
+const WildDice = (() => { // eslint-disable-line no-unused-vars
 
-    var version = '0.3.2',
-        lastUpdate = 1490872135,
+    const version = '0.3.3';
+    const lastUpdate = 1585015346;
 
-	ch = function (c) {
-		var entities = {
-			'<' : 'lt',
-			'>' : 'gt',
-			"'" : '#39',
-			'@' : '#64',
-			'{' : '#123',
-			'|' : '#124',
-			'}' : '#125',
-			'[' : '#91',
-			']' : '#93',
-			'"' : 'quot',
-			'-' : 'mdash',
-			' ' : 'nbsp'
-		};
+    const ch = (c) => {
+        const entities = {
+            '<' : 'lt',
+            '>' : 'gt',
+            "'" : '#39',
+            '@' : '#64',
+            '{' : '#123',
+            '|' : '#124',
+            '}' : '#125',
+            '[' : '#91',
+            ']' : '#93',
+            '"' : 'quot',
+            '*' : 'ast',
+            '/' : 'sol',
+            ' ' : 'nbsp'
+        };
 
-		if(_.has(entities,c) ){
-			return ('&'+entities[c]+';');
-		}
-		return '';
-	},
+        if( entities.hasOwnProperty(c) ){
+            return `&${entities[c]};`;
+        }
+        return '';
+    };
 
-    checkInstall = function() {
+    const checkInstall = () => {
         log('-=> WildDice v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
-    },
+    };
 
-    showHelp = function(who) {
+    const showHelp = (who) => {
 
         sendChat('','/w "'+who+'" '+
 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
@@ -61,80 +61,79 @@ var WildDice = WildDice || (function() {
     '</div>'+
 '</div>'
         );
-    },
+    };
 
-
-
-
-    getDiceCounts = function(rolls) {
-        return ( _.reduce(rolls || [], function(m,r){
+    const getDiceCounts = (rolls) => (rolls || [])
+        .reduce((m,r) => {
                 m[r]=(m[r]||0)+1;
                 return m;
-            },{}));
-    },
+            },{});
 
-    getDiceArray = function(c) {
-        return _.reduce(c,function(m,v,k){
-            _.times(v,function(){m.push(k);});
-            return m;
-        },[]);
-    },
+    const s = {
+        failsum: "float:left; background: red; margin-left: 10px; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;",
+        diceblock: "background: white; border: 1px solid black; padding: 1px 3px; color: black; font-weight: bold;",
+        clear: "clear: both;",
+        result: ""
+    };
+    const f = {
+        outer: (...t) => `<div>${t.join('')}</div>`,
+        diceblock: (t) => `<div style="${s.diceblock}">Dice:<div>${t}</div>${f.clear()}</div>`,
+        result: (t) => `<div style="${s.result}">${t}</div>`,
+        clear: () => `<div style="${s.clear}"></div>`,
+        failsum: (n) => `<div style="${s.failsum}">${n} Crit Fail</div>`
+    };
 
-    handleInput = function(msg) {
-        var args, who,
-            w=false,
-            rDice, wildDie, errorDie,
-            bonusDice = [],
-            critFailDice = [],
-            markFirstMax = false,
-            sum = 0, sumFail = 0,
-            pips = 0
-            ;
-
+    const handleInput = (msg) => {
         if (msg.type !== "api") {
             return;
         }
 
-        who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+        let who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
-        args = msg.content.split(/\s+/);
+        let args = msg.content.split(/\s+/);
+        let w = false;
         switch(args[0]) {
             case '!wwd':
-                w=true;
-                /* break; */ // Intentional drop through
-            case '!wd':
+                w=true; 
+                /* break; // intentional dropthrough */ /* falls through */
+            case '!wd': {
                 if(!msg.inlinerolls || _.contains(args,'--help')){
                     showHelp(who);
                     return;
                 }
 
-                rDice = _.pluck( (msg.inlinerolls && msg.inlinerolls[0].results.rolls[0].results) || [], 'v');
-                pips = ((msg.inlinerolls && msg.inlinerolls[0].results.total-_.reduce(rDice,function(m,r){return m+r;},0)) || 0);
-                wildDie = rDice.pop();
+                let rDice = _.pluck( (msg.inlinerolls && msg.inlinerolls[0].results.rolls[0].results) || [], 'v');
+                let pips = ((msg.inlinerolls && msg.inlinerolls[0].results.total-_.reduce(rDice,function(m,r){return m+r;},0)) || 0);
+                let wildDie = rDice.pop();
+                let hasFail = false;
+                let markFirstMax = false;
+                let sumFail = 0;
+                let bonusDice = [];
+
                 switch(wildDie) {
-                    case 1:  // critical failure
-                        critFailDice = getDiceCounts(rDice);
-                        if(critFailDice.length){
-                            critFailDice[_.max(rDice)]--;
-                            critFailDice = getDiceArray(critFailDice);
+                    case 1: { // critical failure
+                            let critFailDice = getDiceCounts(rDice);
+                            hasFail = Object.keys(critFailDice).length>0;
+
+                            if(hasFail){
+                                --critFailDice[`${_.max(rDice)}`];
+                            }
+                            sumFail = Object.keys(critFailDice).reduce((m,k) => (m + parseInt(k,10)*critFailDice[k]), 0) + pips;
+                            markFirstMax = true;
                         }
-                        sumFail=_.reduce(critFailDice,function(m,r){return parseInt(m,10) + parseInt(r,10);},0) + wildDie + pips;
-                        markFirstMax = true;
                         break;
-                    case 6:  // explode!
-                        errorDie = 6;
-                        while(6 === errorDie) {
-                            errorDie = randomInteger(6);
-                            bonusDice.push(errorDie);
+                    case 6: {  // explode!
+                            let errorDie = 6;
+                            while(6 === errorDie) {
+                                errorDie = randomInteger(6);
+                                bonusDice.push(errorDie);
+                            }
                         }
                         break;
                 }
-                sum = _.reduce(rDice.concat(bonusDice),function(m,r){return m+r;},0) + wildDie + pips;
+                let sum = _.reduce(rDice.concat(bonusDice),function(m,r){return m+r;},0) + wildDie + pips;
 
-                sendChat( 'WildDice', (w ? '/w gm ' : '/direct ')+
-                    '<div>'+
-                        '<div style="background: white; border: 1px solid black; padding: 1px 3px; color: black; font-weight: bold;">Dice:'+
-                            '<div>'+
+                sendChat( 'WildDice', ` ${w ? '/w gm ' : ''}${f.outer(f.diceblock(
                                 _.map(rDice,function(d){
                                         var c = 'white';
                                         if( markFirstMax && d === _.max(rDice) ) {
@@ -149,35 +148,31 @@ var WildDice = WildDice || (function() {
                                     }).join('')+
                                 (pips ?
 									'<div style="float:left; background-color: yellow; color: black; border: 1px solid #999999;border-radius: 10px;font-weight:bold;padding:1px 5px; margin:1px 8px;"> + '+pips+'</div>' :
-									'')+
-                                '<div style="clear: both"></div>'+
-                            '</div>'+
-                        '</div>'+
-                        '<div>'+
-                            (critFailDice.length ? ('<div style="float:left; background: red; margin-left: 10px; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;">'+ sumFail +' Crit Fail</div>') : '')+
-                            '<div style="float:left; margin-left: 10px; background: '+(critFailDice.length ? 'orange' : 'green' )+ '; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;">'+sum+(critFailDice.length ? ' Complication' : ' Total')+'</div>'+
-                            '<div style="clear: both"></div>'+
-                        '</div>'+
-                    '</div>');
-                
+									'')
+                                ),
+                            f.result(
+                                ( hasFail ? f.failsum(sumFail) : '') +
+                                '<div style="float:left; margin-left: 10px; background: '+( hasFail ? 'orange' : 'green' )+ '; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;">'+sum+(hasFail ? ' Complication' : ' Total')+'</div>'+
+                                '<div style="clear: both"></div>'
+                            )
+                        )}`);
+
+                }
                 break;
         }
-    },
+    };
 
-    registerEventHandlers = function() {
+    const registerEventHandlers = () => {
         on('chat:message', handleInput);
     };
 
+    on('ready', () => {
+        checkInstall();
+        registerEventHandlers();
+    });
+
     return {
-        CheckInstall: checkInstall,
-        RegisterEventHandlers: registerEventHandlers
     };
     
-}());
+})();
 
-on('ready',function() {
-    'use strict';
-
-    WildDice.CheckInstall();
-    WildDice.RegisterEventHandlers();
-});
