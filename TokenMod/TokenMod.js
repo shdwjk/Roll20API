@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.48',
-        lastUpdate = 1576473641,
+    const version = '0.8.50',
+        lastUpdate = 1585922960,
         schemaVersion = 0.3,
 
 
@@ -32,6 +32,12 @@ var TokenMod = TokenMod || (function() {
             fliph: {type: 'boolean'},
             aura1_square: {type: 'boolean'},
             aura2_square: {type: 'boolean'},
+            
+                // UDL settings
+            has_bright_light_vision: {type: 'boolean'},
+            has_night_vision: {type: 'boolean'},
+            emits_bright_light: {type: 'boolean'},
+            emits_low_light: {type: 'boolean'},
 
             // bounded by screen size
             left: {type: 'number', transform: 'screen'},
@@ -53,10 +59,12 @@ var TokenMod = TokenMod || (function() {
             aura1_radius: {type: 'numberBlank'},
             aura2_radius: {type: 'numberBlank'},
 
+                //UDL settings
+            night_vision_distance: {type: 'numberBlank'},
+            bright_light_distance: {type: 'numberBlank'},
+            low_light_distance: {type: 'numberBlank'},
+
             // text or numbers
-            bar1_current: {type: 'text'},
-            bar2_current: {type: 'text'},
-            bar3_current: {type: 'text'},
             bar1_value: {type: 'text'},
             bar2_value: {type: 'text'},
             bar3_value: {type: 'text'},
@@ -93,21 +101,29 @@ var TokenMod = TokenMod || (function() {
             // <Blank> : special
             defaulttoken: {type: 'defaulttoken'}
         },
+        fieldAliases = {
+            bar1_current: "bar1_value",
+            bar2_current: "bar2_value",
+            bar3_current: "bar3_value",
+            bright_vision: "has_bright_light_vision",
+            night_vision: "has_night_vision",
+            emits_bright: "emits_bright_light",
+            emits_low: "emits_low_light",
+            night_distance: "night_vision_distance",   
+            bright_distance: "bright_light_distance",    
+            low_distance: "low_light_distance"
+        },
 
         reportTypes = [
             'gm', 'player', 'all', 'control', 'token', 'character'
         ],
 
+        unalias = (name) => fieldAliases.hasOwnProperty(name) ? fieldAliases[name] : name,
+
         filters = {
-            hasArgument: function(a) {
-                return a.match(/.+[|#]/) || 'defaulttoken'===a ;
-            },
-            isBoolean: function(a) {
-                return _.has(fields,a) && 'boolean' === fields[a].type;
-            },
-            isTruthyArgument: function(a) {
-                    return _.contains([1,'1','on','yes','true','sure','yup'],a);
-            }
+            hasArgument: (a) => a.match(/.+[|#]/) || 'defaulttoken'===a,
+            isBoolean: (a) => 'boolean' === (fields[a]||{type:'UNKNOWN'}).type,
+            isTruthyArgument: (a) => [1,'1','on','yes','true','sure','yup'].includes(a)
         },
 		getCleanImgsrc = (imgsrc) => {
 			var parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
@@ -183,6 +199,12 @@ var TokenMod = TokenMod || (function() {
                     case 'aura2_radius':
                     case 'aura1_radius':
                     case 'adv_fow_view_distance':
+                    case 'night_vision_distance':
+                    case 'bright_light_distance':
+                    case 'low_light_distance':
+                    case 'night_distance':
+                    case 'bright_distance':
+                    case 'low_distance':
                         // convert to scale_number relative
                         switch(this.relative){
                             case 'u':
@@ -247,7 +269,21 @@ var TokenMod = TokenMod || (function() {
                 let current = parseFloat(token.get(this.field))||0;
                 switch(this.operation){
                     default:
-                    case '=': return {[this.field]:num};
+                    case '=': {
+                        switch(this.field){
+                            case 'bright_light_distance':
+                                return {
+                                    bright_light_distance: num,
+                                    low_light_distance: (parseFloat(token.get('low_light_distance'))-parseFloat(token.get('bright_light_distance'))+num)
+                                };
+                            case 'low_light_distance':
+                                return {
+                                    low_light_distance: (parseFloat(token.get('bright_light_distance'))+num)
+                                };
+                            default:
+                                return {[this.field]:num};
+                        }
+                    }
                     case '!': return {[this.field]:(current===0 ? num : '')};
                     case '+': return {[this.field]:(current+num)};
                     case '-': return {[this.field]:(current-num)};
@@ -925,9 +961,7 @@ var TokenMod = TokenMod || (function() {
                 .sortBy(function(s){
                     return s.idx;
                 })
-                .map(function(s){
-                    return ('dead'===s.mark ? 'dead' : ( s.mark+(s.num!=='' ? '@'+s.num : '')));
-                })
+                .map( (s) => ('dead'===s.mark ? 'dead' : ( s.mark+(s.num!=='' ? '@'+s.num : ''))) )
                 .value()
                 .join(',');
             }
@@ -1275,7 +1309,7 @@ var TokenMod = TokenMod || (function() {
         ol: (...o) => `<ol>${_h.items(o)}</ol>`,
         ul: (...o) => `<ul>${_h.items(o)}</ul>`,
         grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`, 
-        cell: (o) =>  `<div style="width: 130px; padding: 0 3px; float: left;">${o}</div>`,
+        cell: (o) =>  `<div style="width: 160px; padding: 0 3px; float: left;">${o}</div>`,
         statusCell: (o) =>  {
             let text = `${o.getName()}${o.getName()!==o.getTag()?` [${o.getTag()}]`:''}`;
             return `<div style="width: auto; padding: .2em; margin: .1em .25em; border: 1px solid #ccc; border-radius: .25em; background-color: #eee; line-height:1.5em; height: 1.5em;float:left;">${o.getHTML()}${text}</div>`;
@@ -1407,14 +1441,29 @@ var TokenMod = TokenMod || (function() {
                             _h.cell('flipv'),
                             _h.cell('fliph'),
                             _h.cell('aura1_square'),
-                            _h.cell('aura2_square')
+                            _h.cell('aura2_square'),
+                            _h.cell(''),
+
+                            _h.cell("has_bright_light_vision"),
+                            _h.cell("bright_vision"),
+                            _h.cell("has_night_vision"),
+                            _h.cell("night_vision"),
+                            _h.cell("emits_bright_light"),
+                            _h.cell("emits_bright"),
+                            _h.cell("emits_low_light"),
+                            _h.cell("emits_low")
                         )
                     ),
                     _h.paragraph( `Any of the booleans can be set with the ${_h.italic('--set')} command by passing a true or false as the value`),
                     _h.inset(
                         _h.pre('!token-mod --set showname|yes isdrawing|no')
                     ),
-                    _h.paragraph(`The following are considered true values: ${_h.code('1')}, ${_h.code('on')}, ${_h.code('yes')}, ${_h.code('true')}, ${_h.code('sure')}, ${_h.code('yup')}  Anything else is considered false.`)
+                    _h.paragraph(`The following are considered true values: ${_h.code('1')}, ${_h.code('on')}, ${_h.code('yes')}, ${_h.code('true')}, ${_h.code('sure')}, ${_h.code('yup')}  Anything else is considered false.`),
+                    _h.subhead("Updated Dynamic Lighting"),
+                    _h.paragraph(`${_h.code("has_bright_light_vision")} is the UDL version of ${_h.bold("light_hassight")}. It controls if a token can see at all, and must be turned on for a token to use UDL.  You can also use the alias ${_h.code("bright_vision")}.`),
+                    _h.paragraph(`${_h.code("has_night_vision")} controls if a token can see without emitted light around it.  This was handled with ${_h.bold("light_otherplayers")} in the old light system.  In the new light system, you don't need to be emitting light to see if you have night vision turned on.  You can also use the alias ${_h.code("night_vision")}.`),
+                    _h.paragraph(`${_h.code("emits_bright_light")} determines if the configured ${_h.bold("bright_light_distance")} is active or not.  There wasn't a concept like this in the old system, it would be synonymous with setting the ${_h.bold("light_radius")} to 0, but now it's not necessary.  You can also use the alias ${_h.code("emits_bright")}.`),
+                    _h.paragraph(`${_h.code("emits_low_light")} determines if the configured ${_h.bold("low_light_distance")} is active or not.  There wasn't a concept like this in the old system, it would be synonymous with setting the ${_h.bold("light_dimradius")} to 0 (kind of), but now it's not necessary.  You can also use the alias ${_h.code("emits_low")}.`)
                 ),
 
                 // SECTION: --set, etc
@@ -1500,7 +1549,13 @@ var TokenMod = TokenMod || (function() {
                                     _h.cell('light_multiplier'),
                                     _h.cell('aura1_radius'),
                                     _h.cell('aura2_radius'),
-                                    _h.cell('adv_fow_view_distance')
+                                    _h.cell('adv_fow_view_distance'),
+                                    _h.cell("night_vision_distance"),
+                                    _h.cell("night_distance"),
+                                    _h.cell("bright_light_distance"),
+                                    _h.cell("bright_distance"),
+                                    _h.cell("low_light_distance"),
+                                    _h.cell("low_distance")
                                 )
                             ),
                             _h.paragraph(`Here is setting a standard DnD 5e torch, turning off aura1 and setting aura2 to 30. Note that the ${_h.code('|')} is still required for setting a blank value, such as aura1_radius below.`),
@@ -1520,7 +1575,11 @@ var TokenMod = TokenMod || (function() {
                             _h.inset(
                                 _h.pre('!token-mod --set aura1_radius|3g aura2_radius|10u light_radius|25s')
                             ),
-                            _h.paragraph(`${_h.bold('Note:')} ${_h.code('light_multiplier')} ignores these modifiers.  Additionally, the rest are already in the scale of measuring distance (${_h.code('s')}) so there is no difference between ${_h.code('25s')}, ${_h.code('25ft')}, and ${_h.code('25')}.`)
+                            _h.paragraph(`${_h.bold('Note:')} ${_h.code('light_multiplier')} ignores these modifiers.  Additionally, the rest are already in the scale of measuring distance (${_h.code('s')}) so there is no difference between ${_h.code('25s')}, ${_h.code('25ft')}, and ${_h.code('25')}.`),
+                            _h.subhead(`Updated Dynamic Lighting`),
+                            _h.paragraph(`${_h.code("night_vision_distance")} lets you set how far away a token can see with no light.  You need to have ${_h.bold("has_night_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("night_distance")}.`),
+                            _h.paragraph(`${_h.code("bright_light_distance")} lets you set how far bright light is emitted from the token.  You need to have ${_h.bold("has_bright_light_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("bright_distance")}.`),
+                            _h.paragraph(`${_h.code("low_light_distance")} lets you set how far low light is emitted from the token.  You need to have ${_h.bold("has_bright_light_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("low_distance")}.`)
                         ),
 
 
@@ -2212,10 +2271,11 @@ var TokenMod = TokenMod || (function() {
     },
 
     parseArguments = function(a) {
-        var args=a.replace(/(\|#|##)/g,'|%%HASHMARK%%').split(/[|#]/).map((v)=>v.replace('%%HASHMARK%%','#')),
-            cmd=args.shift().toLowerCase(),
-            retr={},
-            t,t2;
+        let args = a.replace(/(\|#|##)/g,'|%%HASHMARK%%').split(/[|#]/).map((v)=>v.replace('%%HASHMARK%%','#'));
+        let cmd = unalias(args.shift().toLowerCase());
+        let retr={};
+        let t;
+        let t2;
 
         if(_.has(fields,cmd)) {
             retr[cmd]=[];
@@ -2569,6 +2629,12 @@ var TokenMod = TokenMod || (function() {
                 case 'aura2_radius':
                 case 'aura1_radius':
                 case 'adv_fow_view_distance':
+                case 'night_vision_distance':
+                case 'bright_light_distance':
+                case 'low_light_distance':
+                case 'night_distance':
+                case 'bright_distance':
+                case 'low_distance':
                     mods = Object.assign( mods, f[0].getMods(token));
                     break;
 
@@ -2583,9 +2649,6 @@ var TokenMod = TokenMod || (function() {
 					}
                     break;
 
-                case 'bar1_current':
-                case 'bar2_current':
-                case 'bar3_current':
                 case 'bar1_value':
                 case 'bar2_value':
                 case 'bar3_value':
@@ -2751,25 +2814,30 @@ var TokenMod = TokenMod || (function() {
         }
     },
 
+// */
      handleInput = function(msg_orig) {
         try {
-            var msg = _.clone(msg_orig),
-                who=(getObj('player',msg_orig.playerid)||{get:()=>'API'}).get('_displayname'),
-                args, cmds, ids=[],
-                ignoreSelected = false,
-                pageRestriction=[],
-                modlist={
+            if (msg_orig.type !== "api") {
+                return;
+            }
+
+            let msg = _.clone(msg_orig);
+            let who=(getObj('player',msg_orig.playerid)||{get:()=>'API'}).get('_displayname');
+            let playerid = msg.playerid;
+            let args;
+            let cmds;
+            let ids=[];
+            let ignoreSelected = false;
+            let pageRestriction=[];
+            let modlist={
                     flip: [],
                     on: [],
                     off: [],
                     set: {},
                     order: []
-                },
-                reports=[];
+                };
+            let reports=[];
 
-            if (msg.type !== "api") {
-                return;
-            }
 
             if(_.has(msg,'inlinerolls')){
                 msg.content = _.chain(msg.inlinerolls)
@@ -2797,6 +2865,7 @@ var TokenMod = TokenMod || (function() {
                 .replace(/(\{\{(.*?)\}\})/g," $2 ")
                 .split(/\s+--/);
 
+
             switch(args.shift()) {
                 case '!token-mod': {
 
@@ -2804,25 +2873,36 @@ var TokenMod = TokenMod || (function() {
                         cmds=args.shift().match(/([^\s]+[|#]'[^']+'|[^\s]+[|#]"[^"]+"|[^\s]+)/g);
                         switch(cmds.shift()) {
                             case 'help':
-                                showHelp(msg.playerid);
+                                showHelp(playerid);
                                 return;
 
+                            case 'api-as':
+                                if('API' === playerid){
+                                    let player = getObj('player',cmds[0]);
+                                    if(player){
+                                        playerid = player.id;
+                                        who = player.get('_displayname');
+                                    }
+                                }
+                                break;
+
                             case 'config':
-                                if(playerIsGM(msg.playerid)) {
-                                    handleConfig(cmds,msg.playerid);
+                                if(playerIsGM(playerid)) {
+                                    handleConfig(cmds,playerid);
                                 }
                                 return;
 
+
                             case 'flip':
-                                modlist.flip=_.union(_.filter(cmds,filters.isBoolean),modlist.flip);
+                                modlist.flip=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.flip);
                                 break;
 
                             case 'on':
-                                modlist.on=_.union(_.filter(cmds,filters.isBoolean),modlist.on);
+                                modlist.on=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.on);
                                 break;
 
                             case 'off':
-                                modlist.off=_.union(_.filter(cmds,filters.isBoolean),modlist.off);
+                                modlist.off=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.off);
                                 break;
 
                             case 'set':
@@ -2845,7 +2925,7 @@ var TokenMod = TokenMod || (function() {
                                 break;
 
                             case 'current-page':
-                                pageRestriction=[getPageForPlayer(msg.playerid)];
+                                pageRestriction=[getPageForPlayer(playerid)];
                                 break;
 
                             case 'ids':
@@ -2855,7 +2935,7 @@ var TokenMod = TokenMod || (function() {
                     }
                     modlist.off=_.difference(modlist.off,modlist.on);
                     modlist.flip=_.difference(modlist.flip,modlist.on,modlist.off);
-                    if( !playerIsGM(msg.playerid) && !state.TokenMod.playersCanUse_ids ) {
+                    if( !playerIsGM(playerid) && !state.TokenMod.playersCanUse_ids ) {
                         ids=[];
                     }
 
@@ -2918,19 +2998,16 @@ var TokenMod = TokenMod || (function() {
         on('change:campaign:_token_markers',()=>StatusMarkers.init());
     };
 
+    on("ready",() => {
+        checkInstall();
+        registerEventHandlers();
+    });
+
     return {
-        CheckInstall: checkInstall,
-        ObserveTokenChange: observeTokenChange,
-        RegisterEventHandlers: registerEventHandlers
+        ObserveTokenChange: observeTokenChange
     };
 }());
 
-on("ready",function(){
-    'use strict';
-
-    TokenMod.CheckInstall();
-    TokenMod.RegisterEventHandlers();
-});
 
 
 

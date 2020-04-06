@@ -5,8 +5,8 @@
 /* global GroupInitiative TokenMod */
 const TokenCondition = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.1.1';
-    const lastUpdate = 1577904348;
+    const version = '0.1.2';
+    const lastUpdate = 1585754161;
     const schemaVersion = 0.2;
 
     let lookup = {};
@@ -484,12 +484,62 @@ const TokenCondition = (() => { // eslint-disable-line no-unused-vars
         return tokens[0]; // in an error, return the first token in the list
     };
 
+    const matchConditionChar = (character) => (character||{get:()=>''}).get('name').match(/^\s*(condition|decoration|mount)\s*:/i);
+
+    const attachConditionToTokenExternal = (condition_id, token_id) => {
+        let conditionToken = getObj('graphic', condition_id);
+        let targetToken = getObj('graphic', token_id);
+
+        if(!targetToken){
+            return {
+                success: false,
+                reason: `Target token ${token_id} does not exist. [getObj("graphic","${token_id}") failed.]`
+            };
+        }
+
+        if(!conditionToken){
+            return {
+                success: false,
+                reason: `Target token ${condition_id} does not exist. [getObj("graphic","${condition_id}") failed.]`
+            };
+        }
+
+        if(lookup.hasOwnProperty(condition_id)){
+            return {
+                success: false,
+                reason: `Condition token ${condition_id} is already assigned as a Condition on a token, or is itself a token with a condition.`
+            };
+        }
+
+        let conditionChar = getObj('character', conditionToken.get('represents'));
+        if(conditionChar){
+            let match = matchConditionChar(conditionChar);
+            if(match){
+                linkConditionToToken(conditionToken, conditionChar, targetToken);
+                return {
+                    success: true
+                };
+            } else {
+                return {
+                    success: false,
+                    reason: `Condition token ${condition_id} for character [${conditionChar.get('name')}] does not represent a condition.`
+                };
+            }
+        } else {
+            return {
+                success: false,
+                reason: `Condition token ${condition_id} does not represent a character.`
+            };
+        }
+
+    };
+
     // on add graphic, lookup represented character, if it's name begins with /^Condition:/i then do things.
     // also support decoration and mount
     const handleAddGraphic = (obj) => {
         let character = getObj('character',obj.get('represents'));
         if(character) {
-            let match = character.get('name').match(/^\s*(condition|decoration|mount)\s*:/i);
+            let match = matchConditionChar(character);
             if(match) {
                 // find the token it needs to glom to, assume the top token on duplicate.
                 let toks = findObjs({
@@ -509,49 +559,56 @@ const TokenCondition = (() => { // eslint-disable-line no-unused-vars
                         token = getTopTokenForPage(tList,obj.get('pageid'));
                     }
 
-                    let type = match[1].toLowerCase();
+                    linkConditionToToken(obj,character,token);
 
-                    // build conditionData
-                    let conditionData = {
-                        id: obj.id,
-                        mirror: [...new Set([...defaults._base.mirror,...defaults[type].mirror])],
-                        forward: [...new Set([...defaults._base.forward,...defaults[type].forward])],
-                        adjustments: [...new Set([...defaults._base.adjustments,...defaults[type].adjustments])]
-                    };
-                    let match2 = character.get('name').match(/\[([^\]]*)\]/);
-                    if(match2){ 
-                        match2[1].split(/\s*\|\s*/).forEach(entry => {
-                            let match3 = entry.match(/^\s*(mirror|forward)\s*:/i);
-                            if(match3){
-                                let field = match3[1].toLowerCase();
-
-                                entry.split(/\s*[:,]\s*/).slice(1).forEach(m=>{
-                                    let parts = m.match(/^([+-])?\s*(.*)\s*$/);
-                                    let op = parts ? parts[1] : '';
-                                    let prop = (parts ? parts[2] : '').toLowerCase();
-                                    switch(op){
-                                        case '-':
-                                            conditionData[field] = conditionData[field].filter(p =>p!==prop);
-                                            break;
-                                        default:
-                                            conditionData[field] = [...new Set([...conditionData[field],prop])];
-                                            break;
-                                    }
-                                });
-                            } else {
-                                conditionData.adjustments.push(entry);
-                            }
-                        });
-                        
-                    }
-                    if(conditionData.adjustments.includes('below')){
-                        toBack(obj);
-                    }
-                    Modify.create(obj.id,conditionData);
-                    setTimeout(()=>glomOn(conditionData,token,obj), 500);
                 }
             }
         }
+    };
+
+    const linkConditionToToken = (obj, character, token) => {
+        let match = matchConditionChar(character);
+        let type = match[1].toLowerCase();
+
+        // build conditionData
+        let conditionData = {
+            id: obj.id,
+            mirror: [...new Set([...defaults._base.mirror,...defaults[type].mirror])],
+            forward: [...new Set([...defaults._base.forward,...defaults[type].forward])],
+            adjustments: [...new Set([...defaults._base.adjustments,...defaults[type].adjustments])]
+        };
+        let match2 = character.get('name').match(/\[([^\]]*)\]/);
+        if(match2){ 
+            match2[1].split(/\s*\|\s*/).forEach(entry => {
+                let match3 = entry.match(/^\s*(mirror|forward)\s*:/i);
+                if(match3){
+                    let field = match3[1].toLowerCase();
+
+                    entry.split(/\s*[:,]\s*/).slice(1).forEach(m=>{
+                        let parts = m.match(/^([+-])?\s*(.*)\s*$/);
+                        let op = parts ? parts[1] : '';
+                        let prop = (parts ? parts[2] : '').toLowerCase();
+                        switch(op){
+                            case '-':
+                                conditionData[field] = conditionData[field].filter(p =>p!==prop);
+                                break;
+                            default:
+                                conditionData[field] = [...new Set([...conditionData[field],prop])];
+                                break;
+                        }
+                    });
+                } else {
+                    conditionData.adjustments.push(entry);
+                }
+            });
+
+        }
+        if(conditionData.adjustments.includes('below')){
+            toBack(obj);
+        }
+        Modify.create(obj.id,conditionData);
+        setTimeout(()=>glomOn(conditionData,token,obj), 500);
+
     };
 
     // on modify graphic
@@ -790,6 +847,7 @@ const TokenCondition = (() => { // eslint-disable-line no-unused-vars
 
     return {
         // Public interface here
+        AttachConditionToToken: attachConditionToTokenExternal
     };
 
 })();
