@@ -5,8 +5,8 @@
 var TokenMod = TokenMod || (function() {
     'use strict';
 
-    const version = '0.8.50',
-        lastUpdate = 1585922960,
+    const version = '0.8.51',
+        lastUpdate = 1586577451,
         schemaVersion = 0.3,
 
 
@@ -2151,7 +2151,8 @@ var TokenMod = TokenMod || (function() {
                     _h.inset(
                         _h.ul(
                             `${_h.code('before')} -- Show the value of the property before a change was applied.`,
-                            `${_h.code('change')} -- Show the change that was applied to the property. (Only works on numeric fields, will result in 0 on things like name or imagsrc.)`
+                            `${_h.code('change')} -- Show the change that was applied to the property. (Only works on numeric fields, will result in 0 on things like name or imagsrc.)`,
+                            `${_h.code('abschange')} -- Show the absolute value of the change that was applied to the property. (Only works on numeric fields, will result in 0 on things like name or imagsrc.)`
                         )
                     ),
                     _h.paragraph(`Showing the amount of damage done to a token.`),
@@ -2161,7 +2162,7 @@ var TokenMod = TokenMod || (function() {
                             '  --set',
                             `    bar1_value|-${ch('[')}${ch('[')}2d6+8${ch(']')}${ch(']')}`,
                             '  --report',
-                            '    all|"{name} takes {bar1_value:change} points of damage."',
+                            '    all|"{name} takes {bar1_value:abschange} points of damage."',
                             '}}'
                         )
                     ),
@@ -2725,6 +2726,9 @@ var TokenMod = TokenMod || (function() {
                 switch(mod){
                     case 'before':
                         return ctx.prev[prop];
+
+                    case 'abschange':
+                        return Math.abs((parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0)));
 
                     case 'change':
                         return (parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0));
