@@ -2,15 +2,13 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
-var TokenMod = TokenMod || (function() {
-    'use strict';
+const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.8.51',
-        lastUpdate = 1586577451,
-        schemaVersion = 0.3,
+    const version = '0.8.52';
+    const lastUpdate = 1587417000;
+    const schemaVersion = 0.3;
 
-
-        fields = {
+    const fields = {
             // booleans
             showname: {type: 'boolean'},
             showplayers_name: {type: 'boolean'},
@@ -92,7 +90,7 @@ var TokenMod = TokenMod || (function() {
             bar1_link: {type: 'attribute'},
             bar2_link: {type: 'attribute'},
             bar3_link: {type: 'attribute'},
-			currentside: {type: 'sideNumber'},
+			currentSide: {type: 'sideNumber'},
             imgsrc: {type: 'image'},
 			sides: {type: 'image' },
 
@@ -100,8 +98,9 @@ var TokenMod = TokenMod || (function() {
 
             // <Blank> : special
             defaulttoken: {type: 'defaulttoken'}
-        },
-        fieldAliases = {
+        };
+
+    const fieldAliases = {
             bar1_current: "bar1_value",
             bar2_current: "bar2_value",
             bar3_current: "bar3_value",
@@ -111,36 +110,38 @@ var TokenMod = TokenMod || (function() {
             emits_low: "emits_low_light",
             night_distance: "night_vision_distance",   
             bright_distance: "bright_light_distance",    
-            low_distance: "low_light_distance"
-        },
+            low_distance: "low_light_distance",
+            currentside: "currentSide"   // fix for case issue
+        };
 
-        reportTypes = [
+    const reportTypes = [
             'gm', 'player', 'all', 'control', 'token', 'character'
-        ],
+        ];
 
-        unalias = (name) => fieldAliases.hasOwnProperty(name) ? fieldAliases[name] : name,
+    const unalias = (name) => fieldAliases.hasOwnProperty(name) ? fieldAliases[name] : name;
 
-        filters = {
+    const filters = {
             hasArgument: (a) => a.match(/.+[|#]/) || 'defaulttoken'===a,
             isBoolean: (a) => 'boolean' === (fields[a]||{type:'UNKNOWN'}).type,
             isTruthyArgument: (a) => [1,'1','on','yes','true','sure','yup'].includes(a)
-        },
-		getCleanImgsrc = (imgsrc) => {
+        };
+
+	const getCleanImgsrc = (imgsrc) => {
 			var parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
 			if(parts) {
 				return parts[1]+'thumb'+parts[3]+(parts[4]?parts[4]:`?${Math.round(Math.random()*9999999)}`);
 			}
 			return;
-		},
+		};
 
-        regex = {
+    const regex = {
             numberString: /^[-+*/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][+-]?[0-9]+)?$/,
             stripSingleQuotes: /'([^']+(?='))'/g,
             stripDoubleQuotes: /"([^"]+(?="))"/g,
             layers: /^(?:gmlayer|objects|map|walls)$/,
 
             imgsrc: /(.*\/images\/.*)(thumb|med|original|max)(.*)$/,
-			imageOp: /^(?:(-(?:\d*(?:\s*,\s*\d+)*|\*)$)|(\+))?(=?)(?:(https?:\/\/.*$)|([-\d\w]*))(?::(.*))?$/,
+            imageOp: /^(?:(-(?:\d*(?:\s*,\s*\d+)*|\*)$)|(\/(?:\d+@\d+(?:\s*,\s*\d+@\d+)*|\*)$)|([+^]))?(=?)(?:(https?:\/\/.*$)|([-\d\w]*))(?::(.*))?$/,
 			sideNumber: /^(\?)?([-+=*])?(\d*)$/,
 			color : {
 				ops: '([*=+\\-!])?',
@@ -149,11 +150,11 @@ var TokenMod = TokenMod || (function() {
 				rgb: '(rgb\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))\\s*\\))',
 				hsv: '(hsv\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))\\s*\\))'
 			}
-        },
+        };
 
-		colorOpReg = new RegExp(`^${regex.color.ops}(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i'),
-		colorReg = new RegExp(`^(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i'),
-		colorParams = /\(\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*\)/;
+	const colorOpReg = new RegExp(`^${regex.color.ops}(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i');
+	const colorReg = new RegExp(`^(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i');
+	const colorParams = /\(\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*\)/;
 
 
 
@@ -298,138 +299,238 @@ var TokenMod = TokenMod || (function() {
         // Image Operations
         ////////////////////////////////////////////////////////////
 
-		class imageOp {
-			static parseImage(input){
-                const OP_REMOVE_BY_INDEX = 1;
-                const OP_OPERATION = 2;
-                const OP_EXPLICIT_SET = 3;
-                const OP_IMAGE_URL = 4;
-                const OP_TOKEN_ID = 5;
-                const OP_TOKEN_SIDE_INDEX = 6;
 
-				let parsed = input.match(regex.imageOp);
+        class imageOp {
+          static parseImage(input){
+            const OP_REMOVE_BY_INDEX = 1;
+            const OP_REORDER = 2;
+            const OP_OPERATION = 3;
+            const OP_EXPLICIT_SET = 4;
+            const OP_IMAGE_URL = 5;
+            const OP_TOKEN_ID = 6;
+            const OP_TOKEN_SIDE_INDEX = 7;
 
-				if(parsed && parsed.length){
-					if(parsed[ OP_REMOVE_BY_INDEX ]){
-						let idxs=parsed[ OP_REMOVE_BY_INDEX ].slice(1);
-						return new imageOp('-',false,
-							'*'===idxs
-								? ['*']
-								: idxs.split(/\s*,\s*/).filter(s=>s.length).map((n)=>parseInt(n,10)-1)
-							);
-					} else {
-						let op = parsed[ OP_OPERATION ]||'_';
-						let set = '='===parsed[ OP_EXPLICIT_SET ];
-						if(parsed[ OP_IMAGE_URL ]){
-							let url=getCleanImgsrc(parsed[ OP_IMAGE_URL ]);
-							if(url){
-								return new imageOp(op,set,[],[url]);
-							}
-						} else {
-							let id = parsed[ OP_TOKEN_ID ];
-							let t = getObj('graphic',id);
+            let parsed = input.match(regex.imageOp);
 
-							if(t){
-								if(parsed[ OP_TOKEN_SIDE_INDEX ]){
-									let sides = t.get('sides').split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
-									let urls=[];
-									let idxs;
-									if('*'===parsed[ OP_TOKEN_SIDE_INDEX ]){
-										idxs=sides.reduce((m,v)=> ({ c:m.c+1, i:(v?[...m.i,m.c]:m.i) }), {c:0,i:[]}).i;
-									} else {
-										idxs=parsed[ OP_TOKEN_SIDE_INDEX ].split(/\s*,\s*/).filter(s=>s.length).map((n)=>parseInt(n,10)-1);
-									}
-									_.each(idxs,(i)=>{
-										if(sides[i]){
-											urls.push(sides[i]);
-										}
-									});
-									if(urls.length){
-										return new imageOp(op,set,[],urls);
-									}
-								} else {
-									let url=getCleanImgsrc(t.get('imgsrc'));
-									if(url){
-										return new imageOp(op,set,[],[url]);
-									}
-								}
-							}
-						}
-					}
-				}
-				return new imageOp();
-			}
+            if(parsed && parsed.length){
+              if(parsed[ OP_REMOVE_BY_INDEX ]){
+                let idxs=parsed[ OP_REMOVE_BY_INDEX ].slice(1);
+                return new imageOp('-',false,
+                  '*'===idxs
+                  ? ['*']
+                  : idxs.split(/\s*,\s*/).filter(s=>s.length).map((idx)=>parseInt(idx,10)-1)
+                );
+              } else if(parsed[ OP_REORDER ]){
+                let idxs=parsed[ OP_REORDER ].slice(1);
 
-			constructor(op,set,indicies,urls){
-				this.op = op||'/';
-				this.set = set || false;
-				this.indicies=indicies||[];
-				this.urls=urls||[];
-			}
+                return new imageOp('/',false,
+                  idxs.split(/\s*,\s*/)
+                    .filter(s=>s.length)
+                    .map((idx)=>{
+                      let parts = idx.split(/@/);
+                      return {
+                        idx: (parseInt(parts[0])-1),
+                        pos: (parseInt(parts[1]))
+                      };
+                    })
+                );
+              } else {
+                let op = parsed[ OP_OPERATION ]||'_';
+                let set = '='===parsed[ OP_EXPLICIT_SET ];
+                if(parsed[ OP_IMAGE_URL ]){
 
-			getMods(token){
-				let sides = token.get('sides').split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
-				switch(this.op){
-					case '-': {
-						if('*'===this.indicies[0]){
-							return {
-								currentSide: 0,
-								sides: ''
-							};
-						}
-						let currentSide=token.get('currentSide');
-						if(this.indicies.length){
-							_.each(this.indicies,(i)=>{
-								if(currentSide===i){
-									currentSide=0;
-								}
-								delete sides[i];
-							});
-						} else {
-							delete sides[currentSide];
-							currentSide=0;
-						}
-						let idxs=sides.reduce((m,v)=> ({ c:m.c+1, i:(v?[...m.i,m.c]:m.i) }), {c:0,i:[]}).i;
-						sides=sides.reduce((m,s)=>m.concat( s ? [s] : []),[]);
-						currentSide=Math.max(_.indexOf(idxs,currentSide),0);
-						if(sides.length){
-							return {
-								imgsrc: sides[currentSide],
-								currentSide: currentSide,
-								sides: sides.reduce((m,s)=>m.concat(s),[]).map(encodeURIComponent).join('|')
-							};
-						}
-						return {
-							currentSide: 0,
-							sides: ''
-						};
-					}
+                  let parts = parsed[ OP_IMAGE_URL ].split(/:@/);
+                  let url=getCleanImgsrc(parts[0]);
+                  if(url){
+                    return new imageOp(op,set,[],[{url,index:parseInt(parts[1])||undefined}]);
+                  }
+                } else {
+                  let id = parsed[ OP_TOKEN_ID ];
+                  let t = getObj('graphic',id);
 
-					case '_':
-						sides=sides.reduce((m,s)=>m.concat( s ? [s] : []),[]);
-						if(1 === this.urls.length && 0===sides.length){
-							return {
-								imgsrc: this.urls[0]
-							};
-						}
-						/* fallsthrough */
-					case '+': {
-						// appending
-						sides=sides.concat(this.urls);
-						sides=sides.reduce((m,s)=>m.concat( s ? [s] : []),[]);
-						let retr = {
-							sides: sides.map(encodeURIComponent).join('|')
-						};
-						if(this.set){
-							retr.imgsrc=sides.slice(-1)[0];
-							retr.currentSide=sides.length-1;
-						}
-						return retr;
-					}
-				}
-				return {};
-			}
-		}
+                  if(t){
+                    if(parsed[ OP_TOKEN_SIDE_INDEX ]){
+                      let sides = t.get('sides');
+                      if(sides.length){
+                        sides = sides.split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
+                      } else {
+                        sides = [getCleanImgsrc(t.get('imgsrc'))];
+                      }
+                      let urls=[];
+                      let idxs;
+                      if('*'===parsed[ OP_TOKEN_SIDE_INDEX ]){
+                        idxs=sides.reduce((m,v)=> ({ c:m.c+1, i:(v?[...m.i,m.c]:m.i) }), {c:0,i:[]}).i.map(id=>({idx:id}));
+                      } else {
+                        idxs=parsed[ OP_TOKEN_SIDE_INDEX ]
+                          .split(/\s*,\s*/)
+                          .filter(s=>s.length)
+                          .map((idx)=>({
+                            idx: (parseInt(idx,10)||1)-1,
+                            insert: parseInt(idx.split(/@/)[1])||undefined
+                          }));
+                      }
+                      idxs.forEach((i)=>{
+                        if(sides[i.idx]){
+                          urls.push({url:sides[i.idx], index: i.insert });
+                        }
+                      });
+
+                      if(urls.length){
+                        return new imageOp(op,set,[],urls);
+                      }
+                    } else {
+                      let url=getCleanImgsrc(t.get('imgsrc'));
+                      if(url){
+                        return new imageOp(op,set,[],[{url}]);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            return new imageOp();
+          }
+
+          constructor(op,set,indicies,urls){
+            //$d({op,set,indicies,urls});
+            this.op = op||'/';
+            this.set = set || false;
+            this.indicies=indicies||[];
+            this.urls=urls||[];
+          }
+
+          getMods(token){
+            let sideText = token.get('sides');
+            let sides;
+
+
+            if( sideText.length ){
+              sides = sideText.split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
+            } else {
+              sides = [getCleanImgsrc(token.get('imgsrc'))];
+              if('^' === this.op){
+                this.op = '_';
+              }
+            }
+
+            switch(this.op) {
+              case '-': {
+                if('*'===this.indicies[0]){
+                  return {
+                    currentSide: 0,
+                    sides: ''
+                  };
+                }
+                let currentSide=token.get('currentSide');
+                if(this.indicies.length){
+                  this.indicies.forEach((i)=>{
+                    if(currentSide===i){
+                      currentSide=0;
+                    }
+                    delete sides[i];
+                  });
+                } else {
+                  delete sides[currentSide];
+                  currentSide=0;
+                }
+                let idxs=sides.reduce((m,v)=> ({ c:m.c+1, i:(v?[...m.i,m.c]:m.i) }), {c:0,i:[]}).i;
+                sides=sides.reduce((m,s)=>m.concat( s ? [s] : []),[]);
+                currentSide=Math.max(_.indexOf(idxs,currentSide),0);
+                if(sides.length){
+                  return {
+                    imgsrc: sides[currentSide],
+                    currentSide: currentSide,
+                    sides: sides.reduce((m,s)=>m.concat(s),[]).map(encodeURIComponent).join('|')
+                  };
+                }
+                return {
+                  currentSide: 0,
+                  sides: ''
+                };
+              }
+
+              case '/': {
+                let currentSide=token.get('currentSide');
+                let imgsrc=token.get('imgsrc');
+                let sidesOld=token.get('sides');
+
+                sides = this.indicies.reduce( (s,o) => {
+                  let url = s[o.idx];
+                  s.splice(o.idx,1);
+                  return [...s.slice(0,(o.pos||Number.MAX_SAFE_INTEGER)-1), url, ...s.slice((o.pos||Number.MAX_SAFE_INTEGER)-1)];
+                },sides);
+
+
+                let retr = {
+                  sides: sides.map(encodeURIComponent).join('|')
+                };
+                if(retr.sides===sidesOld){
+                  delete retr.sides;
+                }
+
+                if(imgsrc !== sides[currentSide]){
+                  retr.imgsrc=sides[currentSide];
+                }
+                return retr;
+              }
+
+              case '_': 
+                return {
+                  imgsrc: this.urls[0].url
+                };
+
+              case '^': {
+                // replacing
+                let currentSide=token.get('currentSide');
+                let imgsrc=token.get('imgsrc');
+
+                sides = this.urls.reduce((s,u) => {
+                  let replaceIdx =(u.index||Number.MAX_SAFE_INTEGER)-1;
+                  if(sides.hasOwnProperty(replaceIdx)){
+                    sides[replaceIdx] = u.url;
+                  } else {
+                    sides.push(u.url);
+                  }
+                  return sides;
+                },sides);
+
+                let retr = {
+                  sides: sides.map(encodeURIComponent).join('|')
+                };
+                if(this.set){
+                  retr.imgsrc=sides.slice(-1)[0];
+                  retr.currentSide=sides.length-1;
+                }
+                if(imgsrc !== sides[currentSide]){
+                  retr.imgsrc=sides[currentSide];
+                }
+                return retr;
+              }
+
+              case '+': {
+
+                // appending
+                let currentSide=token.get('currentSide');
+                let imgsrc=token.get('imgsrc');
+                sides = this.urls.reduce((s,u) =>
+                [...s.slice(0,(u.index||Number.MAX_SAFE_INTEGER)-1), u.url, ...s.slice((u.index||Number.MAX_SAFE_INTEGER)-1)]
+                ,sides);
+                let retr = {
+                  sides: sides.map(encodeURIComponent).join('|')
+                };
+                if(this.set){
+                  retr.imgsrc=sides.slice(-1)[0];
+                  retr.currentSide=sides.length-1;
+                }
+                if(imgsrc !== sides[currentSide]){
+                  retr.imgsrc=sides[currentSide];
+                }
+                return retr;
+              }
+            }
+            return {};
+          }
+        }
 
         ////////////////////////////////////////////////////////////
         // Side Numbers
@@ -451,7 +552,7 @@ var TokenMod = TokenMod || (function() {
 			constructor(flag,op,count){
 				this.flag=flag||false;
 				this.operation=op||'=';
-				this.count=_.isUndefined(count) ? 1 : count;
+				this.count=(parseInt(`${count}`)||1);
 			}
 
 
@@ -1101,9 +1202,9 @@ var TokenMod = TokenMod || (function() {
 
         let observers = {
                 tokenChange: []
-        },
+        };
 
-        getPageForPlayer =( pid ) => {
+        const getPageForPlayer =( pid ) => {
             if(playerIsGM(pid)){
                 return  getObj('player',pid).get('lastpage');
             }
@@ -1112,9 +1213,9 @@ var TokenMod = TokenMod || (function() {
                 return ppages[pid];
             }
             return Campaign().get('playerpageid');
-        },
+        };
 
-        getActivePages = () => _.union([
+        const getActivePages = () => _.union([
             Campaign().get('playerpageid')],
             _.values(Campaign().get('playerspecificpages')),
             _.chain(findObjs({
@@ -1124,10 +1225,10 @@ var TokenMod = TokenMod || (function() {
             .filter((p)=>playerIsGM(p.id))
             .map((p)=>p.get('lastpage'))
             .value()
-        ),
+        );
 
 
-        transforms = {
+        const transforms = {
             degrees: function(t){
                     var n = parseFloat(t,10);
                     if(!_.isNaN(n)) {
@@ -1162,9 +1263,9 @@ var TokenMod = TokenMod || (function() {
             keyHash: function(t){
                     return (t && t.toLowerCase().replace(/\s+/,'_')) || undefined;
                 }
-        },
+        };
 
-    checkGlobalConfig = function(){
+    const checkGlobalConfig = function(){
         var s=state.TokenMod,
             g=globalconfig && globalconfig.tokenmod;
 
@@ -1174,9 +1275,9 @@ var TokenMod = TokenMod || (function() {
           s.playersCanUse_ids = 'playersCanIDs' === g['Players can use --ids'];
           state.TokenMod.globalconfigCache=globalconfig.tokenmod;
         }
-    },
+    };
 
-    checkInstall = function() {
+    const checkInstall = function() {
         log('-=> TokenMod v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! _.has(state,'TokenMod') || state.TokenMod.version !== schemaVersion) {
@@ -1205,20 +1306,21 @@ var TokenMod = TokenMod || (function() {
         }
         checkGlobalConfig();
         StatusMarkers.init();
-    },
+    };
 
-    observeTokenChange = function(handler){
+    const observeTokenChange = function(handler){
         if(handler && _.isFunction(handler)){
             observers.tokenChange.push(handler);
         }
-    },
-    notifyObservers = function(event,obj,prev){
+    };
+
+    const notifyObservers = function(event,obj,prev){
         _.each(observers[event],function(handler){
             handler(obj,prev);
         });
-    },
+    };
 
-    getPlayerIDs = (function(){
+    const getPlayerIDs = (function(){
         let age=0,
             cache=[],
         checkCache=function(){
@@ -1254,9 +1356,9 @@ var TokenMod = TokenMod || (function() {
         return function(datum){
             return 'all'===datum ? ['all'] : findPlayer(datum);
         };
-    }()),
+    }());
 
-    ch = function (c) {
+    const ch = function (c) {
         var entities = {
             '<' : 'lt',
             '>' : 'gt',
@@ -1277,9 +1379,9 @@ var TokenMod = TokenMod || (function() {
             return ('&'+entities[c]+';');
         }
         return '';
-    },
+    };
 
-    getConfigOption_PlayersCanIDs = function() {
+    const getConfigOption_PlayersCanIDs = function() {
         var text = ( state.TokenMod.playersCanUse_ids ?
                 '<span style="color: red; font-weight:bold; padding: 0px 4px;">ON</span>' :
                 '<span style="color: #999999; font-weight:bold; padding: 0px 4px;">OFF</span>'
@@ -1292,9 +1394,9 @@ var TokenMod = TokenMod || (function() {
             '</a>'+
         '</div>';
 
-    },
+    };
 
-    _h = {
+    const _h = {
         outer: (...o) => `<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">${o.join(' ')}</div>`,
         title: (t,v) => `<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">${t} v${v}</div>`,
         subhead: (...o) => `<b>${o.join(' ')}</b>`,
@@ -1315,6 +1417,7 @@ var TokenMod = TokenMod || (function() {
             return `<div style="width: auto; padding: .2em; margin: .1em .25em; border: 1px solid #ccc; border-radius: .25em; background-color: #eee; line-height:1.5em; height: 1.5em;float:left;">${o.getHTML()}${text}</div>`;
         },
         inset: (...o) => `<div style="padding-left: 10px;padding-right:20px">${o.join(' ')}</div>`,
+        join: (...o) => o.join(' '),
         pre: (...o) =>`<div style="border:1px solid #e1e1e8;border-radius:4px;padding:8.5px;margin-bottom:9px;font-size:12px;white-space:normal;word-break:normal;word-wrap:normal;background-color:#f7f7f9;font-family:monospace;overflow:auto;">${o.join(' ')}</div>`,
         preformatted: (...o) =>_h.pre(o.join('<br>').replace(/\s/g,ch(' '))),
         code: (...o) => `<code>${o.join(' ')}</code>`,
@@ -1329,90 +1432,84 @@ var TokenMod = TokenMod || (function() {
         font: {
             command: (...o)=>`<b><span style="font-family:serif;">${o.join(' ')}</span></b>`
         }
-    },
+    };
 
 
-
-    showHelp = function(playerid) {
-        let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
-        sendChat('', '/w "'+who+'" '+
-            _h.outer(
-                _h.title('TokenMod',version),
-                _h.header(
-                    _h.paragraph( 'TokenMod provides an interface to setting almost all settable properties of a token.')
-                ),
-                _h.subhead('Commands'),
-                _h.inset(
-                    _h.font.command(
-                        `!token-mod `,
-                        _h.required(
-                            `--help`,
-                            `--ignore-selected`,
-                            `--current-page`,
-                            `--active-pages`,
-                            `--config`,
-                            `--on`,
-                            `--off`,
-                            `--flip`,
-                            `--set`,
-                            `--report`,
-                            `--order`
-                        ),
-                        _h.required(`parameter`),
-                        _h.optional(`${_h.required(`parameter`)} ...`),
-                        `...`,
-                        _h.optional(
-                            `--ids`,
-                            _h.required(`token_id`),
-                            _h.optional(`${_h.required(`token_id`)} ...`)
-                        )
-                    ),
-                    _h.paragraph('This command takes a list of modifications and applies them to the selected tokens (or tokens specified with --ids by a GM or Player depending on configuration).'),
-                    _h.paragraph(`${_h.bold('Note:')} Each --option can be specified multiple times and in any order.`),
-                    _h.paragraph(`${_h.bold('Note:')} If you are using multiple ${_h.attr.target('token_id')} calls in a macro, and need to adjust fewer than the supplied number of token ids, simply select the same token several times.  The duplicates will be removed.`),
-                    _h.paragraph(`${_h.bold('Note:')} Anywhere you use ${_h.code('|')}, you can use ${_h.code('#')} instead.  Sometimes this make macros easier.`),
-                    _h.paragraph(`${_h.bold('Note:')} You can use the ${_h.code('{{')} and ${_h.code('}}')} to span multiple lines with your command for easier clarity and editing:`),
+    const helpParts = {
+        commands: (/* context */) => _h.join(
+                    _h.subhead('Commands'),
                     _h.inset(
-                        _h.preformatted(
-                            '!token-mod {{',
-                            '  --on',
-                            '    flipv',
-                            '    fliph',
-                            '  --set',
-                            '    rotation|180',
-                            `    bar1|${ch('[')+ch('[')}8d8+8${ch(']')+ch(']')}`,
-                            '    light_radius|60',
-                            '    light_dimradius|30',
-                            '    name|"My bright token"',
-                            '}}'
+                        _h.font.command(
+                            `!token-mod `,
+                            _h.required(
+                                `--help`,
+                                `--ignore-selected`,
+                                `--current-page`,
+                                `--active-pages`,
+                                `--config`,
+                                `--on`,
+                                `--off`,
+                                `--flip`,
+                                `--set`,
+                                `--report`,
+                                `--order`
+                            ),
+                            _h.required(`parameter`),
+                            _h.optional(`${_h.required(`parameter`)} ...`),
+                            `...`,
+                            _h.optional(
+                                `--ids`,
+                                _h.required(`token_id`),
+                                _h.optional(`${_h.required(`token_id`)} ...`)
+                            )
+                        ),
+                        _h.paragraph('This command takes a list of modifications and applies them to the selected tokens (or tokens specified with --ids by a GM or Player depending on configuration).'),
+                        _h.paragraph(`${_h.bold('Note:')} Each --option can be specified multiple times and in any order.`),
+                        _h.paragraph(`${_h.bold('Note:')} If you are using multiple ${_h.attr.target('token_id')} calls in a macro, and need to adjust fewer than the supplied number of token ids, simply select the same token several times.  The duplicates will be removed.`),
+                        _h.paragraph(`${_h.bold('Note:')} Anywhere you use ${_h.code('|')}, you can use ${_h.code('#')} instead.  Sometimes this make macros easier.`),
+                        _h.paragraph(`${_h.bold('Note:')} You can use the ${_h.code('{{')} and ${_h.code('}}')} to span multiple lines with your command for easier clarity and editing:`),
+                        _h.inset(
+                            _h.preformatted(
+                                '!token-mod {{',
+                                '  --on',
+                                '    flipv',
+                                '    fliph',
+                                '  --set',
+                                '    rotation|180',
+                                `    bar1|${ch('[')+ch('[')}8d8+8${ch(']')+ch(']')}`,
+                                '    light_radius|60',
+                                '    light_dimradius|30',
+                                '    name|"My bright token"',
+                                '}}'
+                            )
+                        ),
+                        _h.ul(
+                            `${_h.bold('--help')} -- Displays this help`,
+                            `${_h.bold('--ignore-selected')} -- Prevents modifications to the selected tokens (only modifies tokens passed with --ids).`,
+                            `${_h.bold('--current-page')} -- Only modifies tokens on the calling player${ch("'")}s current page.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
+                            `${_h.bold('--active-pages')} -- Only modifies tokens on pages where there is a player or the GM.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
+                            `${_h.bold('--config')} -- Sets Config options. `,
+                            `${_h.bold('--on')} -- Turns on any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
+                            `${_h.bold('--off')} -- Turns off any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
+                            `${_h.bold('--flip')} -- Flips the value of any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
+                            `${_h.bold('--set')} -- Each parameter is treated as a key and value, divided by a ${_h.code('|')} character.  Sets the key to the value.  If the value has spaces, you must enclose it ${_h.code(ch("'"))} or ${_h.code(ch('"'))}. See below for specific value handling logic.`,
+                            `${_h.bold('--order')} -- Changes the ordering of tokens.  Specify one of ${_h.code('tofront')}, ${_h.code('front')}, ${_h.code('f')}, ${_h.code('top')} to bring something to the front or ${_h.code('toback')}, ${_h.code('back')}, ${_h.code('b')}, ${_h.code('bottom')} to push it to the back.`,
+                            `${_h.bold('--report')} -- Displays a report of what changed for each token. ${_h.experimental()}`,
+                            `${_h.bold('--ids')} -- Each parameter is a Token ID, usually supplied with something like ${_h.attr.target(`Target 1${ch('|')}token_id`)}. By default, only a GM can use this argument.  You can enable players to use it as well with ${_h.bold('--config players-can-ids|on')}.`
                         )
                     ),
-                    _h.ul(
-                        `${_h.bold('--help')} -- Displays this help`,
-                        `${_h.bold('--ignore-selected')} -- Prevents modifications to the selected tokens (only modifies tokens passed with --ids).`,
-                        `${_h.bold('--current-page')} -- Only modifies tokens on the calling player${ch("'")}s current page.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
-                        `${_h.bold('--active-pages')} -- Only modifies tokens on pages where there is a player or the GM.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
-                        `${_h.bold('--config')} -- Sets Config options. `,
-                        `${_h.bold('--on')} -- Turns on any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
-                        `${_h.bold('--off')} -- Turns off any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
-                        `${_h.bold('--flip')} -- Flips the value of any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
-                        `${_h.bold('--set')} -- Each parameter is treated as a key and value, divided by a ${_h.code('|')} character.  Sets the key to the value.  If the value has spaces, you must enclose it ${_h.code(ch("'"))} or ${_h.code(ch('"'))}. See below for specific value handling logic.`,
-                        `${_h.bold('--order')} -- Changes the ordering of tokens.  Specify one of ${_h.code('tofront')}, ${_h.code('front')}, ${_h.code('f')}, ${_h.code('top')} to bring something to the front or ${_h.code('toback')}, ${_h.code('back')}, ${_h.code('b')}, ${_h.code('bottom')} to push it to the back.`,
-                        `${_h.bold('--report')} -- Displays a report of what changed for each token. ${_h.experimental()}`,
-                        `${_h.bold('--ids')} -- Each parameter is a Token ID, usually supplied with something like ${_h.attr.target(`Target 1${ch('|')}token_id`)}. By default, only a GM can use this argument.  You can enable players to use it as well with ${_h.bold('--config players-can-ids|on')}.`
+                    // SECTION: --ids, --ignore-selected, etc...
+                    _h.section('Token Specification',
+                        _h.paragraph(`By default, any selected token is adjusted when the command is executed.  Note that there is a bug where using ${_h.attr.target('')} commands, they may cause them to get skipped.`),
+                        _h.paragraph(`${_h.italic('--ids')} takes token ids to operate on, separated by spaces.`),
+                        _h.inset(_h.pre( `!token-mod --ids -Jbz-mlHr1UXlfWnGaLh -JbjeTZycgyo0JqtFj-r -JbjYq5lqfXyPE89CJVs --on showname showplayers_name`)),
+                        _h.paragraph(`Usually, you will want to specify these with the ${_h.attr.target('')} syntax:`),
+                        _h.inset(_h.pre( `!token-mod --ids ${_h.attr.target('1|token_id')} ${_h.attr.target('2|token_id')} ${_h.attr.target('3|token_id')} --on showname showplayers_name`)),
+                        _h.paragraph(`${_h.italic('--ignore-selected')} can be used when you want to be sure selected tokens are not affected.  This is particularly useful when specifying the id of a known token, such as moving a graphic from the gm layer to the objects layer, or coloring an object on the map.`)
                     )
                 ),
 
-                // SECTION: --ids, --ignore-selected, etc...
-                _h.section('Token Specification',
-                    _h.paragraph(`By default, any selected token is adjusted when the command is executed.  Note that there is a bug where using ${_h.attr.target('')} commands, they may cause them to get skipped.`),
-                    _h.paragraph(`${_h.italic('--ids')} takes token ids to operate on, separated by spaces.`),
-                    _h.inset(_h.pre( `!token-mod --ids -Jbz-mlHr1UXlfWnGaLh -JbjeTZycgyo0JqtFj-r -JbjYq5lqfXyPE89CJVs --on showname showplayers_name`)),
-                    _h.paragraph(`Usually, you will want to specify these with the ${_h.attr.target('')} syntax:`),
-                    _h.inset(_h.pre( `!token-mod --ids ${_h.attr.target('1|token_id')} ${_h.attr.target('2|token_id')} ${_h.attr.target('3|token_id')} --on showname showplayers_name`)),
-                    _h.paragraph(`${_h.italic('--ignore-selected')} can be used when you want to be sure selected tokens are not affected.  This is particularly useful when specifying the id of a known token, such as moving a graphic from the gm layer to the objects layer, or coloring an object on the map.`)
-                ),
-
+        booleans: (/* context */) => _h.join(
                 // SECTION: --on, --off, --flip, etc...
                 _h.section('Boolean Arguments',
                     _h.paragraph(`${_h.italic('--on')}, ${_h.italic('--off')} and ${_h.italic('--flip')} options only work on properties of a token that are either ${_h.code('true')} or ${_h.code('false')}, usually represented as checkboxes in the User Interface.  Specified properties will only be changed once, priority is given to arguments to ${_h.italic('--on')} first, then ${_h.italic('--off')} and finally to ${_h.italic('--flip')}.`),
@@ -1464,8 +1561,708 @@ var TokenMod = TokenMod || (function() {
                     _h.paragraph(`${_h.code("has_night_vision")} controls if a token can see without emitted light around it.  This was handled with ${_h.bold("light_otherplayers")} in the old light system.  In the new light system, you don't need to be emitting light to see if you have night vision turned on.  You can also use the alias ${_h.code("night_vision")}.`),
                     _h.paragraph(`${_h.code("emits_bright_light")} determines if the configured ${_h.bold("bright_light_distance")} is active or not.  There wasn't a concept like this in the old system, it would be synonymous with setting the ${_h.bold("light_radius")} to 0, but now it's not necessary.  You can also use the alias ${_h.code("emits_bright")}.`),
                     _h.paragraph(`${_h.code("emits_low_light")} determines if the configured ${_h.bold("low_light_distance")} is active or not.  There wasn't a concept like this in the old system, it would be synonymous with setting the ${_h.bold("light_dimradius")} to 0 (kind of), but now it's not necessary.  You can also use the alias ${_h.code("emits_low")}.`)
+                )
+            ),
+
+        setNumbers: (/* context*/) => _h.join(
+                    _h.subhead('Numbers'),
+                    _h.inset(
+                        _h.paragraph('Number values can be any floating point number (though most fields will drop the fractional part). Numbers must be given a numeric value.  They cannot be blank or a non-numeric string.'),
+                        _h.minorhead('Available Numbers Properties:'),
+                        _h.inset(
+                            _h.grid(
+                                _h.cell('left'),
+                                _h.cell('top'),
+                                _h.cell('width'),
+                                _h.cell('height'),
+                                _h.cell('scale')
+                            )
+                        ),
+                        _h.paragraph( `It${ch("'")}s probably a good idea not to set the location of a token off screen, or the width or height to 0.`),
+                        _h.paragraph( `Placing a token in the top left corner of the map and making it take up a 2x2 grid section:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set top|0 left|0 width|140 height|140' )
+                        ),
+                        _h.paragraph(`You can also apply relative change using ${_h.code('+')}, ${_h.code('-')}, ${_h.code(ch('*'))}, and ${_h.code(ch('/'))}. This will move each token one unit down, 2 units left, then make it 5 times as wide and half as tall.`),
+                        _h.inset(
+                            _h.pre( `!token-mod --set top|+70 left|-140 width|${ch('*')}5 height|/2` )
+                        ),
+                        _h.paragraph(`You can use ${_h.code('=')} to explicity set a value.  This is the default behavior, but you might need to use it to move something to a location off the edge using a negative number but not a relative number:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set top|=-140' )
+                        ),
+                        _h.paragraph( `${_h.code('scale')} is a pseudo field which adjusts both ${_h.code('width')} and ${_h.code('height')} with the same operation.  This will scale a token to twice it's current size.`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set scale|*2' )
+                        ),
+                        _h.paragraph(`You can follow a number by one of ${_h.code('u')}, ${_h.code('g')}, or ${_h.code('s')} to adjust the scale that the number is applied in.`),
+                        _h.paragraph(`Use ${_h.code('u')} to use a number based on Roll20 Units, which are 70 pixels at 100% zoom.  This will set a graphic to 280x140.`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set width|4u height|2u' )
+                        ),
+                        _h.paragraph(`Use ${_h.code('g')} to use a number based on the current grid size.  This will set a token to the middle of the 8th column, 4rd row grid. (.5 offset for half the center)`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set left|7.5g top|3.5g' )
+                        ),
+                        _h.paragraph(`Use ${_h.code('s')} to use a number based on the current unit if measure. (ft, m, mi, etc)  This will set a token to be 25ft by 35ft (assuming ft are the unit of measure)`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set width|25s height|35s' )
+                        ),
+                        _h.paragraph(`Currently, you can also use any of the default units of measure as alternatives to ${_h.code('s')}: ${_h.code('ft')}, ${_h.code('m')}, ${_h.code('km')}, ${_h.code('mi')}, ${_h.code('in')}, ${_h.code('cm')}, ${_h.code('un')}, ${_h.code('hex')}, ${_h.code('sq')}`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set width|25ft height|35ft' )
+                        )
+                    )
                 ),
 
+        setNumbersOrBlank: ( /* context */) => _h.join(
+                _h.subhead('Numbers or Blank'),
+                _h.inset(
+                    _h.paragraph('Just like the Numbers fields, except you can set them to blank as well.'),
+                    _h.minorhead('Available Numbers or Blank Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('light_radius'),
+                            _h.cell('light_dimradius'),
+                            _h.cell('light_multiplier'),
+                            _h.cell('aura1_radius'),
+                            _h.cell('aura2_radius'),
+                            _h.cell('adv_fow_view_distance'),
+                            _h.cell("night_vision_distance"),
+                            _h.cell("night_distance"),
+                            _h.cell("bright_light_distance"),
+                            _h.cell("bright_distance"),
+                            _h.cell("low_light_distance"),
+                            _h.cell("low_distance")
+                        )
+                    ),
+                    _h.paragraph(`Here is setting a standard DnD 5e torch, turning off aura1 and setting aura2 to 30. Note that the ${_h.code('|')} is still required for setting a blank value, such as aura1_radius below.`),
+                    _h.inset(
+                        _h.pre('!token-mod --set light_radius|40 light_dimradius|20 aura1_radius| aura2_radius|30')
+                    ),
+                    _h.paragraph(`Just as above, you can use ${_h.code('=')}, ${_h.code('+')}, ${_h.code('-')}, ${_h.code(ch('*'))}, and ${_h.code(ch('/'))} when setting these values.`),
+                    _h.paragraph(`Here is setting a standard DnD 5e torch, with advanced fog of war revealed for 30.`),
+                    _h.inset(
+                        _h.pre('!token-mod --set light_radius|40 light_dimradius|20 adv_fow_view_distance|30')
+                    ),
+                    _h.paragraph(`Sometimes it is convenient to have a way to set a radius if there is none, but remove it if it is set.  This allows toggling a known radius on and off, or setting a multiplier if there isn't one, but clearing it if there is.  You can preface a number with ${_h.code('!')} to toggle it${ch("'")}s value on and off.  Here is an example that will add or remove a 20${ch("'")} radius aura 1 from a token:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set aura1_radius|!20')
+                    ),
+                    _h.paragraph(`These also support the relative scale operations that ${_h.bold('Numbers')} support: ${_h.code('u')}, ${_h.code('g')}, ${_h.code('s')}`),
+                    _h.inset(
+                        _h.pre('!token-mod --set aura1_radius|3g aura2_radius|10u light_radius|25s')
+                    ),
+                    _h.paragraph(`${_h.bold('Note:')} ${_h.code('light_multiplier')} ignores these modifiers.  Additionally, the rest are already in the scale of measuring distance (${_h.code('s')}) so there is no difference between ${_h.code('25s')}, ${_h.code('25ft')}, and ${_h.code('25')}.`),
+                    _h.subhead(`Updated Dynamic Lighting`),
+                    _h.paragraph(`${_h.code("night_vision_distance")} lets you set how far away a token can see with no light.  You need to have ${_h.bold("has_night_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("night_distance")}.`),
+                    _h.paragraph(`${_h.code("bright_light_distance")} lets you set how far bright light is emitted from the token.  You need to have ${_h.bold("has_bright_light_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("bright_distance")}.`),
+                    _h.paragraph(`${_h.code("low_light_distance")} lets you set how far low light is emitted from the token.  You need to have ${_h.bold("has_bright_light_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("low_distance")}.`)
+                )
+            ),
+
+        setDegrees: ( /* context */) => _h.join(
+                _h.subhead('Degrees'),
+                _h.inset(
+                    _h.paragraph('Any positive or negative number.  Values will be automatically adjusted to be in the 0-360 range, so if you add 120 to 270, it will wrap around to 90.'),
+                    _h.minorhead('Available Degrees Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('rotation')
+                        )
+                    ),
+                    _h.paragraph('Rotating a token by 180 degrees.'),
+                    _h.inset(
+                        _h.pre('!token-mod --set rotation|+180')
+                    )
+                )
+            ),
+
+        setCircleSegment: ( /* context */) => _h.join(
+                _h.subhead('Circle Segment (Arc)'),
+                _h.inset(
+                    _h.paragraph('Any Positive or negative number, with the final result being clamped to from 0-360.  This is different from a degrees setting, where 0 and 360 are the same thing and subtracting 1 from 0 takes you to 359.  Anything lower than 0 will become 0 and anything higher than 360 will become 360.'),
+                    _h.minorhead('Available Circle Segment (Arc) Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('light_angle'),
+                            _h.cell('light_losangle')
+                        )
+                    ),
+                    _h.paragraph('Setting line of sight angle to 90 degrees.'),
+                    _h.inset(
+                        _h.pre('!token-mod --set light_losangle|90')
+                    )
+                )
+            ),
+
+        setColors: ( /* context */) => _h.join(
+                _h.subhead('Colors'),
+                _h.inset(
+                    _h.paragraph(`Colors can be specified in multiple formats:`),
+                    _h.inset(
+                        _h.ul(
+                            `${_h.bold('Transparent')} -- This is the special literal ${_h.code('transparent')} and represents no color at all.`,
+                            `${_h.bold('HTML Color')} -- This is 6 or 3 hexidecimal digits, optionally prefaced by ${_h.code('#')}.  Digits in a 3 digit hexidecimal color are doubled.  All of the following are the same: ${_h.code('#ff00aa')}, ${_h.code('#f0a')}, ${_h.code('ff00aa')}, ${_h.code('f0a')}`,
+                            `${_h.bold('RGB Color')} -- This is an RGB color in the format ${_h.code('rgb(1.0,1.0,1.0)')} or ${_h.code('rgb(256,256,256)')}.  Decimal numbers are in the scale of 0.0 to 1.0, integer numbers are scaled 0 to 256.  Note that numbers can be outside this range for the purpose of doing math.`,
+                            `${_h.bold('HSV Color')} -- This is an HSV color in the format ${_h.code('hsv(1.0,1.0,1.0)')} or ${_h.code('hsv(360,100,100)')}.  Decimal numbers are in the scale of 0.0 to 1.0, integer numbers are scaled 0 to 360 for the hue and 0 to 100 for saturation and value.  Note that numbers can be outside this range for the purpose of doing math.`
+                        )
+                    ),
+                    _h.minorhead('Available Colors Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('tint_color'),
+                            _h.cell('aura1_color'),
+                            _h.cell('aura2_color')
+                        )
+                    ),
+                    _h.paragraph('Turning off the tint and setting aura1 to a reddish color.  All of the following are the same:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set tint_color|transparent aura1_color|ff3366'),
+                        _h.pre('!token-mod --set tint_color| aura1_color|f36'),
+                        _h.pre('!token-mod --set tint_color|transparent aura1_color|#f36'),
+                        _h.pre('!token-mod --set tint_color| aura1_color|#ff3366')
+                    ),
+                    _h.paragraph('Setting the tint_color using an RGB Color using Integer and Decimal notations:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set tint_color|rgb(127,0,256)'),
+                        _h.pre('!token-mod --set tint_color|rgb(.5,0.0,1.0)')
+                    ),
+                    _h.paragraph('Setting the tint_color using an HSV Color using Integer and Decimal notations:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set tint_color|hsv(0,50,100)'),
+                        _h.pre('!token-mod --set tint_color|hsv(0.0,.5,1.0)')
+                    ),
+
+                    _h.paragraph(`You can toggle a color on and off by prefacing it with ${_h.code('!')}.  If the color is currently transparent, it will be set to the specified color, otherwise it will be set to transparent:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set tint_color|!rgb(1.0,.0,.2)')
+                    ),
+
+                    _h.minorhead('Color Math'),
+
+                    _h.paragraph(`You can perform math on colors using ${_h.code('+')}, ${_h.code('-')}, and ${_h.code(ch('*'))}.`),
+                    _h.paragraph(`Making the aura just a little more red:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set aura1_color|+#330000')
+                    ),
+                    _h.paragraph(`Making the aura just a little less blue:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set aura1_color|-rgb(0.0,0.0,0.1)')
+                    ),
+                    _h.paragraph(`HSV colors are especially good for color math.  Making the aura twice as bright:`),
+                    _h.inset(
+                        _h.pre(`!token-mod --set aura1_color|${ch('*')}hsv(1.0,1.0,2.0)`)
+                    ),
+
+                    _h.paragraph(`Performing math operations with a transparent color as the command argument does nothing:`),
+                    _h.inset(
+                        _h.pre(`!token-mod --set aura1_color|${ch('*')}transparent`)
+                    ),
+
+                    _h.paragraph(`Performing math operations on a transparent color on a token treats the color as black.  Assuming a token had a transparent aura1, this would set it to #330000.`),
+                    _h.inset(
+                        _h.pre('!token-mod --set aura1_color|+300')
+                    )
+                )
+            ),
+
+        setText: ( /* context */) => _h.join(
+                _h.subhead('Text'),
+                _h.inset(
+                    _h.paragraph(`These can be pretty much anything.  If your value has spaces in it, you need to enclose it in ${ch("'")} or ${ch('"')}.`),
+                    _h.minorhead('Available Text Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('name'),
+                            _h.cell('bar1_value'),
+                            _h.cell('bar2_value'),
+                            _h.cell('bar3_value'),
+                            _h.cell('bar1_current'),
+                            _h.cell('bar2_current'),
+                            _h.cell('bar3_current'),
+                            _h.cell('bar1_max'),
+                            _h.cell('bar2_max'),
+                            _h.cell('bar3_max'),
+                            _h.cell('bar1'),
+                            _h.cell('bar2'),
+                            _h.cell('bar3'),
+                            _h.cell('bar1_reset'),
+                            _h.cell('bar2_reset'),
+                            _h.cell('bar3_reset')
+                        )
+                    ),
+                    _h.paragraph(`Setting a token${ch("'")}s name to ${ch('"')}Sir Thomas${ch('"')} and bar1 value to 23.`),
+                    _h.inset(
+                        _h.pre(`!token-mod --set name|${ch('"')}Sir Thomas${ch('"')} bar1_value|23`)
+                    ),
+                    _h.paragraph(`${_h.italic('bar1')}, ${_h.italic('bar2')} and ${_h.italic('bar3')} are special.  Any value set on them will be set in both the ${_h.italic('_value')} and ${_h.italic('_max')} fields for that bar.  This is most useful for setting hit points, particularly if the value comes from an inline roll.`),
+                    _h.inset(
+                        _h.pre(`!token-mod --set bar1|${ch('[')}${ch('[')}3d6+8${ch(']')}${ch(']')}`)
+                    ),
+                    _h.paragraph(`${_h.italic('bar1_reset')}, ${_h.italic('bar2_reset')} and ${_h.italic('bar3_reset')} are special.  Any value set on them will be ignored, instead they will set the ${_h.italic('_value')} field for that bar to whatever the matching ${_h.italic('_max')} field is set to.  This is most useful for resetting hit points or resource counts like spells. (The ${_h.code('|')} is currently still required.)`),
+                    _h.inset(
+                        _h.pre(`!token-mod --set bar1_reset| bar3_reset|`)
+                    )
+                )
+            ),
+
+        setLayer: ( /* context */) => _h.join(
+                _h.subhead('Layer'),
+                _h.inset(
+                    _h.paragraph(`There is only one Layer property.  It can be one of 4 values, listed below.`),
+                    _h.minorhead('Available Layer Values:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('gmlayer'),
+                            _h.cell('objects'),
+                            _h.cell('map'),
+                            _h.cell('walls')
+                        )
+                    ),
+                    _h.paragraph('Moving something to the gmlayer.'),
+                    _h.inset(
+                        _h.pre('!token-mod --set layer|gmlayer')
+                    )
+                )
+            ),
+        setStatus: ( /* context */) => _h.join(
+                _h.subhead('Status'),
+                _h.inset(
+                    _h.paragraph(`There is only one Status property.  Status has a somewhat complicated syntax to support the greatest possible flexibility.`),
+                    _h.minorhead('Available Status Property:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('statusmarkers')
+                        )
+                    ),
+
+                    _h.paragraph(`Status is the only property that supports multiple values, all separated by ${_h.code('|')} as seen below. This command adds the blue, red, green, padlock and broken-sheilds to a token, on top of any other status markers it already has:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|blue|red|green|padlock|broken-shield')
+                    ),
+
+                    _h.paragraph(`You can optionally preface each status with a ${_h.code('+')} to remind you it is being added.  This command is identical:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|+blue|+red|+green|+padlock|+broken-shield')
+                    ),
+
+                    _h.paragraph(`Each value can be followed by a ${_h.code(':')} and a number between 0 and 9.  (The number following the ${_h.italic('dead')} status is ignored as that status is special.)  This will set the blue status with no number overlay, red with a 3 overlay, green with no overlay, padlock with a 2 overlay, and broken-shield with a 7 overlay:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|blue:0|red:3|green|padlock:2|broken-shield:7')
+                    ),
+                    _h.paragraph(`${_h.bold('Note:')} TokenMod will now show 0 on status markers everywhere that makes sense to do.`),
+
+                    _h.paragraph(`The numbers following a status can be prefaced with a ${_h.code('+')} or ${_h.code('-')}, which causes their value to be applied to the current value. Here${ch("'")}s an example showing blue getting incremented by 2, and padlock getting decremented by 1.  Values will be bounded between 0 and 9.`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|blue:+2|padlock:-1')
+                    ),
+
+                    _h.paragraph(`You can append two additional numbers separated by ${_h.code(':')}.  These numbers will be used as the minimum and maximum value when setting or adjusting the number on a status marker.  Specified minimum and maximum values will be kept between 0 and 9.`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|blue:+1:2:5')
+                    ),
+
+                    _h.paragraph(`Omitting either of the numbers will cause them to use their default value.  Here is an example limiting the max to 5:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|blue:+1::5')
+                    ),
+
+                    _h.paragraph(`You can optionally preface each status with a ${_h.code('?')} to modify the way ${_h.code('+')} and ${_h.code('-')} on status numbers work.  With ${_h.code('?')} on the front of the status, only selected tokens that have that status will be modified.  Additionally, if the status reaches 0, it will be removed.  Here${ch("'")}s an example showing blue getting decremented by 1.  If it reaches 0, it will be removed and no status will be added if it is missing.`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|?blue:-1')
+                    ),
+
+                    _h.paragraph(`By default, status markers will be added, retaining whichever status markers are already present.  You can override this behavior by prefacing a status with a ${_h.code('-')} to cause the status to be removed.  This will remove the blue and padlock status:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|-blue|-padlock')
+                    ),
+
+                    _h.paragraph(`Sometimes it is convenient to have a way to add a status if it is not there, but remove it if it is.  This allows marking tokens with markers and clearing them with the same command.  You can preface a status with ${_h.code('!')} to toggle it${ch("'")}s state on and off.  Here is an example that will add or remove the Rook piece from a token:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|!white-tower')
+                    ),
+
+                    _h.paragraph(`Sometimes, you might want to clear all status marker as part of setting a new status marker.  You can do this by prefacing a status marker with an ${_h.code('=')}.  Note that this affects all status markers before as well, so you will want to do this only on the first status marker.  This will remove all status markers and set only the dead marker:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|=dead')
+                    ),
+
+                    _h.paragraph(`If you want to remove all status markers, just specify the same marker twice with an ${_h.code('=')} and then a ${_h.code('-')}.  This will clear all the status markers:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|=blue|-blue')
+                    ),
+
+                    _h.paragraph(`You can set multiple of the same status marker with a bracket syntax. Copies of a status are indexed starting at 1 from left to right. Leaving brackets off will be the same as specifying index 1. Using empty brackets is the same as specifying an index 1 greater than the highest index in use. When setting a status at an index that doesn${ch("'")}t exist (say, 8 when you only have 2 of that status) it will be appended to the right as the next index. When removing a status that doesn${ch("'")}t exist, it will be ignored. Removing the empty bracket status will remove all statues of that type.`),
+                    _h.paragraph(`Adding 2 blue status markers with the numbers 7 and 5 in a few different ways:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|blue:7|blue[]:5'),
+                        _h.pre('!token-mod --set statusmarkers|blue[]:7|blue[]:5'),
+                        _h.pre('!token-mod --set statusmarkers|blue[1]:7|blue[2]:5')
+                    ),
+                    _h.paragraph('Removing the second blue status marker:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|-blue[2]')
+                    ),
+                    _h.paragraph('Removing all blue status markers:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|-blue[]')
+                    ),
+
+                    _h.minorhead('Available Status Markers:'),
+                    _h.inset(
+                        _h.grid(
+                            ...StatusMarkers.getOrderedList().map(tm=>_h.statusCell(tm))
+                        )
+                    ),
+
+                    _h.paragraph('All of these operations can be combine in a single statusmarkers command.'),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|blue:3|-dead|red:3')
+                    )
+                )
+            ),
+
+        setImage: ( /* context */) => _h.join(
+                _h.subhead('Image'),
+                _h.inset(
+                    _h.paragraph(`The Image type lets you manage the image a token uses, as well as the available images for Multi-Sided tokens.  Images must be in a user library or will be ignored. The full path must be provided.`),
+                    _h.minorhead('Available Image Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('imgsrc')
+                        )
+                    ),
+                    _h.paragraph(`Setting the token image to a library image using a url (in this case, the orange ring I use for ${_h.italic('TurnMarker1')}):`),
+                    _h.inset(
+                        _h.pre('!token-mod --set imgsrc|https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/max.png?1400535580')
+                    ),
+                    _h.paragraph(`Setting the token image from another token by specifying it${ch("'")}s token_id:`),
+                    _h.inset(
+                        _h.pre(`!token-mod --set imgsrc|${_h.attr.target('token_id')} --ids ${_h.attr.selected('token_id')}`)
+                    ),
+                    _h.paragraph(`${_h.bold('WARNING:')} Because of a Roll20 bug with ${_h.attr.target('')} and the API, you must specify the tokens you want to change using ${_h.code('--ids')} when using ${_h.attr.target('')}.`),
+
+                    _h.minorhead('Multi-Sided Token Options'),
+                    _h.inset(
+                        _h.subhead('Appending (+)'),
+                        _h.inset(
+                            _h.paragraph(`You can append additional images to the list of sides by prefacing the source of an image with ${_h.code('+')}:`),
+                            _h.inset(
+                                _h.pre('!token-mod --set imgsrc|+https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/max.png?1400535580'),
+                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')} --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`If you follow the ${_h.code('+')} with a ${_h.code('=')}, it will update the current side to the freshly added image:`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+=${_h.attr.target('token_id')} --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`When getting the image from a token, you can append a ${_h.code(':')} and follow it with an index to copy.  Indicies start at 1, if you specify an index that doesn${ch("'")}t exist, nothing will happen:`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3 --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`You can specify the ${_h.code('=')} with this syntax:`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+=${_h.attr.target('token_id')}:3 --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`You can specify multiple indices to copy by using a ${_h.code(',')} separated list:`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3,4,5,9 --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`Using ${_h.code('=')} with this syntax will set the current side to the last added image:`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+=${_h.attr.target('token_id')}:3,4,5,9 --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`Images are copied in the order specified.  You can even copy images from a token you${ch("'")}re setting.`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3,2,1 --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`You can use an ${_h.code(ch('*'))} after the ${_h.code(':')} to copy all the images from a token.  The order will be from 1 to the maximum image.`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:${ch('*')} --ids ${_h.attr.selected('token_id')}`)
+                            ),
+
+                            _h.paragraph(`When appending a url, you can use a ${_h.code(ch(':@'))} followed by a number to specify where to place the new image.  Indicies start at 1.`),
+                            _h.inset(
+                                _h.pre('!token-mod --set imgsrc|+https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/max.png?1400535580:@1')
+                            ),
+
+                            _h.paragraph(`When appending from a token, you can use an ${_h.code(ch('@'))} followed by a number to specify where each copied image is inserted.  Indicies start at 1.`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3@1,4@2,5@4,9@5 --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`Note that inserts are performed in order, so continuously inserting at a position will insert in reverse order.`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3@1,4@1,5@1,9@1 --ids ${_h.attr.selected('token_id')}`)
+                            )
+                        ),
+
+                        _h.subhead('Replacing (^)'),
+                        _h.inset(
+                            _h.paragraph(`You can replace images in the list of sides by prefacing the source of an image with ${_h.code('^')} and append an ${_h.code(ch('@'))} followed by a number to specify which images to replace.  Indicies start at 1.`),
+                            _h.inset(
+                                _h.pre('!token-mod --set imgsrc|^https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/max.png?1400535580:@2'),
+                                _h.pre(`!token-mod --set imgsrc|^${_h.attr.target('token_id')}:@2 --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`When replacing from a token, you can specify multiple replacements from a source token to the destination token:`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|^${_h.attr.target('token_id')}:3@1,4@2,5@4,9@5 --ids ${_h.attr.selected('token_id')}`)
+                            )
+                        ),
+
+                        _h.subhead('Reordering (/)'),
+                        _h.inset(
+                            _h.paragraph(`You can use a ${_h.code(ch('/'))} followed by a pair of numbers separated by ${_h.code('@')} to move an image on the token from one postion to another.  Indicies start at 1.`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|/3@1 --ids ${_h.attr.selected('token_id')}`)
+                            ),
+                            _h.paragraph(`You can string these together with commas.  Note that operationes are performed in order and may displace prior moved images.`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|/3@1,4@2,5@3,9@4 --ids ${_h.attr.selected('token_id')}`)
+                            )
+                        ),
+
+                        _h.subhead('Removing (-)'),
+                        _h.inset(
+                            _h.paragraph(`You can remove images from the image list using ${_h.code('-')} followed by the index to remove.  If you remove the currently used image, the side will be set to 1.`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|-3`)
+                            ),
+                            _h.paragraph(`If you omit the number, it will remove the current side:`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|-`)
+                            ),
+
+                            _h.paragraph(`You can follow the ${_h.code('-')} with a ${_h.code(',')} separated list of indicies to remove.  If any of the indicies don${ch("'")}t exist, they will be ignored:`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|-3,4,7`)
+                            ),
+
+                            _h.paragraph(`You can follow the ${_h.code('-')} with an ${_h.code(ch('*'))} to remove all the images, turning the Multi-Sided token back into a regular token. (This also happens if you remove the last image by index.):`),
+                            _h.inset(
+                                _h.pre(`!token-mod --set imgsrc|-${ch('*')}`)
+                            )
+                        ),
+
+                        _h.paragraph(`${_h.bold('WARNING:')} If you attempt to change the image list for a token with images in the Marketplace Library, it will remove all of them from that token.`)
+                    )
+                )
+            ),
+
+        setSideNumber: ( /* context */) => _h.join(
+                _h.subhead('SideNumber'),
+                _h.inset(
+                    _h.paragraph(`This is the index of the side to show for Multi-Sided tokens.  Indicies start at 1.  If you have a 6-sided token, it will have indicies 1, 2, 3, 4, 5 and 6.  An empty index is considered to be 1.  If a token doesn't have the index specified, it isn't changed.`),
+                    _h.paragraph(`${_h.bold('NOTICE:')} This only works for images in the User Image library.  If your token has images that are stored in the Marketplace Library, they will not be selectable with this command.  You can download those images and upload them to your User Image Library to use them with this.`),
+                    _h.minorhead('Available SideNumber Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('currentside')
+                        )
+                    ),
+                    _h.paragraph(`Setting a token to index 2:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set currentside|2')
+                    ),
+                    _h.paragraph(`Not specifying an index will set the index to 1, the first image:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set currentside|')
+                    ),
+
+                    _h.paragraph(`You can shift the image by some amount by using ${_h.code('+')} or ${_h.code('-')} followed by an optional number.`),
+                    _h.paragraph(`Moving all tokens to the next image:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set currentside|+')
+                    ),
+                    _h.paragraph(`Moving all tokens back 2 images:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set currentside|-2')
+                    ),
+                    _h.paragraph(`By default, if you go off either end of the list of images, you will wrap back around to the opposite side.  If this token is showing image 3 out of 4 and this command is run, it will be on image 2:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set currentside|+3')
+                    ),
+                    _h.paragraph(`If you preface the command with a ${_h.code('?')}, the index will be bounded to the number of images and not wrap.  In the same scenario, this would leave the above token at image 4:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set currentside|?+3')
+                    ),
+                    _h.paragraph(`In the same scenario, this would leave the above token at image 1:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set currentside|?-30')
+                    ),
+
+                    _h.paragraph(`If you want to chose a random image, you can use ${_h.code(ch('*'))}.  This will choose one of the valid images at random (all equally weighted):`),
+                    _h.inset(
+                        _h.pre(`!token-mod --set currentside|${ch('*')}`)
+                    )
+                )
+            ),
+
+        setCharacterID: ( /*context*/ ) => _h.join(
+                _h.subhead('Character ID'),
+                _h.inset(
+                    _h.paragraph(`You can use the ${_h.attr.char('character_id')} syntax to specify a character_id directly or use the name of a character (quoted if it contains spaces) or just the shortest part of the name that is unique (${ch("'")}Sir Maximus Strongbow${ch("'")} could just be ${ch("'")}max${ch("'")}.).  Not case sensitive: Max = max = MaX = MAX`),
+                    _h.minorhead('Available Character ID Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('represents')
+                        )
+                    ),
+                    _h.paragraph('Here is setting the represents to the character Bob.'),
+                    _h.inset(
+                        _h.pre(`!token-mod --set represents|${_h.attr.char('character_id','Bob')}`)
+                    ),
+                    _h.paragraph('Note that setting the represents will clear the links for the bars, so you will probably want to set those again.')
+                )
+            ),
+
+        setAttributeName: ( /*context*/ ) => _h.join(
+                _h.subhead('Attribute Name'),
+                _h.inset(
+                    _h.paragraph(`These are resolved from the represented character id.  If the token doesn${ch("'")}t represent a character, these will be ignored.  If the Attribute Name specified doesn${ch("'")}t exist for the represented character, the link is unchanged. You can clear a link by passing a blank Attribute Name.`),
+                    _h.minorhead('Available Attribute Name Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('bar1_link'),
+                            _h.cell('bar2_link'),
+                            _h.cell('bar3_link')
+                        )
+                    ),
+                    _h.paragraph('Here is setting the represents to the character Bob and setting bar1 to be the npc hit points attribute.'),
+                    _h.inset(
+                        _h.pre(`!token-mod --set represents|${_h.attr.char('character_id','Bob')} bar1_link|npc_HP`)
+                    ),
+                    _h.paragraph('Here is clearing the link for bar3:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set bar3_link|')
+                    )
+                )
+            ),
+
+
+        setPlayer: ( /*context*/ ) => _h.join(
+                _h.subhead('Player'),
+                _h.inset(
+                    _h.paragraph('You can specify Players using one of five methods: Player ID, Roll20 ID Number, Player Name Matching, Token ID, Character ID'),
+                    _h.inset(
+                        _h.ul(
+                            'Player ID is a unique identifier assigned that player in a specific game.  You can only find this id from the API, so this is likely the least useful method.',
+                            'Roll20 ID Number is a unique identifier assigned to a specific player.  You can find it in the URL of their profile page as the number preceeding their name.  This is really useful if you play with the same people all the time, or are cloning the same game with the same players, etc.',
+                            'Player Name Matching is a string that will be matched to the current name of the player in game.  Just like with Characters above, it can be quoted if it has spaces and is case insensitive.  All players that match a given string will be used.',
+                            'Token ID will be used to collect the controlledby entries for a token or the associated character if the token represetns one.',
+                            'Character ID will be used to collect the controlledby entries for a character.'
+                        )
+                    ),
+                    _h.paragraph(`Note that you can use the special string ${_h.italic('all')} to denote the All Players special player.`),
+                    _h.minorhead('Available Player Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('controlledby')
+                        )
+                    ),
+
+                    _h.paragraph(`Controlled by supports multiple values, all separated by ${_h.code('|')} as seen below.`),
+                    _h.inset(
+                        _h.pre('!token-mod --set controlledby|aaron|+stephen|+russ')
+                    ),
+
+                    _h.paragraph(`There are 3 operations that can be specified with leading characters: ${_h.code('+')}, ${_h.code('-')}, ${_h.code('=')} (default)`),
+                    _h.inset(
+                        _h.ul(
+                            `${_h.code('+')} will add the player(s) to the controlledby list.`,
+                            `${_h.code('-')} will remove the player(s) from the controlledby list.`,
+                            `${_h.code('=')} will set the controlledby list to only the player(s).  (Default)`
+                        )
+                    ),
+
+                    _h.paragraph('Adding control for roll20 player number 123456:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set controlledby|+123456')
+                    ),
+
+                    _h.paragraph('Setting control for all players:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set controlledby|all')
+                    ),
+                    
+                    _h.paragraph('Adding all the players with k in their name but removing karen:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set controlledby|+k|-karen')
+                    ),
+
+                    _h.paragraph( 'Adding the player with player id -JsABCabc123-12:' ),
+                    _h.inset(
+                        _h.pre( '!token-mod --set controlledby|+-JsABCabc123-12' )
+                    ),
+
+                    _h.paragraph( 'In the case of a leading character on the name that would be interpreted as an operation, you can use quotes:' ),
+                    _h.inset(
+                        _h.pre('!token-mod --set controlledby|"-JsABCabc123-12"')
+                    ),
+
+                    _h.paragraph( `When using Token ID or Character ID methods, it${ch("'")}s a good idea to use an explicit operation:` ),
+                    _h.inset(
+                        _h.pre( `!token-mod --set controlledby|=${_h.attr.target('token_id')}`)
+                    ),
+
+                    _h.paragraph( 'Quotes will also help with names that have spaces, or with nested other quotes:' ),
+                    _h.inset(
+                        _h.pre( `!token-mod --set controlledby|+${ch("'")}Bob "tiny" Slayer${ch("'")}`)
+                    ),
+
+                    _h.paragraph( 'You can remove all controlling players by using a blank list or explicitly setting equal to nothing:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set controlledby|'),
+                        _h.pre('!token-mod --set controlledby|=')
+                    ),
+
+                    _h.paragraph( `A specified action that doesn${ch("'")}t match any player(s) will be ignored.  If there are no players named Tim, this won${ch("'")}t change the list:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set controlledby|tim')
+                    ),
+
+                    _h.paragraph( 'If you wanted to force an empty list and set tim if tim is available, you can chain this with blanking the list:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set controlledby||tim')
+                    ),
+
+                    _h.minorhead( 'Using controlledby with represents'),
+                    _h.paragraph( 'When a token represents a character, the controlledby property that is adjusted is the one on the character. This works as you would want it to, so if you are changing the represents as part of the same command, it will adjust the location that will be correct after all commands are run.'),
+
+                    _h.paragraph( 'Set the token to represent the character with rook in the name and assign control to players matching bob:'),
+                    _h.inset(
+                        _h.pre('!token-mod --set represents|rook controlledby|bob')
+                    ),
+
+                    _h.paragraph( 'Remove the represent setting for the token and then give bob control of that token (useful for one-offs from npcs or monsters):'),
+                    _h.inset(
+                        _h.pre('!token-mod --set represents| controlledby|bob')
+                    )
+                )
+            ),
+
+        setDefaultToken: ( /*context*/ ) => _h.join(
+                _h.subhead('DefaultToken'),
+                _h.inset(
+                    _h.paragraph(`You can set the default token by specifying defaulttoken in your set list.`),
+                    _h.minorhead('Available DefaultToken Properties:'),
+                    _h.inset(
+                        _h.grid(
+                            _h.cell('defaulttoken')
+                        )
+                    ),
+                    _h.paragraph('There is no argument for defaulttoken, and this relies on the token representing a character.'),
+                    _h.inset(
+                        _h.pre('!token-mod --set defaulttoken')
+                    ),
+                    _h.paragraph('Setting defaulttoken along with represents works as expected:'),
+                    _h.inset(
+                        _h.pre(`!token-mod --set represents|${_h.attr.char('character_id','Bob')} defaulttoken`)
+                    ),
+                    _h.paragraph(`Be sure that defaulttoken is after all changes to the token you want to store are made.  For example, if you set the defaulttoken, then set the bar links, the bars won${ch("'")}t be linked when you pull out the token.`)
+                )
+            ),
+
+        sets: ( context ) => _h.join(
                 // SECTION: --set, etc
                 _h.section('Set Arguments',
                     _h.paragraph(`${_h.italic('--set')} takes key-value pairs, separated by ${_h.code('|')} characters (or ${_h.code('#')} characters).`),
@@ -1489,716 +2286,96 @@ var TokenMod = TokenMod || (function() {
 
                     _h.paragraph('There are several types of keys with special value formats:'),
                     _h.inset(
-                        _h.subhead('Numbers'),
-                        _h.inset(
-                            _h.paragraph('Number values can be any floating point number (though most fields will drop the fractional part). Numbers must be given a numeric value.  They cannot be blank or a non-numeric string.'),
-                            _h.minorhead('Available Numbers Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('left'),
-                                    _h.cell('top'),
-                                    _h.cell('width'),
-                                    _h.cell('height'),
-                                    _h.cell('scale')
-                                )
-                            ),
-                            _h.paragraph( `It${ch("'")}s probably a good idea not to set the location of a token off screen, or the width or height to 0.`),
-                            _h.paragraph( `Placing a token in the top left corner of the map and making it take up a 2x2 grid section:`),
-                            _h.inset(
-                                _h.pre( '!token-mod --set top|0 left|0 width|140 height|140' )
-                            ),
-                            _h.paragraph(`You can also apply relative change using ${_h.code('+')}, ${_h.code('-')}, ${_h.code(ch('*'))}, and ${_h.code(ch('/'))}. This will move each token one unit down, 2 units left, then make it 5 times as wide and half as tall.`),
-                            _h.inset(
-                                _h.pre( `!token-mod --set top|+70 left|-140 width|${ch('*')}5 height|/2` )
-                            ),
-							_h.paragraph(`You can use ${_h.code('=')} to explicity set a value.  This is the default behavior, but you might need to use it to move something to a location off the edge using a negative number but not a relative number:`),
-                            _h.inset(
-                                _h.pre( '!token-mod --set top|=-140' )
-                            ),
-                            _h.paragraph( `${_h.code('scale')} is a pseudo field which adjusts both ${_h.code('width')} and ${_h.code('height')} with the same operation.  This will scale a token to twice it's current size.`),
-                            _h.inset(
-                                _h.pre( '!token-mod --set scale|*2' )
-                            ),
-                            _h.paragraph(`You can follow a number by one of ${_h.code('u')}, ${_h.code('g')}, or ${_h.code('s')} to adjust the scale that the number is applied in.`),
-                            _h.paragraph(`Use ${_h.code('u')} to use a number based on Roll20 Units, which are 70 pixels at 100% zoom.  This will set a graphic to 280x140.`),
-                            _h.inset(
-                                _h.pre( '!token-mod --set width|4u height|2u' )
-                            ),
-                            _h.paragraph(`Use ${_h.code('g')} to use a number based on the current grid size.  This will set a token to the middle of the 8th column, 4rd row grid. (.5 offset for half the center)`),
-                            _h.inset(
-                                _h.pre( '!token-mod --set left|7.5g top|3.5g' )
-                            ),
-                            _h.paragraph(`Use ${_h.code('s')} to use a number based on the current unit if measure. (ft, m, mi, etc)  This will set a token to be 25ft by 35ft (assuming ft are the unit of measure)`),
-                            _h.inset(
-                                _h.pre( '!token-mod --set width|25s height|35s' )
-                            ),
-                            _h.paragraph(`Currently, you can also use any of the default units of measure as alternatives to ${_h.code('s')}: ${_h.code('ft')}, ${_h.code('m')}, ${_h.code('km')}, ${_h.code('mi')}, ${_h.code('in')}, ${_h.code('cm')}, ${_h.code('un')}, ${_h.code('hex')}, ${_h.code('sq')}`),
-                            _h.inset(
-                                _h.pre( '!token-mod --set width|25ft height|35ft' )
-                            )
-                        ),
-
-                        _h.subhead('Numbers or Blank'),
-                        _h.inset(
-                            _h.paragraph('Just like the Numbers fields, except you can set them to blank as well.'),
-                            _h.minorhead('Available Numbers or Blank Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('light_radius'),
-                                    _h.cell('light_dimradius'),
-                                    _h.cell('light_multiplier'),
-                                    _h.cell('aura1_radius'),
-                                    _h.cell('aura2_radius'),
-                                    _h.cell('adv_fow_view_distance'),
-                                    _h.cell("night_vision_distance"),
-                                    _h.cell("night_distance"),
-                                    _h.cell("bright_light_distance"),
-                                    _h.cell("bright_distance"),
-                                    _h.cell("low_light_distance"),
-                                    _h.cell("low_distance")
-                                )
-                            ),
-                            _h.paragraph(`Here is setting a standard DnD 5e torch, turning off aura1 and setting aura2 to 30. Note that the ${_h.code('|')} is still required for setting a blank value, such as aura1_radius below.`),
-                            _h.inset(
-                                _h.pre('!token-mod --set light_radius|40 light_dimradius|20 aura1_radius| aura2_radius|30')
-                            ),
-							_h.paragraph(`Just as above, you can use ${_h.code('=')}, ${_h.code('+')}, ${_h.code('-')}, ${_h.code(ch('*'))}, and ${_h.code(ch('/'))} when setting these values.`),
-                            _h.paragraph(`Here is setting a standard DnD 5e torch, with advanced fog of war revealed for 30.`),
-                            _h.inset(
-                                _h.pre('!token-mod --set light_radius|40 light_dimradius|20 adv_fow_view_distance|30')
-                            ),
-                            _h.paragraph(`Sometimes it is convenient to have a way to set a radius if there is none, but remove it if it is set.  This allows toggling a known radius on and off, or setting a multiplier if there isn't one, but clearing it if there is.  You can preface a number with ${_h.code('!')} to toggle it${ch("'")}s value on and off.  Here is an example that will add or remove a 20${ch("'")} radius aura 1 from a token:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set aura1_radius|!20')
-                            ),
-                            _h.paragraph(`These also support the relative scale operations that ${_h.bold('Numbers')} support: ${_h.code('u')}, ${_h.code('g')}, ${_h.code('s')}`),
-                            _h.inset(
-                                _h.pre('!token-mod --set aura1_radius|3g aura2_radius|10u light_radius|25s')
-                            ),
-                            _h.paragraph(`${_h.bold('Note:')} ${_h.code('light_multiplier')} ignores these modifiers.  Additionally, the rest are already in the scale of measuring distance (${_h.code('s')}) so there is no difference between ${_h.code('25s')}, ${_h.code('25ft')}, and ${_h.code('25')}.`),
-                            _h.subhead(`Updated Dynamic Lighting`),
-                            _h.paragraph(`${_h.code("night_vision_distance")} lets you set how far away a token can see with no light.  You need to have ${_h.bold("has_night_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("night_distance")}.`),
-                            _h.paragraph(`${_h.code("bright_light_distance")} lets you set how far bright light is emitted from the token.  You need to have ${_h.bold("has_bright_light_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("bright_distance")}.`),
-                            _h.paragraph(`${_h.code("low_light_distance")} lets you set how far low light is emitted from the token.  You need to have ${_h.bold("has_bright_light_vision")} turned on for this to take effect.  You can also use the alias ${_h.code("low_distance")}.`)
-                        ),
-
-
-                        _h.subhead('Degrees'),
-                        _h.inset(
-                            _h.paragraph('Any positive or negative number.  Values will be automatically adjusted to be in the 0-360 range, so if you add 120 to 270, it will wrap around to 90.'),
-                            _h.minorhead('Available Degrees Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('rotation')
-                                )
-                            ),
-                            _h.paragraph('Rotating a token by 180 degrees.'),
-                            _h.inset(
-                                _h.pre('!token-mod --set rotation|+180')
-                            )
-                        ),
-
-
-                        _h.subhead('Circle Segment (Arc)'),
-                        _h.inset(
-                            _h.paragraph('Any Positive or negative number, with the final result being clamped to from 0-360.  This is different from a degrees setting, where 0 and 360 are the same thing and subtracting 1 from 0 takes you to 359.  Anything lower than 0 will become 0 and anything higher than 360 will become 360.'),
-                            _h.minorhead('Available Circle Segment (Arc) Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('light_angle'),
-                                    _h.cell('light_losangle')
-                                )
-                            ),
-                            _h.paragraph('Setting line of sight angle to 90 degrees.'),
-                            _h.inset(
-                                _h.pre('!token-mod --set light_losangle|90')
-                            )
-                        ),
-
-
-                        _h.subhead('Colors'),
-                        _h.inset(
-							_h.paragraph(`Colors can be specified in multiple formats:`),
-                            _h.inset(
-                                _h.ul(
-									`${_h.bold('Transparent')} -- This is the special literal ${_h.code('transparent')} and represents no color at all.`,
-									`${_h.bold('HTML Color')} -- This is 6 or 3 hexidecimal digits, optionally prefaced by ${_h.code('#')}.  Digits in a 3 digit hexidecimal color are doubled.  All of the following are the same: ${_h.code('#ff00aa')}, ${_h.code('#f0a')}, ${_h.code('ff00aa')}, ${_h.code('f0a')}`,
-									`${_h.bold('RGB Color')} -- This is an RGB color in the format ${_h.code('rgb(1.0,1.0,1.0)')} or ${_h.code('rgb(256,256,256)')}.  Decimal numbers are in the scale of 0.0 to 1.0, integer numbers are scaled 0 to 256.  Note that numbers can be outside this range for the purpose of doing math.`,
-									`${_h.bold('HSV Color')} -- This is an HSV color in the format ${_h.code('hsv(1.0,1.0,1.0)')} or ${_h.code('hsv(360,100,100)')}.  Decimal numbers are in the scale of 0.0 to 1.0, integer numbers are scaled 0 to 360 for the hue and 0 to 100 for saturation and value.  Note that numbers can be outside this range for the purpose of doing math.`
-								)
-							),
-                            _h.minorhead('Available Colors Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('tint_color'),
-                                    _h.cell('aura1_color'),
-                                    _h.cell('aura2_color')
-                                )
-                            ),
-                            _h.paragraph('Turning off the tint and setting aura1 to a reddish color.  All of the following are the same:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set tint_color|transparent aura1_color|ff3366'),
-                                _h.pre('!token-mod --set tint_color| aura1_color|f36'),
-                                _h.pre('!token-mod --set tint_color|transparent aura1_color|#f36'),
-                                _h.pre('!token-mod --set tint_color| aura1_color|#ff3366')
-                            ),
-                            _h.paragraph('Setting the tint_color using an RGB Color using Integer and Decimal notations:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set tint_color|rgb(127,0,256)'),
-                                _h.pre('!token-mod --set tint_color|rgb(.5,0.0,1.0)')
-                            ),
-                            _h.paragraph('Setting the tint_color using an HSV Color using Integer and Decimal notations:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set tint_color|hsv(0,50,100)'),
-                                _h.pre('!token-mod --set tint_color|hsv(0.0,.5,1.0)')
-                            ),
-
-                            _h.paragraph(`You can toggle a color on and off by prefacing it with ${_h.code('!')}.  If the color is currently transparent, it will be set to the specified color, otherwise it will be set to transparent:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set tint_color|!rgb(1.0,.0,.2)')
-                            ),
-
-							_h.minorhead('Color Math'),
-
-                            _h.paragraph(`You can perform math on colors using ${_h.code('+')}, ${_h.code('-')}, and ${_h.code(ch('*'))}.`),
-							_h.paragraph(`Making the aura just a little more red:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set aura1_color|+#330000')
-                            ),
-							_h.paragraph(`Making the aura just a little less blue:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set aura1_color|-rgb(0.0,0.0,0.1)')
-                            ),
-							_h.paragraph(`HSV colors are especially good for color math.  Making the aura twice as bright:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set aura1_color|${ch('*')}hsv(1.0,1.0,2.0)`)
-                            ),
-
-							_h.paragraph(`Performing math operations with a transparent color as the command argument does nothing:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set aura1_color|${ch('*')}transparent`)
-                            ),
-
-							_h.paragraph(`Performing math operations on a transparent color on a token treats the color as black.  Assuming a token had a transparent aura1, this would set it to #330000.`),
-                            _h.inset(
-                                _h.pre('!token-mod --set aura1_color|+300')
-                            )
-
-
-                        ),
-
-
-                        _h.subhead('Text'),
-                        _h.inset(
-                            _h.paragraph(`These can be pretty much anything.  If your value has spaces in it, you need to enclose it in ${ch("'")} or ${ch('"')}.`),
-                            _h.minorhead('Available Text Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('name'),
-                                    _h.cell('bar1_value'),
-                                    _h.cell('bar2_value'),
-                                    _h.cell('bar3_value'),
-                                    _h.cell('bar1_current'),
-                                    _h.cell('bar2_current'),
-                                    _h.cell('bar3_current'),
-                                    _h.cell('bar1_max'),
-                                    _h.cell('bar2_max'),
-                                    _h.cell('bar3_max'),
-                                    _h.cell('bar1'),
-                                    _h.cell('bar2'),
-                                    _h.cell('bar3'),
-                                    _h.cell('bar1_reset'),
-                                    _h.cell('bar2_reset'),
-                                    _h.cell('bar3_reset')
-                                )
-                            ),
-                            _h.paragraph(`Setting a token${ch("'")}s name to ${ch('"')}Sir Thomas${ch('"')} and bar1 value to 23.`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set name|${ch('"')}Sir Thomas${ch('"')} bar1_value|23`)
-                            ),
-                            _h.paragraph(`${_h.italic('bar1')}, ${_h.italic('bar2')} and ${_h.italic('bar3')} are special.  Any value set on them will be set in both the ${_h.italic('_value')} and ${_h.italic('_max')} fields for that bar.  This is most useful for setting hit points, particularly if the value comes from an inline roll.`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set bar1|${ch('[')}${ch('[')}3d6+8${ch(']')}${ch(']')}`)
-                            ),
-                            _h.paragraph(`${_h.italic('bar1_reset')}, ${_h.italic('bar2_reset')} and ${_h.italic('bar3_reset')} are special.  Any value set on them will be ignored, instead they will set the ${_h.italic('_value')} field for that bar to whatever the matching ${_h.italic('_max')} field is set to.  This is most useful for resetting hit points or resource counts like spells. (The ${_h.code('|')} is currently still required.)`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set bar1_reset| bar3_reset|`)
-                            )
-                        ),
-
-
-                        _h.subhead('Layer'),
-                        _h.inset(
-                            _h.paragraph(`There is only one Layer property.  It can be one of 4 values, listed below.`),
-                            _h.minorhead('Available Layer Values:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('gmlayer'),
-                                    _h.cell('objects'),
-                                    _h.cell('map'),
-                                    _h.cell('walls')
-                                )
-                            ),
-                            _h.paragraph('Moving something to the gmlayer.'),
-                            _h.inset(
-                                _h.pre('!token-mod --set layer|gmlayer')
-                            )
-                        ),
-
-
-
-
-                        _h.subhead('Status'),
-                        _h.inset(
-                            _h.paragraph(`There is only one Status property.  Status has a somewhat complicated syntax to support the greatest possible flexibility.`),
-                            _h.minorhead('Available Status Property:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('statusmarkers')
-                                )
-                            ),
-
-                            _h.paragraph(`Status is the only property that supports multiple values, all separated by ${_h.code('|')} as seen below. This command adds the blue, red, green, padlock and broken-sheilds to a token, on top of any other status markers it already has:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|blue|red|green|padlock|broken-shield')
-                            ),
-
-                            _h.paragraph(`You can optionally preface each status with a ${_h.code('+')} to remind you it is being added.  This command is identical:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|+blue|+red|+green|+padlock|+broken-shield')
-                            ),
-
-                            _h.paragraph(`Each value can be followed by a ${_h.code(':')} and a number between 0 and 9.  (The number following the ${_h.italic('dead')} status is ignored as that status is special.)  This will set the blue status with no number overlay, red with a 3 overlay, green with no overlay, padlock with a 2 overlay, and broken-shield with a 7 overlay:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|blue:0|red:3|green|padlock:2|broken-shield:7')
-                            ),
-                            _h.paragraph(`${_h.bold('Note:')} TokenMod will now show 0 on status markers everywhere that makes sense to do.`),
-
-                            _h.paragraph(`The numbers following a status can be prefaced with a ${_h.code('+')} or ${_h.code('-')}, which causes their value to be applied to the current value. Here${ch("'")}s an example showing blue getting incremented by 2, and padlock getting decremented by 1.  Values will be bounded between 0 and 9.`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|blue:+2|padlock:-1')
-                            ),
-
-                            _h.paragraph(`You can append two additional numbers separated by ${_h.code(':')}.  These numbers will be used as the minimum and maximum value when setting or adjusting the number on a status marker.  Specified minimum and maximum values will be kept between 0 and 9.`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|blue:+1:2:5')
-                            ),
-
-                            _h.paragraph(`Omitting either of the numbers will cause them to use their default value.  Here is an example limiting the max to 5:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|blue:+1::5')
-                            ),
-
-                            _h.paragraph(`You can optionally preface each status with a ${_h.code('?')} to modify the way ${_h.code('+')} and ${_h.code('-')} on status numbers work.  With ${_h.code('?')} on the front of the status, only selected tokens that have that status will be modified.  Additionally, if the status reaches 0, it will be removed.  Here${ch("'")}s an example showing blue getting decremented by 1.  If it reaches 0, it will be removed and no status will be added if it is missing.`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|?blue:-1')
-                            ),
-
-                            _h.paragraph(`By default, status markers will be added, retaining whichever status markers are already present.  You can override this behavior by prefacing a status with a ${_h.code('-')} to cause the status to be removed.  This will remove the blue and padlock status:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|-blue|-padlock')
-                            ),
-
-                            _h.paragraph(`Sometimes it is convenient to have a way to add a status if it is not there, but remove it if it is.  This allows marking tokens with markers and clearing them with the same command.  You can preface a status with ${_h.code('!')} to toggle it${ch("'")}s state on and off.  Here is an example that will add or remove the Rook piece from a token:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|!white-tower')
-                            ),
-
-                            _h.paragraph(`Sometimes, you might want to clear all status marker as part of setting a new status marker.  You can do this by prefacing a status marker with an ${_h.code('=')}.  Note that this affects all status markers before as well, so you will want to do this only on the first status marker.  This will remove all status markers and set only the dead marker:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|=dead')
-                            ),
-
-                            _h.paragraph(`If you want to remove all status markers, just specify the same marker twice with an ${_h.code('=')} and then a ${_h.code('-')}.  This will clear all the status markers:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|=blue|-blue')
-                            ),
-
-                            _h.paragraph(`You can set multiple of the same status marker with a bracket syntax. Copies of a status are indexed starting at 1 from left to right. Leaving brackets off will be the same as specifying index 1. Using empty brackets is the same as specifying an index 1 greater than the highest index in use. When setting a status at an index that doesn${ch("'")}t exist (say, 8 when you only have 2 of that status) it will be appended to the right as the next index. When removing a status that doesn${ch("'")}t exist, it will be ignored. Removing the empty bracket status will remove all statues of that type.`),
-                            _h.paragraph(`Adding 2 blue status markers with the numbers 7 and 5 in a few different ways:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|blue:7|blue[]:5'),
-                                _h.pre('!token-mod --set statusmarkers|blue[]:7|blue[]:5'),
-                                _h.pre('!token-mod --set statusmarkers|blue[1]:7|blue[2]:5')
-                            ),
-                            _h.paragraph('Removing the second blue status marker:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|-blue[2]')
-                            ),
-                            _h.paragraph('Removing all blue status markers:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|-blue[]')
-                            ),
-
-                            _h.minorhead('Available Status Markers:'),
-                            _h.inset(
-                                _h.grid(
-                                    ...StatusMarkers.getOrderedList().map(tm=>_h.statusCell(tm))
-                                )
-                            ),
-
-                            _h.paragraph('All of these operations can be combine in a single statusmarkers command.'),
-                            _h.inset(
-                                _h.pre('!token-mod --set statusmarkers|blue:3|-dead|red:3')
-                            )
-                        ),
-
-
-                        _h.subhead('Image'),
-                        _h.inset(
-							_h.paragraph(`The Image type lets you manage the image a token uses, as well as the available images for Multi-Sided tokens.  Images must be in a user library or will be ignored. The full path must be provided.`),
-                            _h.minorhead('Available Image Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('imgsrc')
-                                )
-                            ),
-                            _h.paragraph(`Setting the token image to a library image using a url (in this case, the orange ring I use for ${_h.italic('TurnMarker1')}):`),
-                            _h.inset(
-                                _h.pre('!token-mod --set imgsrc|https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/max.png?1400535580')
-                            ),
-                            _h.paragraph(`Setting the token image from another token by specifying it${ch("'")}s token_id:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|${_h.attr.target('token_id')} --ids ${_h.attr.selected('token_id')}`)
-                            ),
-							_h.paragraph(`${_h.bold('WARNING:')} Because of a Roll20 bug with ${_h.attr.target('')} and the API, you must specify the tokens you want to change using ${_h.code('--ids')} when using ${_h.attr.target('')}.`),
-
-							_h.minorhead('Multi-Sided Token Options'),
-							_h.paragraph(`You can append additional images to the list of sides by prefacing the source of an image with ${_h.code('+')}:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set imgsrc|+https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/max.png?1400535580'),
-                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')} --ids ${_h.attr.selected('token_id')}`)
-                            ),
-							_h.paragraph(`If you follow the ${_h.code('+')} with a ${_h.code('=')}, it will update the current side to the freshly added image:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|+=${_h.attr.target('token_id')} --ids ${_h.attr.selected('token_id')}`)
-                            ),
-							_h.paragraph(`When getting the image from a token, you can append a ${_h.code(':')} and follow it with an index to copy.  Indicies start at 1, if you specify an index that doesn${ch("'")}t exist, nothing will happen:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3 --ids ${_h.attr.selected('token_id')}`)
-                            ),
-							_h.paragraph(`You can specify the ${_h.code('=')} with this syntax:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|+=${_h.attr.target('token_id')}:3 --ids ${_h.attr.selected('token_id')}`)
-                            ),
-							_h.paragraph(`You can specify multiple indices to copy by using a ${_h.code(',')} separated list:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3,4,5,9 --ids ${_h.attr.selected('token_id')}`)
-                            ),
-							_h.paragraph(`Using ${_h.code('=')} with this syntax will set the current side to the last added image:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|+=${_h.attr.target('token_id')}:3,4,5,9 --ids ${_h.attr.selected('token_id')}`)
-                            ),
-							_h.paragraph(`Images are copied in the order specified.  You can even copy images from a token you${ch("'")}re setting.`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:3,2,1 --ids ${_h.attr.selected('token_id')}`)
-                            ),
-							_h.paragraph(`You can use an ${_h.code(ch('*'))} after the ${_h.code(':')} to copy all the images from a token.  The order will be from 1 to the maximum image.`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|+${_h.attr.target('token_id')}:${ch('*')} --ids ${_h.attr.selected('token_id')}`)
-                            ),
-
-							_h.paragraph(`You can remove images from the image list using ${_h.code('-')} followed by the index to remove.  If you remove the currently used image, the side will be set to 1.`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|-3`)
-                            ),
-							_h.paragraph(`If you omit the number, it will remove the current side:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|-`)
-                            ),
-
-							_h.paragraph(`You can follow the ${_h.code('-')} with a ${_h.code(',')} separated list of indicies to remove.  If any of the indicies don${ch("'")}t exist, they will be ignored:`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|-3,4,7`)
-                            ),
-
-							_h.paragraph(`You can follow the ${_h.code('-')} with an ${_h.code(ch('*'))} to remove all the images, turning the Multi-Sided token back into a regular token. (This also happens if you remove the last image by index.):`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set imgsrc|-${ch('*')}`)
-                            ),
-
-							_h.paragraph(`${_h.bold('WARNING:')} If you attempt to change the image list for a token with images in the Marketplace Library, it will remove all of them from that token.`)
-							
-                        ),
-
-						_h.subhead('SideNumber'),
-                        _h.inset(
-                            _h.paragraph(`This is the index of the side to show for Multi-Sided tokens.  Indicies start at 1.  If you have a 6-sided token, it will have indicies 1, 2, 3, 4, 5 and 6.  An empty index is considered to be 1.  If a token doesn't have the index specified, it isn't changed.`),
-							_h.paragraph(`${_h.bold('NOTICE:')} This only works for images in the User Image library.  If your token has images that are stored in the Marketplace Library, they will not be selectable with this command.  You can download those images and upload them to your User Image Library to use them with this.`),
-                            _h.minorhead('Available SideNumber Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('currentside')
-                                )
-                            ),
-                            _h.paragraph(`Setting a token to index 2:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set currentside|2')
-                            ),
-                            _h.paragraph(`Not specifying an index will set the index to 1, the first image:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set currentside|')
-                            ),
-
-                            _h.paragraph(`You can shift the image by some amount by using ${_h.code('+')} or ${_h.code('-')} followed by an optional number.`),
-                            _h.paragraph(`Moving all tokens to the next image:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set currentside|+')
-                            ),
-                            _h.paragraph(`Moving all tokens back 2 images:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set currentside|-2')
-                            ),
-                            _h.paragraph(`By default, if you go off either end of the list of images, you will wrap back around to the opposite side.  If this token is showing image 3 out of 4 and this command is run, it will be on image 2:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set currentside|+3')
-                            ),
-                            _h.paragraph(`If you preface the command with a ${_h.code('?')}, the index will be bounded to the number of images and not wrap.  In the same scenario, this would leave the above token at image 4:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set currentside|?+3')
-                            ),
-                            _h.paragraph(`In the same scenario, this would leave the above token at image 1:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set currentside|?-30')
-                            ),
-
-                            _h.paragraph(`If you want to chose a random image, you can use ${_h.code(ch('*'))}.  This will choose one of the valid images at random (all equally weighted):`),
-                            _h.inset(
-                                _h.pre(`!token-mod --set currentside|${ch('*')}`)
-                            )
-                        ),
-
-
-                        _h.subhead('Character ID'),
-                        _h.inset(
-                            _h.paragraph(`You can use the ${_h.attr.char('character_id')} syntax to specify a character_id directly or use the name of a character (quoted if it contains spaces) or just the shortest part of the name that is unique (${ch("'")}Sir Maximus Strongbow${ch("'")} could just be ${ch("'")}max${ch("'")}.).  Not case sensitive: Max = max = MaX = MAX`),
-                            _h.minorhead('Available Character ID Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('represents')
-                                )
-                            ),
-                            _h.paragraph('Here is setting the represents to the character Bob.'),
-                            _h.inset(
-                                _h.pre(`!token-mod --set represents|${_h.attr.char('character_id','Bob')}`)
-                            ),
-                            _h.paragraph('Note that setting the represents will clear the links for the bars, so you will probably want to set those again.')
-                        ),
-
-                        _h.subhead('Attribute Name'),
-                        _h.inset(
-                            _h.paragraph(`These are resolved from the represented character id.  If the token doesn${ch("'")}t represent a character, these will be ignored.  If the Attribute Name specified doesn${ch("'")}t exist for the represented character, the link is unchanged. You can clear a link by passing a blank Attribute Name.`),
-                            _h.minorhead('Available Attribute Name Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('bar1_link'),
-                                    _h.cell('bar2_link'),
-                                    _h.cell('bar3_link')
-                                )
-                            ),
-                            _h.paragraph('Here is setting the represents to the character Bob and setting bar1 to be the npc hit points attribute.'),
-                            _h.inset(
-                                _h.pre(`!token-mod --set represents|${_h.attr.char('character_id','Bob')} bar1_link|npc_HP`)
-                            ),
-                            _h.paragraph('Here is clearing the link for bar3:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set bar3_link|')
-                            )
-                        ),
-
-                        _h.subhead('DefaultToken'),
-                        _h.inset(
-                            _h.paragraph(`You can set the default token by specifying defaulttoken in your set list.`),
-                            _h.minorhead('Available DefaultToken Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('defaulttoken')
-                                )
-                            ),
-                            _h.paragraph('There is no argument for defaulttoken, and this relies on the token representing a character.'),
-                            _h.inset(
-                                _h.pre('!token-mod --set defaulttoken')
-                            ),
-                            _h.paragraph('Setting defaulttoken along with represents works as expected:'),
-                            _h.inset(
-                                _h.pre(`!token-mod --set represents|${_h.attr.char('character_id','Bob')} defaulttoken`)
-                            ),
-                            _h.paragraph(`Be sure that defaulttoken is after all changes to the token you want to store are made.  For example, if you set the defaulttoken, then set the bar links, the bars won${ch("'")}t be linked when you pull out the token.`)
-                        ),
-
-                        _h.subhead('Player'),
-                        _h.inset(
-                            _h.paragraph('You can specify Players using one of five methods: Player ID, Roll20 ID Number, Player Name Matching, Token ID, Character ID'),
-                            _h.inset(
-                                _h.ul(
-                                    'Player ID is a unique identifier assigned that player in a specific game.  You can only find this id from the API, so this is likely the least useful method.',
-                                    'Roll20 ID Number is a unique identifier assigned to a specific player.  You can find it in the URL of their profile page as the number preceeding their name.  This is really useful if you play with the same people all the time, or are cloning the same game with the same players, etc.',
-                                    'Player Name Matching is a string that will be matched to the current name of the player in game.  Just like with Characters above, it can be quoted if it has spaces and is case insensitive.  All players that match a given string will be used.',
-                                    'Token ID will be used to collect the controlledby entries for a token or the associated character if the token represetns one.',
-                                    'Character ID will be used to collect the controlledby entries for a character.'
-                                )
-                            ),
-                            _h.paragraph(`Note that you can use the special string ${_h.italic('all')} to denote the All Players special player.`),
-                            _h.minorhead('Available Player Properties:'),
-                            _h.inset(
-                                _h.grid(
-                                    _h.cell('controlledby')
-                                )
-                            ),
-
-                            _h.paragraph(`Controlled by supports multiple values, all separated by ${_h.code('|')} as seen below.`),
-                            _h.inset(
-                                _h.pre('!token-mod --set controlledby|aaron|+stephen|+russ')
-                            ),
-
-                            _h.paragraph(`There are 3 operations that can be specified with leading characters: ${_h.code('+')}, ${_h.code('-')}, ${_h.code('=')} (default)`),
-                            _h.inset(
-                                _h.ul(
-                                    `${_h.code('+')} will add the player(s) to the controlledby list.`,
-                                    `${_h.code('-')} will remove the player(s) from the controlledby list.`,
-                                    `${_h.code('=')} will set the controlledby list to only the player(s).  (Default)`
-                                )
-                            ),
-
-                            _h.paragraph('Adding control for roll20 player number 123456:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set controlledby|+123456')
-                            ),
-
-                            _h.paragraph('Setting control for all players:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set controlledby|all')
-                            ),
-                            
-                            _h.paragraph('Adding all the players with k in their name but removing karen:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set controlledby|+k|-karen')
-                            ),
-
-                            _h.paragraph( 'Adding the player with player id -JsABCabc123-12:' ),
-                            _h.inset(
-                                _h.pre( '!token-mod --set controlledby|+-JsABCabc123-12' )
-                            ),
-
-                            _h.paragraph( 'In the case of a leading character on the name that would be interpreted as an operation, you can use quotes:' ),
-                            _h.inset(
-                                _h.pre('!token-mod --set controlledby|"-JsABCabc123-12"')
-                            ),
-
-                            _h.paragraph( `When using Token ID or Character ID methods, it${ch("'")}s a good idea to use an explicit operation:` ),
-                            _h.inset(
-                                _h.pre( `!token-mod --set controlledby|=${_h.attr.target('token_id')}`)
-                            ),
-
-                            _h.paragraph( 'Quotes will also help with names that have spaces, or with nested other quotes:' ),
-                            _h.inset(
-                                _h.pre( `!token-mod --set controlledby|+${ch("'")}Bob "tiny" Slayer${ch("'")}`)
-                            ),
-
-                            _h.paragraph( 'You can remove all controlling players by using a blank list or explicitly setting equal to nothing:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set controlledby|'),
-                                _h.pre('!token-mod --set controlledby|=')
-                            ),
-
-                            _h.paragraph( `A specified action that doesn${ch("'")}t match any player(s) will be ignored.  If there are no players named Tim, this won${ch("'")}t change the list:`),
-                            _h.inset(
-                                _h.pre('!token-mod --set controlledby|tim')
-                            ),
-
-                            _h.paragraph( 'If you wanted to force an empty list and set tim if tim is available, you can chain this with blanking the list:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set controlledby||tim')
-                            ),
-
-                            _h.minorhead( 'Using controlledby with represents'),
-                            _h.paragraph( 'When a token represents a character, the controlledby property that is adjusted is the one on the character. This works as you would want it to, so if you are changing the represents as part of the same command, it will adjust the location that will be correct after all commands are run.'),
-
-                            _h.paragraph( 'Set the token to represent the character with rook in the name and assign control to players matching bob:'),
-                            _h.inset(
-                                _h.pre('!token-mod --set represents|rook controlledby|bob')
-                            ),
-
-                            _h.paragraph( 'Remove the represent setting for the token and then give bob control of that token (useful for one-offs from npcs or monsters):'),
-                            _h.inset(
-                                _h.pre('!token-mod --set represents| controlledby|bob')
-                            )
-                        )
-
-                    ) // END: Additional special formats
-                ),
-
+                        helpParts.setNumbers(context),
+                        helpParts.setNumbersOrBlank(context),
+                        helpParts.setDegrees(context),
+                        helpParts.setCircleSegment(context),
+                        helpParts.setColors(context),
+                        helpParts.setText(context),
+                        helpParts.setLayer(context),
+                        helpParts.setStatus(context),
+                        helpParts.setImage(context),
+                        helpParts.setSideNumber(context),
+                        helpParts.setCharacterID(context),
+                        helpParts.setAttributeName(context),
+                        helpParts.setDefaultToken(context),
+                        helpParts.setPlayer(context)
+                    ) 
+                )
+            ),
+
+        reports: (/* context */) => _h.join(
                 // SECTION: --report
-                _h.section('Report',
-                    _h.paragraph(`${_h.experimental()} ${_h.italic('--report')} provides feedback about the changes that were made to each token that a command affects.  Arguments to the ${_h.italic('--report')} command are ${_h.code('|')} separated pairs of Who to tell, and what to tell them, with the following format:`),
-                    _h.inset(
-                        _h.pre(`!token-mod --report Who[:Who ...]|Message`)
-                    ),
-                    _h.paragraph(`You can specify multiple different Who arguments by separating them with a ${_h.code(':')}.  Be sure you have no spaces.`),
-                    _h.minorhead('Available options for Who'),
-                    _h.inset(
+                    _h.section('Report',
+                        _h.paragraph(`${_h.experimental()} ${_h.italic('--report')} provides feedback about the changes that were made to each token that a command affects.  Arguments to the ${_h.italic('--report')} command are ${_h.code('|')} separated pairs of Who to tell, and what to tell them, with the following format:`),
+                        _h.inset(
+                            _h.pre(`!token-mod --report Who[:Who ...]|Message`)
+                        ),
+                        _h.paragraph(`You can specify multiple different Who arguments by separating them with a ${_h.code(':')}.  Be sure you have no spaces.`),
+                        _h.minorhead('Available options for Who'),
+                        _h.inset(
+                            _h.ul(
+                                `${_h.code('player')} will whisper the report to the player who issued the command.`,
+                                `${_h.code('gm')} will whisper the report to the gm.`,
+                                `${_h.code('all')} will send the report publicly to chat for everyone to see.`,
+                                `${_h.code('token')} will whisper to whomever controls the token.`,
+                                `${_h.code('character')} will whisper to whomever controls the character the token represents.`,
+                                `${_h.code('control')} will whisper to whomever can control the token from either the token or character controlledby list.  This is equivalent to specifying ${_h.code('token:character')}.`
+                            )
+                        ),
+                        _h.paragraph(`The Message must be enclosed in quotes if it has spaces in it. The Message can contain any of the properties of the of the token, enclosed in ${_h.code('{ }')}, and they will be replaced with the final value of that property.  Additionally, each property may have a modifier to select slightly different information:`),
+                        _h.minorhead('Available options for Property Modifiers'),
+                        _h.inset(
+                            _h.ul(
+                                `${_h.code('before')} -- Show the value of the property before a change was applied.`,
+                                `${_h.code('change')} -- Show the change that was applied to the property. (Only works on numeric fields, will result in 0 on things like name or imagsrc.)`,
+                                `${_h.code('abschange')} -- Show the absolute value of the change that was applied to the property. (Only works on numeric fields, will result in 0 on things like name or imagsrc.)`
+                            )
+                        ),
+                        _h.paragraph(`Showing the amount of damage done to a token.`),
+                        _h.inset(
+                            _h.preformatted(
+                                '!token-mod {{',
+                                '  --set',
+                                `    bar1_value|-${ch('[')}${ch('[')}2d6+8${ch(']')}${ch(']')}`,
+                                '  --report',
+                                '    all|"{name} takes {bar1_value:abschange} points of damage."',
+                                '}}'
+                            )
+                        ),
+                        _h.paragraph(`Showing everyone the results of the hit, but only the gm and the controlling players the actual damage and original hit point value.`),
+                        _h.inset(
+                            _h.preformatted(
+                                '!token-mod {{',
+                                '  --set',
+                                `    bar1_value|-${ch('[')}${ch('[')}2d6+8${ch(']')}${ch(']')}`,
+                                '  --report',
+                                '    all|"{name} takes a vicious wound leaving them at {bar1_value}hp out of {bar1_max}hp."',
+                                '    gm:control|"{name} damage: {bar1_value:change}hp, was at {bar1_value:before}hp"',
+                                '}}'
+                            )
+                        )
+                    )
+                ),
+        config: (context) => _h.join(
+                    // SECTION: --config, etc
+                    _h.section('Configuration',
+                        _h.paragraph(`${_h.italic('--config')} takes option value pairs, separated by | characters.`),
+                        _h.inset(
+                            _h.pre( '!token-mod --config option|value option|value')
+                        ),
+                        _h.minorhead('Available Configuration Properties:'),
                         _h.ul(
-                            `${_h.code('player')} will whisper the report to the player who issued the command.`,
-                            `${_h.code('gm')} will whisper the report to the gm.`,
-                            `${_h.code('all')} will send the report publicly to chat for everyone to see.`,
-                            `${_h.code('token')} will whisper to whomever controls the token.`,
-                            `${_h.code('character')} will whisper to whomever controls the character the token represents.`,
-                            `${_h.code('control')} will whisper to whomever can control the token from either the token or character controlledby list.  This is equivalent to specifying ${_h.code('token:character')}.`
-                        )
-                    ),
-                    _h.paragraph(`The Message must be enclosed in quotes if it has spaces in it. The Message can contain any of the properties of the of the token, enclosed in ${_h.code('{ }')}, and they will be replaced with the final value of that property.  Additionally, each property may have a modifier to select slightly different information:`),
-                    _h.minorhead('Available options for Property Modifiers'),
-                    _h.inset(
-                        _h.ul(
-                            `${_h.code('before')} -- Show the value of the property before a change was applied.`,
-                            `${_h.code('change')} -- Show the change that was applied to the property. (Only works on numeric fields, will result in 0 on things like name or imagsrc.)`,
-                            `${_h.code('abschange')} -- Show the absolute value of the change that was applied to the property. (Only works on numeric fields, will result in 0 on things like name or imagsrc.)`
-                        )
-                    ),
-                    _h.paragraph(`Showing the amount of damage done to a token.`),
-                    _h.inset(
-                        _h.preformatted(
-                            '!token-mod {{',
-                            '  --set',
-                            `    bar1_value|-${ch('[')}${ch('[')}2d6+8${ch(']')}${ch(']')}`,
-                            '  --report',
-                            '    all|"{name} takes {bar1_value:abschange} points of damage."',
-                            '}}'
-                        )
-                    ),
-                    _h.paragraph(`Showing everyone the results of the hit, but only the gm and the controlling players the actual damage and original hit point value.`),
-                    _h.inset(
-                        _h.preformatted(
-                            '!token-mod {{',
-                            '  --set',
-                            `    bar1_value|-${ch('[')}${ch('[')}2d6+8${ch(']')}${ch(']')}`,
-                            '  --report',
-                            '    all|"{name} takes a vicious wound leaving them at {bar1_value}hp out of {bar1_max}hp."',
-                            '    gm:control|"{name} damage: {bar1_value:change}hp, was at {bar1_value:before}hp"',
-                            '}}'
+                            `${_h.bold('players-can-ids')} -- Determines if players can use <i>--ids</i>.  Specifying a value which is true allows players to use --ids.  Omitting a value flips the current setting. `
+                        ),
+                        ( playerIsGM(context.playerid)
+                            ?  _h.paragraph(getConfigOption_PlayersCanIDs())
+                            : ''
                         )
                     )
                 ),
 
-
-
-                // SECTION: --config, etc
-                _h.section('Configuration',
-                    _h.paragraph(`${_h.italic('--config')} takes option value pairs, separated by | characters.`),
-                    _h.inset(
-                        _h.pre( '!token-mod --config option|value option|value')
-                    ),
-                    _h.minorhead('Available Configuration Properties:'),
-                    _h.ul(
-                        `${_h.bold('players-can-ids')} -- Determines if players can use <i>--ids</i>.  Specifying a value which is true allows players to use --ids.  Omitting a value flips the current setting. `
-                    ),
-                    ( playerIsGM(playerid)
-                        ?  _h.paragraph(getConfigOption_PlayersCanIDs())
-                        : ''
-                    )
-                ),
-
-
+        apiInterface: (/* context */) => _h.join(
                 // SECTION: .ObserveTokenChange(), etc
                 _h.section('API Notifications',
                     _h.paragraph( 'API Scripts can register for the following notifications:'),
@@ -2220,13 +2397,37 @@ var TokenMod = TokenMod || (function() {
                         )
                     )
                 )
+            )
+
+    };
+
+
+    const showHelp = function(playerid) {
+        let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
+        let context = {
+            who,
+            playerid
+        };
+        sendChat('', '/w "'+who+'" '+
+            _h.outer(
+                _h.title('TokenMod',version),
+                _h.header(
+                    _h.paragraph( 'TokenMod provides an interface to setting almost all settable properties of a token.')
+                ),
+                helpParts.commands(context),
+                helpParts.booleans(context),
+                helpParts.sets(context),
+                helpParts.reports(context),
+                helpParts.config(context),
+                helpParts.apiInterface(context)
+
             ) // outer()
         );
 
-    },
+    };
 
 
-    getRelativeChange = function(current,update) {
+    const getRelativeChange = function(current,update) {
         var cnum,unum,op='=';
         if(_.isString(update)){
             if( _.has(update,0) && ('=' === update[0]) ){
@@ -2269,9 +2470,9 @@ var TokenMod = TokenMod || (function() {
             }
         }
         return update;
-    },
+    };
 
-    parseArguments = function(a) {
+    const parseArguments = function(a) {
         let args = a.replace(/(\|#|##)/g,'|%%HASHMARK%%').split(/[|#]/).map((v)=>v.replace('%%HASHMARK%%','#'));
         let cmd = unalias(args.shift().toLowerCase());
         let retr={};
@@ -2428,8 +2629,9 @@ var TokenMod = TokenMod || (function() {
         }
 
         return retr;
-    },
-    expandMetaArguments = function(memo,a) {
+    };
+
+    const expandMetaArguments = function(memo,a) {
         var args=a.split(/[|#]/),
             cmd=args.shift();
         switch(cmd) {
@@ -2450,17 +2652,17 @@ var TokenMod = TokenMod || (function() {
                 break;
         }
         return memo;
-    },
+    };
 
-    parseOrderArguments = function(list,base) {
+    const parseOrderArguments = function(list,base) {
         return _.chain(list)
             .map(transforms.orderType)
             .reject(_.isUndefined)
             .union(base)
             .value();
-    },
+    };
 
-    parseSetArguments = function(list,base) {
+    const parseSetArguments = function(list,base) {
         return _.chain(list)
             .filter(filters.hasArgument)
             .reduce(expandMetaArguments,[])
@@ -2484,9 +2686,9 @@ var TokenMod = TokenMod || (function() {
                 return memo;
             },base)
             .value();
-    },
+    };
 
-    parseReportArguments = (list,base) =>
+    const parseReportArguments = (list,base) =>
         list
             .filter(filters.hasArgument)
             .reduce((m,a)=>{
@@ -2502,10 +2704,10 @@ var TokenMod = TokenMod || (function() {
                 }
                 return m;
             },base)
-    ,
+            ;
 
 
-    applyModListToToken = function(modlist, token) {
+    const applyModListToToken = function(modlist, token) {
         let ctx={
               token: token,
               prev: JSON.parse(JSON.stringify(token))
@@ -2663,6 +2865,7 @@ var TokenMod = TokenMod || (function() {
                     }
                     break;
 
+				case 'currentSide':
 				case 'currentside':
 					mods = Object.assign( mods, f[0].getMods(token));
 					break;
@@ -2684,9 +2887,9 @@ var TokenMod = TokenMod || (function() {
         token.set(mods);
         notifyObservers('tokenChange',token,ctx.prev);
         return ctx;
-    },
+    };
 
-    getWho = (()=> {
+    const getWho = (()=> {
         let cache={};
         return (ids) => {
             let names = [];
@@ -2714,27 +2917,41 @@ var TokenMod = TokenMod || (function() {
             }
             return names;
         };
-    })(),
+    })();
 
-    doReports = (ctx,reports,callerWho) => {
+    const doReports = (ctx,reports,callerWho) => {
+        const transforms = {
+            identity: a=>a,
+            addOne: a=>a+1
+        };
+
+        const getTransform = (p) => {
+            switch(p){
+                case 'currentSide': return transforms.addOne;
+                default: return transforms.identity;
+            }
+        };
+
         reports.forEach( r =>{
             let pmsg = r.msg.replace(/\{(.+?)\}/g, (m,n)=>{
                 let parts=n.toLowerCase().split(/:/);
-                let prop=parts[0];
+                let prop=unalias(parts[0]);
+                let t = getTransform(prop);
+    
                 let mod=parts[1];
 
                 switch(mod){
                     case 'before':
-                        return ctx.prev[prop];
+                        return t(ctx.prev[prop]);
 
                     case 'abschange':
-                        return Math.abs((parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0)));
+                        return t(Math.abs((parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0))));
 
                     case 'change':
-                        return (parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0));
+                        return t((parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0)));
 
                     default:
-                        return ctx.token.get(prop);
+                        return t(ctx.token.get(prop));
                 }
             });
 
@@ -2774,9 +2991,9 @@ var TokenMod = TokenMod || (function() {
                 whoList.forEach(w=>sendChat('',`/w "${w}" ${pmsg}`));
             }
         });
-    },
+    };
 
-    handleConfig = function(config, id) {
+    const handleConfig = function(config, id) {
         var args, cmd, who=(getObj('player',id)||{get:()=>'API'}).get('_displayname');
 
         if(config.length) {
@@ -2816,10 +3033,10 @@ var TokenMod = TokenMod || (function() {
                 '</div>'
             );
         }
-    },
+    };
 
 // */
-     handleInput = function(msg_orig) {
+     const handleInput = function(msg_orig) {
         try {
             if (msg_orig.type !== "api") {
                 return;
@@ -2877,6 +3094,25 @@ var TokenMod = TokenMod || (function() {
                         cmds=args.shift().match(/([^\s]+[|#]'[^']+'|[^\s]+[|#]"[^"]+"|[^\s]+)/g);
                         switch(cmds.shift()) {
                             case 'help':
+
+// !tokenmod --help [all]
+    // just the top part and ToC
+
+// !tokenmod --help
+    // just the top part and ToC
+
+// !tokenmod --help[-only] [set|on|off|flip|config]
+    // top part, plus the command parts
+    // -only leaves off top part
+
+// !tokenmod --help[-only] <property> [<properties...]
+    // top part, command part, property part
+    // -only leaves off top and command 
+
+// !tokenmod --help <full command>
+    // explains the parts command
+
+
                                 showHelp(playerid);
                                 return;
 
@@ -2989,15 +3225,15 @@ var TokenMod = TokenMod || (function() {
                     `<div style="margin: .1em 1em 1em 1em;"><code>${msg_orig.content}</code></div>`+
                     `<div>Please <a class="showtip tipsy" title="The Aaron's profile on Roll20." style="color:blue; text-decoration: underline;" href="https://app.roll20.net/users/104025/the-aaron">send me this information</a> so I can make sure this doesn't happen again (triple click for easy select in most browsers.):</div>`+
                     `<div style="font-size: .6em; line-height: 1em;margin:.1em .1em .1em 1em; padding: .1em .3em; color: #666666; border: 1px solid #999999; border-radius: .2em; background-color: white;">`+
-                        JSON.stringify({msg: msg_orig, stack: e.stack})+
+                        JSON.stringify({msg: msg_orig, version:version, stack: e.stack})+
                     `</div>`+
                 `</div>`
             );
         }
 
-    },
+    };
 
-    registerEventHandlers = function() {
+    const registerEventHandlers = function() {
         on('chat:message', handleInput);
         on('change:campaign:_token_markers',()=>StatusMarkers.init());
     };
@@ -3010,7 +3246,7 @@ var TokenMod = TokenMod || (function() {
     return {
         ObserveTokenChange: observeTokenChange
     };
-}());
+})();
 
 
 
