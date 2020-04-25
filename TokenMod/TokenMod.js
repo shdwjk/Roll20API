@@ -4,9 +4,9 @@
 
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.8.52';
-    const lastUpdate = 1587417952;
-    const schemaVersion = 0.3;
+    const version = '0.8.54';
+    const lastUpdate = 1587833769;
+    const schemaVersion = 0.4;
 
     const fields = {
             // booleans
@@ -1277,6 +1277,23 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         }
     };
 
+    const assureHelpHandout = (create = false) => {
+        // find handout
+        let props = {type:'handout', name:'Help: TokenMod'};
+        let hh = findObjs(props)[0];
+        if(!hh) {
+            hh = createObj('handout',Object.assign(props, {inplayerjournals: "all"}));
+            create = true;
+        }
+        if(create || version !== state.TokenMod.lastHelpVersion){
+            hh.set({
+                notes: helpParts.helpDoc({who:'handout',playerid:'handout'})
+            });
+            state.TokenMod.lastHelpVersion = version;
+            log('  > Updating Help Handout to v'+version+' <');
+        }
+    };
+
     const checkInstall = function() {
         log('-=> TokenMod v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
@@ -1284,13 +1301,16 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.TokenMod && state.TokenMod.version) {
 
-                /* falls through */
                 case 0.1:
                 case 0.2:
                   delete state.TokenMod.globalConfigCache;
                   state.TokenMod.globalconfigCache = {lastsaved:0};
+                  /* falls through */
 
-                /* falls through */
+                case 0.3:
+                  state.TokenMod.lastHelpVersion = version;
+                  /* falls through */
+
                 case 'UpdateSchemaVersion':
                     state.TokenMod.version = schemaVersion;
                     break;
@@ -1299,13 +1319,15 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     state.TokenMod = {
                         version: schemaVersion,
                         globalconfigCache: {lastsaved:0},
-                        playersCanUse_ids: false
+                        playersCanUse_ids: false,
+                        lastHelpVersion: version
                     };
                     break;
             }
         }
         checkGlobalConfig();
         StatusMarkers.init();
+        assureHelpHandout();
     };
 
     const observeTokenChange = function(handler){
@@ -2397,20 +2419,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         )
                     )
                 )
-            )
+            ),
 
-    };
-
-
-    const showHelp = function(playerid) {
-        let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
-        let context = {
-            who,
-            playerid
-        };
-        sendChat('', '/w "'+who+'" '+
-            _h.outer(
-                _h.title('TokenMod',version),
+        helpBody: (context) => _h.join(
                 _h.header(
                     _h.paragraph( 'TokenMod provides an interface to setting almost all settable properties of a token.')
                 ),
@@ -2420,10 +2431,27 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 helpParts.reports(context),
                 helpParts.config(context),
                 helpParts.apiInterface(context)
+            ),
 
-            ) // outer()
-        );
+        helpDoc: (context) => _h.join(
+                _h.title('TokenMod',version),
+                helpParts.helpBody(context)
+            ),
 
+        helpChat: (context) => _h.outer(
+                _h.title('TokenMod',version),
+                helpParts.helpBody(context)
+            )
+    };
+
+
+    const showHelp = function(playerid) {
+        let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
+        let context = {
+            who,
+            playerid
+        };
+        sendChat('', '/w "'+who+'" '+ helpParts.helpChat(context));
     };
 
 
