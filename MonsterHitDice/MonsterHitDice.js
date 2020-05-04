@@ -6,8 +6,8 @@ var globalconfig = globalconfig || undefined;
 var MonsterHitDice = MonsterHitDice || (function() {
     'use strict';
 
-    var version = '0.3.7',
-        lastUpdate = 1579217450,
+    var version = '0.3.8',
+        lastUpdate = 1588630167,
         schemaVersion = 0.2,
         tokenIds = [],
 
@@ -27,7 +27,7 @@ var MonsterHitDice = MonsterHitDice || (function() {
                     break;
 
                 case "DnD 5e - Shaped v2":
-                    s.config.hitDiceAttribute = 'npc_HP_hit_dice';
+                    s.config.hitDiceAttribute = 'npc_hpformula';
                     s.findSRDFormula = true;
                     s.config.useConBonus = false;
                     s.config.conBonusAttribute = '';
