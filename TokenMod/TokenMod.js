@@ -4,8 +4,8 @@
 
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.8.54';
-    const lastUpdate = 1587842776;
+    const version = '0.8.55';
+    const lastUpdate = 1589025048;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -189,7 +189,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 this.relative = rel;
             }
 
-            getMods(token){
+            getMods(token,mods){
                 let num = this.num;
                 let page = getObj('page',token.get('pageid'));
                 const unitSize = 70;
@@ -268,6 +268,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 }
 
                 let current = parseFloat(token.get(this.field))||0;
+                const getValue = (k,m,t) => m.hasOwnProperty(k) ? m[k] : t.get(k);
                 switch(this.operation){
                     default:
                     case '=': {
@@ -275,11 +276,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             case 'bright_light_distance':
                                 return {
                                     bright_light_distance: num,
-                                    low_light_distance: (parseFloat(token.get('low_light_distance'))-parseFloat(token.get('bright_light_distance'))+num)
+                                    low_light_distance: (parseFloat(getValue('low_light_distance',mods,token))-parseFloat(getValue('bright_light_distance',mods,token))+num)
                                 };
                             case 'low_light_distance':
                                 return {
-                                    low_light_distance: (parseFloat(token.get('bright_light_distance'))+num)
+                                    low_light_distance: (parseFloat(getValue('bright_light_distance',mods,token))+num)
                                 };
                             default:
                                 return {[this.field]:num};
@@ -399,7 +400,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             this.urls=urls||[];
           }
 
-          getMods(token){
+          getMods(token,mods){
             let sideText = token.get('sides');
             let sides;
 
@@ -556,7 +557,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 			}
 
 
-			getMods(token){
+			getMods(token,mods){
 				// get sides
 				let sides = token.get('sides').split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
 				switch(this.operation){
@@ -1490,7 +1491,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.paragraph('This command takes a list of modifications and applies them to the selected tokens (or tokens specified with --ids by a GM or Player depending on configuration).'),
                         _h.paragraph(`${_h.bold('Note:')} Each --option can be specified multiple times and in any order.`),
                         _h.paragraph(`${_h.bold('Note:')} If you are using multiple ${_h.attr.target('token_id')} calls in a macro, and need to adjust fewer than the supplied number of token ids, simply select the same token several times.  The duplicates will be removed.`),
-                        _h.paragraph(`${_h.bold('Note:')} Anywhere you use ${_h.code('|')}, you can use ${_h.code('#')} instead.  Sometimes this make macros easier.`),
+                        _h.paragraph(`${_h.bold('Note:')} Anywhere you use ${_h.code('|')}, you can use ${_h.code('#')} instead.  Sometimes this makes macros easier.`),
                         _h.paragraph(`${_h.bold('Note:')} You can use the ${_h.code('{{')} and ${_h.code('}}')} to span multiple lines with your command for easier clarity and editing:`),
                         _h.inset(
                             _h.preformatted(
@@ -2838,7 +2839,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'top':
                 case 'width':
                 case 'height':
-                    mods = Object.assign( mods, f[0].getMods(token));
+                    mods = Object.assign( mods, f[0].getMods(token,mods));
                     break;
 
                 case 'rotation':
@@ -2868,7 +2869,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'night_distance':
                 case 'bright_distance':
                 case 'low_distance':
-                    mods = Object.assign( mods, f[0].getMods(token));
+                    mods = Object.assign( mods, f[0].getMods(token,mods));
                     break;
 
                 case 'bar1_reset':
@@ -2897,10 +2898,10 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
 				case 'currentSide':
 				case 'currentside':
-					mods = Object.assign( mods, f[0].getMods(token));
+					mods = Object.assign( mods, f[0].getMods(token,mods));
 					break;
 				case 'imgsrc':
-					mods = Object.assign( mods, f[0].getMods(token));
+					mods = Object.assign( mods, f[0].getMods(token,mods));
 					break;
 
 				case 'aura1_color':
