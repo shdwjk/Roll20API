@@ -5,8 +5,8 @@
 const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "GroupInitiative";
-    const version = '0.9.33';
-    const lastUpdate = 1588471465;
+    const version = '0.9.34';
+    const lastUpdate = 1589282532;
     const schemaVersion = 1.3;
 
     const isString = (s)=>'string'===typeof s || s instanceof String;
@@ -24,26 +24,28 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
         },
         'Ascending': {
           desc: `Sorts the Turn Order from highest to lowest`,
-          func: (to) => {
-            let last = 0;
-            return _.sortBy(to, i => {
-                let val=(parseFloat(i.pr));
-                val = _.isNaN(val) ? last : val;
-                last=val;
-                return val;
-            });
+          func: (to,preserveFirst) => {
+            let first = to[0];
+            const sorter_asc = (a, b) => a.pr - b.pr;
+            let newTo = to.sort(sorter_asc);
+            if(preserveFirst){
+              let idx = newTo.findIndex(e=>e===first);
+              newTo = [...newTo.slice(idx),...newTo.slice(0,idx)];
+            }
+            return newTo;
           }
         },
         'Descending': {
           desc: `Sorts the Turn Order from lowest to highest.`,
-          func: (to) => {
-            var last=100000;
-            return _.sortBy(to,function(i){
-                let val=(-(parseFloat(i.pr)));
-                val = _.isNaN(val) ? last : val;
-                last=val;
-                return val;
-            });
+          func: (to,preserveFirst) => {
+            let first = to[0];
+            const sorter_desc = (a, b) => b.pr - a.pr;
+            let newTo = to.sort(sorter_desc);
+            if(preserveFirst){
+              let idx = newTo.findIndex(e=>e===first);
+              newTo = [...newTo.slice(idx),...newTo.slice(0,idx)];
+            }
+            return newTo;
           }
         }
     };
@@ -506,6 +508,10 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
                     state[scriptName].config.checkForNoConfig = true;
                     /* break; // intentional dropthrough */ /* falls through */
 
+                case 1.3:
+                    state[scriptName].config.preserveFirst=false;
+                    /* break; // intentional dropthrough */ /* falls through */
+
                 case 'UpdateSchemaVersion':
                     state[scriptName].version = schemaVersion;
                     break;
@@ -527,6 +533,7 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
                             checkForNoConfig: true,
                             autoOpenInit: true,
                             sortOption: 'Descending',
+                            preserveFirst: true,
                             announcer: 'Partial'
                         }
                     };
@@ -799,7 +806,7 @@ const _h = {
                 ...Object.keys(sorters).map(s=>`${_h.ui.float(
                   (s === state[scriptName].config.sortOption)
                   ? _h.ui.bubble(_h.bold('Selected'))
-                  : _h.ui.button(`Use ${s}`,`!group-init-config --sort-option|${s}}`)
+                  : _h.ui.button(`Use ${s}`,`!group-init-config --sort-option|${s}`)
                 )}${_h.bold(s)} -- ${sorters[s].desc}${_h.ui.clear()}`)
               )
             )
@@ -869,6 +876,14 @@ const _h = {
               _h.paragraph(`${_h.ui.float(_h.ui.button((state[scriptName].config.checkForNoConfig ? 'Disable' : 'Enable'), `!group-init-config --toggle-check-for-no-config`))}No Configuration Checking is currently ${_h.bold( (state[scriptName].config.checkForNoConfig ? 'On' : 'Off') )}. ${_h.ui.clear()}`)
             )
           ),
+          preserveFirstConfig: ( /* context */ ) => _h.section('Preserve First on Sorted Add',
+            _h.paragraph(
+              `This option causes GroupInitiative to preserve the first Turn Order entry when sorting the Turn Order after adding creatures.`
+            ),
+            _h.inset(
+              _h.paragraph(`${_h.ui.float(_h.ui.button((state[scriptName].config.preserveFirst ? 'Disable' : 'Enable'), `!group-init-config --toggle-preserve-first`))}Preserve First on Sorted Add is currently ${_h.bold( (state[scriptName].config.preserveFirst ? 'On' : 'Off') )}. ${_h.ui.clear()}`)
+            )
+          ),
           announcerConfig: (/*context*/) => _h.section('Announcer Options',
             _h.paragraph(
               `The Announcer controls what is shown in chat when a roll is performed.`
@@ -913,6 +928,7 @@ const _h = {
             _h.inset(
               helpParts.rollerConfig(context),
               helpParts.sortOptionsConfig(context),
+              helpParts.preserveFirstConfig(context),
               helpParts.dieSizeConfig(context),
               helpParts.diceCountConfig(context),
               helpParts.diceCountAttributeConfig(context),
@@ -1120,7 +1136,8 @@ const _h = {
                                 };
                             })
                             .value()
-                        )
+                        ),
+                        state[scriptName].config.preserveFirst
                     )
                 )
             });
@@ -1450,7 +1467,8 @@ const _h = {
                                                 _.union(
                                                     JSON.parse(Campaign().get('turnorder'))||[],
                                                     JSON.parse(sto.turnorder)||[]
-                                                )
+                                                ),
+                                                state[scriptName].config.preserveFirst
                                             )
                                         ));
 
@@ -1467,7 +1485,8 @@ const _h = {
                                                 _.union(
                                                     JSON.parse(Campaign().get('turnorder'))||[],
                                                     JSON.parse(sto.turnorder)||[]
-                                                )
+                                                ),
+                                                state[scriptName].config.preserveFirst
                                             )
                                         ));
 
@@ -1571,10 +1590,12 @@ const _h = {
                             }
                             Campaign().set('turnorder', JSON.stringify(
                                 sorters[state[scriptName].config.sortOption].func(
-                                    JSON.parse(Campaign().get('turnorder'))||[]
+                                    JSON.parse(Campaign().get('turnorder'))||[],
+                                    false
                                 )
                             ));
                             notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
+
                             break;
 
                         case 'adjust':
@@ -1819,6 +1840,15 @@ const _h = {
                             sendChat('',`/w "${who}" `+
                                 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                                     helpParts.replaceRollConfig(context)+
+                                '</div>'
+                            );
+                            break;
+
+                        case 'toggle-preserve-first':
+                            state[scriptName].config.preserveFirst = !state[scriptName].config.preserveFirst;
+                            sendChat('',`/w "${who}" `+
+                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    helpParts.preserveFirstConfig(context)+
                                 '</div>'
                             );
                             break;
