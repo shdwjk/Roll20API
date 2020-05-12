@@ -11,7 +11,7 @@ var TurnMarker = TurnMarker || (function(){
     "use strict";
     
     var version = '1.3.9',
-        lastUpdate = 1500408657,
+        lastUpdate = 1589283627,
         schemaVersion = 1.17,
         active = false,
         threadSync = 1,
@@ -21,20 +21,18 @@ var TurnMarker = TurnMarker || (function(){
             'all'  : 'All'
         },
 
-    fixedSendPing = (function(){
-        var last={};
-        return function(left,top,pageid,playerid,pull){
-            if( last.left   === left   &&
-                last.top    === top    &&
-                last.pageid === pageid ) {
-                sendPing(-100,-100,pageid,null,false);
-            }
-            sendPing(left,top,pageid,playerid,pull);
-            last.left=left;
-            last.top=top;
-            last.pageid=pageid;
-        };
-    }()),
+    getGMPlayers = (pageid) => findObjs({type:'player'})
+        .filter((p)=>playerIsGM(p.id))
+        .filter((p)=>undefined === pageid || p.get('lastpage') === pageid)
+        .map(p=>p.id)
+    ,
+
+    sendGMPing = (left, top, pageid, playerid=null, moveAll=false) => {
+        let players = getGMPlayers(pageid);
+        if(players.length){
+            sendPing(left,top,pageid,playerid,moveAll,players);
+        }
+    },
 
     checkInstall = function() {    
         log('-=> TurnMarker v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
@@ -60,7 +58,8 @@ var TurnMarker = TurnMarker || (function(){
                         autoPull: 'none',
                         autoskipHidden: true,
                         tokenName: 'Round',
-                        tokenURL: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
+                        //tokenURL: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
+                        tokenURL: "https://s3.amazonaws.com/files.d20.io/images/93859710/XaNsGTeaWsMZmmY_Wu8XCw/thumb.webm?157049959155",
                         playAnimations: false,
                         rotation: false,
                         animationSpeed: 5,
@@ -165,7 +164,7 @@ var TurnMarker = TurnMarker || (function(){
                         case 'ping-target':
                             var obj=getObj('graphic',tokens[1]);
                             if(obj){
-                                fixedSendPing(obj.get('left'),obj.get('top'),obj.get('pageid'),null,true);
+                                sendGMPing(obj.get('left'),obj.get('top'),obj.get('pageid'),null,true);
                             }
                             break;
 
@@ -442,7 +441,7 @@ var TurnMarker = TurnMarker || (function(){
                     ( !currentChar || '' === currentChar.get('controlledby'))
                 ))
             ){
-                fixedSendPing(currentToken.get('left'),currentToken.get('top'),currentToken.get('pageid'),null,true);
+                sendGMPing(currentToken.get('left'),currentToken.get('top'),currentToken.get('pageid'),null,true);
             }
         }
     },
@@ -456,8 +455,8 @@ var TurnMarker = TurnMarker || (function(){
     },
 
     handleTurnOrderChange = function(obj, prev) {
-        var prevOrder=JSON.parse(prev.turnorder);
-        var objOrder=JSON.parse(obj.get('turnorder'));
+        var prevOrder=JSON.parse(prev.turnorder||'[]');
+        var objOrder=JSON.parse(obj.get('turnorder')||'[]');
 
         if( _.isArray(prevOrder) &&
             _.isArray(objOrder) &&
@@ -676,7 +675,7 @@ var TurnMarker = TurnMarker || (function(){
     registerEventHandlers = function(){        
         on("change:campaign:initiativepage", dispatchInitiativePage );
         on("change:campaign:turnorder", handleTurnOrderChange );
-        on("change:graphic", checkForTokenMove );
+        on("change:graphic:lastmove", checkForTokenMove );
         on("destroy:graphic", handleDestroyGraphic );
         on("chat:message", handleInput );
 
