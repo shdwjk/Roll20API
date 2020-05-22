@@ -11,8 +11,8 @@ var TurnMarker = TurnMarker || (function(){
     "use strict";
     
     var version = '1.3.10',
-        lastUpdate = 1590189850,
-        schemaVersion = 1.17,
+        lastUpdate = 1590190178,
+        schemaVersion = 1.18,
         active = false,
         threadSync = 1,
         autoPullOptions = {
