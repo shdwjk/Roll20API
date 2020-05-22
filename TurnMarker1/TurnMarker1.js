@@ -10,8 +10,8 @@
 var TurnMarker = TurnMarker || (function(){
     "use strict";
     
-    var version = '1.3.9',
-        lastUpdate = 1589283627,
+    var version = '1.3.10',
+        lastUpdate = 1590189850,
         schemaVersion = 1.17,
         active = false,
         threadSync = 1,
@@ -58,8 +58,7 @@ var TurnMarker = TurnMarker || (function(){
                         autoPull: 'none',
                         autoskipHidden: true,
                         tokenName: 'Round',
-                        //tokenURL: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
-                        tokenURL: "https://s3.amazonaws.com/files.d20.io/images/93859710/XaNsGTeaWsMZmmY_Wu8XCw/thumb.webm?157049959155",
+                        tokenURL: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
                         playAnimations: false,
                         rotation: false,
                         animationSpeed: 5,
