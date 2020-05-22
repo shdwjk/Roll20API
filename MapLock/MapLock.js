@@ -2,11 +2,12 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
+/* global TokenMod */
 var MapLock = MapLock || (function() {
     'use strict';
 
-    var version = '0.4.5',
-        lastUpdate = 1490707622,
+    var version = '0.4.6',
+        lastUpdate = 1590190691,
         schemaVersion = 0.4,
 
     checkInstall = function() {
@@ -204,6 +205,10 @@ var MapLock = MapLock || (function() {
     registerEventHandlers = function() {
         on('chat:message', handleInput);
 		on('change:graphic', HandleMove);
+
+        if('undefined' !== typeof TokenMod && TokenMod.ObserveTokenChange){
+            TokenMod.ObserveTokenChange(HandleMove);
+        }
     };
 
     return {

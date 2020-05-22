@@ -2,10 +2,11 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 
+/* global TokenMod */
 const TokenLock = (() => { // eslint-disable-line no-unused-vars
 
-    const  version = '0.2.7';
-    const lastUpdate = 1566254659;
+    const  version = '0.2.8';
+    const lastUpdate = 1590190642;
     const schemaVersion = 0.2;
 
     const ch = (c) => {
@@ -260,6 +261,11 @@ const TokenLock = (() => { // eslint-disable-line no-unused-vars
 	const registerEventHandlers = () => {
 		on('chat:message', handleInput);
 		on('change:graphic', handleMove);
+
+        if('undefined' !== typeof TokenMod && TokenMod.ObserveTokenChange){
+            TokenMod.ObserveTokenChange(handleMove);
+        }
+
 	};
 
     on("ready", () => {
