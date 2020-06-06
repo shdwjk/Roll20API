@@ -4,8 +4,8 @@
 
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.8.56';
-    const lastUpdate = 1589026818;
+    const version = '0.8.57';
+    const lastUpdate = 1591402099;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -408,7 +408,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             this.urls=urls||[];
           }
 
-          getMods(token,mods){
+          getMods(token /* ,mods */){
             let sideText = token.get('sides');
             let sides;
 
@@ -565,7 +565,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 			}
 
 
-			getMods(token,mods){
+			getMods(token /*,mods */){
 				// get sides
 				let sides = token.get('sides').split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
 				switch(this.operation){
@@ -1287,6 +1287,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     };
 
     const assureHelpHandout = (create = false) => {
+        if(state.TheAaron && state.TheAaron.config && (false === state.TheAaron.config.makeHelpHandouts) ){
+          return;
+        }
         const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/127392204/tAiDP73rpSKQobEYm5QZUw/thumb.png?15878425385";
 
         // find handout
