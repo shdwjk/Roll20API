@@ -4,8 +4,8 @@
 
 const WildDice = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.3.4';
-    const lastUpdate = 1585353091;
+    const version = '0.3.5';
+    const lastUpdate = 1585662581;
 
     const ch = (c) => {
         const entities = {
@@ -90,8 +90,10 @@ const WildDice = (() => { // eslint-disable-line no-unused-vars
 
         let who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
-        let args = msg.content.split(/\s+/);
+        let parts = msg.content.split(/\s+--/);
+        let args = parts[0].split(/\s+/);
         let w = false;
+
         switch(args[0]) {
             case '!wwd':
                 w=true; 
@@ -133,7 +135,13 @@ const WildDice = (() => { // eslint-disable-line no-unused-vars
                 }
                 let sum = _.reduce(rDice.concat(bonusDice),function(m,r){return m+r;},0) + wildDie + pips;
 
-                sendChat( `player|${msg.playerid}`, ` ${w ? '/w gm ' : ''}${f.outer(f.diceblock(
+                let wrapper = (t)=>t;
+                if(/^template\b\s/.test(parts[1]||"")){
+                    let template = `&{template:${msg.rolltemplate}}${parts[1].replace(/^template\s+/i,'')}`;
+                    wrapper = (t) => template.replace(/%%ROLL%%/i,t);
+                }
+
+                sendChat( `player|${msg.playerid}`, `${w ? '/w gm ' : ''}${wrapper(f.outer(f.diceblock(
                                 _.map(rDice,function(d){
                                         var c = 'white';
                                         if( markFirstMax && d === _.max(rDice) ) {
@@ -155,7 +163,7 @@ const WildDice = (() => { // eslint-disable-line no-unused-vars
                                 '<div style="float:left; margin-left: 10px; background: '+( hasFail ? 'orange' : 'green' )+ '; border: 1px solid black; padding: 1px 3px; color: white; font-weight: bold;">'+sum+(hasFail ? ' Complication' : ' Total')+'</div>'+
                                 '<div style="clear: both"></div>'
                             )
-                        )}`);
+                        ))}`);
 
                 }
                 break;
