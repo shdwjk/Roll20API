@@ -5,8 +5,8 @@
 var Ammo = Ammo || (function() {
     'use strict';
 
-    var version = '0.3.10',
-        lastUpdate = 1584729310,
+    var version = '0.3.11',
+        lastUpdate = 1591969685,
 		schemaVersion = 0.1,
 
 	ch = function (c) {
@@ -32,7 +32,7 @@ var Ammo = Ammo || (function() {
 	},
 	sendMessage = function(message, who, whisper) {
 		sendChat(
-            'Ammo',
+            '',
             `${(whisper||'gm'===who)?`/w ${who} `:''}<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">${message}</div>`
 		);
 	},
