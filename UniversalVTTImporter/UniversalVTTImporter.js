@@ -5,8 +5,8 @@
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.0';
-  const lastUpdate = 1592104132;
+  const version = '0.1.1';
+  const lastUpdate = 1592776122;
   const schemaVersion = 0.1;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -198,7 +198,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const importUVTTonGraphic = (token) => {
     let rawNotes = token.get('gmnotes');
-    let notes = unescape(rawNotes).replace(/<[^>]*>/g,'').replace(/\\t/g,'');
+    let notes = unescape(rawNotes).replace(/(?:<[^>]*>|\\t|&nbsp;)/g,'');
     let data;
     try {
       data = JSON.parse(notes);
