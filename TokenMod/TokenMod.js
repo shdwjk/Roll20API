@@ -4,8 +4,9 @@
 
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.8.57';
-    const lastUpdate = 1591402099;
+    const scriptName = "TokenMod";
+    const version = '0.8.58';
+    const lastUpdate = 1592796712;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -90,9 +91,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             bar1_link: {type: 'attribute'},
             bar2_link: {type: 'attribute'},
             bar3_link: {type: 'attribute'},
-			currentSide: {type: 'sideNumber'},
+            currentSide: {type: 'sideNumber'},
             imgsrc: {type: 'image'},
-			sides: {type: 'image' },
+            sides: {type: 'image' },
 
             controlledby: {type: 'player'},
 
@@ -134,35 +135,37 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             isTruthyArgument: (a) => [1,'1','on','yes','true','sure','yup'].includes(a)
         };
 
-	const getCleanImgsrc = (imgsrc) => {
-			var parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
-			if(parts) {
-				return parts[1]+'thumb'+parts[3]+(parts[4]?parts[4]:`?${Math.round(Math.random()*9999999)}`);
-			}
-			return;
-		};
+    const getCleanImgsrc = (imgsrc) => {
+      var parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
+      if(parts) {
+        return parts[1]+'thumb'+parts[3]+(parts[4]?parts[4]:`?${Math.round(Math.random()*9999999)}`);
+      }
+      return;
+    };
 
     const regex = {
-            numberString: /^[-+*/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][+-]?[0-9]+)?$/,
-            stripSingleQuotes: /'([^']+(?='))'/g,
-            stripDoubleQuotes: /"([^"]+(?="))"/g,
-            layers: /^(?:gmlayer|objects|map|walls)$/,
+      moveAngle: /^(=)?([+-]?(?:0|[1-9][0-9]*))(!)?$/,
+      moveDistance: /^([+-]?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?$/i,
+      numberString: /^[-+*/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][+-]?[0-9]+)?$/,
+      stripSingleQuotes: /'([^']+(?='))'/g,
+      stripDoubleQuotes: /"([^"]+(?="))"/g,
+      layers: /^(?:gmlayer|objects|map|walls)$/,
 
-            imgsrc: /(.*\/images\/.*)(thumb|med|original|max)(.*)$/,
-            imageOp: /^(?:(-(?:\d*(?:\s*,\s*\d+)*|\*)$)|(\/(?:\d+@\d+(?:\s*,\s*\d+@\d+)*|\*)$)|([+^]))?(=?)(?:(https?:\/\/.*$)|([-\d\w]*))(?::(.*))?$/,
-			sideNumber: /^(\?)?([-+=*])?(\d*)$/,
-			color : {
-				ops: '([*=+\\-!])?',
-				transparent: '(transparent)',
-				html: '#?((?:[0-9a-f]{6})|(?:[0-9a-f]{3}))',
-				rgb: '(rgb\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))\\s*\\))',
-				hsv: '(hsv\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))\\s*\\))'
-			}
-        };
+      imgsrc: /(.*\/images\/.*)(thumb|med|original|max)(.*)$/,
+      imageOp: /^(?:(-(?:\d*(?:\s*,\s*\d+)*|\*)$)|(\/(?:\d+@\d+(?:\s*,\s*\d+@\d+)*|\*)$)|([+^]))?(=?)(?:(https?:\/\/.*$)|([-\d\w]*))(?::(.*))?$/,
+      sideNumber: /^(\?)?([-+=*])?(\d*)$/,
+      color : {
+        ops: '([*=+\\-!])?',
+        transparent: '(transparent)',
+        html: '#?((?:[0-9a-f]{6})|(?:[0-9a-f]{3}))',
+        rgb: '(rgb\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))\\s*\\))',
+        hsv: '(hsv\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))\\s*\\))'
+      }
+    };
 
-	const colorOpReg = new RegExp(`^${regex.color.ops}(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i');
-	const colorReg = new RegExp(`^(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i');
-	const colorParams = /\(\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*\)/;
+    const colorOpReg = new RegExp(`^${regex.color.ops}(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i');
+    const colorReg = new RegExp(`^(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i');
+    const colorParams = /\(\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*\)/;
 
 
 
@@ -190,17 +193,64 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 return {getMods:()=>({})};
             }
 
-            constructor(field,op,num,rel){
+            constructor(field,op,num,units){
                 this.field=field;
                 this.operation = op;
                 this.num = num;
-                this.relative = rel;
+                this.units = units;
+            }
+
+            static ConvertUnitsPixel(num,unit,page){
+              const unitSize = 70;
+                switch(unit){
+                    case 'u':
+                        return num*unitSize;
+
+                    case 'g':
+                        return num*(parseFloat(page.get('snapping_increment'))*unitSize);
+
+                    case 'ft':
+                    case 'm':
+                    case 'km':
+                    case 'mi':
+                    case 'in':
+                    case 'cm':
+                    case 'un':
+                    case 'hex':
+                    case 'sq':
+                    case 's':
+                        return (num/(parseFloat(page.get('scale_number'))||1))*unitSize;
+                    default:
+                      return num;
+                }
+            }
+
+            static ConvertUnitsRoll20(num,unit,page){
+                switch(unit){
+                    case 'u':
+                        return num*(parseFloat(page.get('scale_number'))*(1/parseFloat(page.get('snapping_increment'))||1));
+
+                    case 'g':
+                        return num*parseFloat(page.get('scale_number'));
+
+                    default:
+                    case 'ft':
+                    case 'm':
+                    case 'km':
+                    case 'mi':
+                    case 'in':
+                    case 'cm':
+                    case 'un':
+                    case 'hex':
+                    case 'sq':
+                    case 's':
+                         return num;
+                }
             }
 
             getMods(token,mods){
                 let num = this.num;
                 let page = getObj('page',token.get('pageid'));
-                const unitSize = 70;
                 switch(this.field){
 
                     case 'light_radius':
@@ -214,29 +264,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     case 'night_distance':
                     case 'bright_distance':
                     case 'low_distance':
-                        // convert to scale_number relative
-                        switch(this.relative){
-                            case 'u':
-                                num*=(parseFloat(page.get('scale_number'))*(1/parseFloat(page.get('snapping_increment'))||1));
-                                break;
-                                
-                            case 'g':
-                                num*=parseFloat(page.get('scale_number'));
-                                break;
-
-                            default:
-                            case 'ft':
-                            case 'm':
-                            case 'km':
-                            case 'mi':
-                            case 'in':
-                            case 'cm':
-                            case 'un':
-                            case 'hex':
-                            case 'sq':
-                            case 's':
-                                break;
-                        }
+                        num = numberOp.ConvertUnitsRoll20(num,this.units,page);
                         break;
 
                     default:
@@ -244,30 +272,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     case 'top':
                     case 'width':
                     case 'height':
-                        // convert to pixel relative
-                        switch(this.relative){
-                            case 'u':
-                                num*=unitSize;
-                                break;
-                            case 'g':
-                                num*=(parseFloat(page.get('snapping_increment'))*unitSize);
-                                break;
-
-                            case 'ft':
-                            case 'm':
-                            case 'km':
-                            case 'mi':
-                            case 'in':
-                            case 'cm':
-                            case 'un':
-                            case 'hex':
-                            case 'sq':
-                            case 's':
-                                num = (num/(parseFloat(page.get('scale_number'))||1))*unitSize;
-                                break;
-                            default:
-                        }
-
+                        num = numberOp.ConvertUnitsPixel(num,this.units,page);
                         break;
 
                     case 'light_multiplier':
@@ -545,365 +550,365 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         // Side Numbers
         ////////////////////////////////////////////////////////////
 
-		class sideNumberOp {
+        class sideNumberOp {
 
-			static parseSideNumber(input){
-                const OP_FLAG = 1;
-                const OP_OPERATION = 2;
-                const OP_COUNT = 3;
-				let parsed = input.toLowerCase().match(regex.sideNumber);
-				if(parsed && parsed.length){
-					return new sideNumberOp( parsed[ OP_FLAG ], parsed[ OP_OPERATION ], parsed[ OP_COUNT ] );
-				}
-				return new sideNumberOp(false,'/');
-			}
+          static parseSideNumber(input){
+            const OP_FLAG = 1;
+            const OP_OPERATION = 2;
+            const OP_COUNT = 3;
+            let parsed = input.toLowerCase().match(regex.sideNumber);
+            if(parsed && parsed.length){
+              return new sideNumberOp( parsed[ OP_FLAG ], parsed[ OP_OPERATION ], parsed[ OP_COUNT ] );
+            }
+            return new sideNumberOp(false,'/');
+          }
 
-			constructor(flag,op,count){
-				this.flag=flag||false;
-				this.operation=op||'=';
-				this.count=(parseInt(`${count}`)||1);
-			}
+          constructor(flag,op,count){
+            this.flag=flag||false;
+            this.operation=op||'=';
+            this.count=(parseInt(`${count}`)||1);
+          }
 
 
-			getMods(token /*,mods */){
-				// get sides
-				let sides = token.get('sides').split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
-				switch(this.operation){
-					case '/':
-						return {};
-					case '=':
-						if(sides[this.count-1]){
-							return {
-								currentSide: this.count-1,
-								imgsrc: sides[this.count-1]
-							};
-						}
-						return {};
-					case '*': {
-						// get indexes that are valid
-						let idxs=sides.reduce((m,v)=> ({ c:m.c+1, i:(v?[...m.i,m.c]:m.i) }), {c:0,i:[]}).i;
-						if(idxs.length){
-							let idx=_.sample(idxs);
-							return {
-								currentSide: idx,
-								imgsrc: sides[idx]
-							};
-						}
-						return {};
-					}
-					case '+':
-					case '-': {
-						let idx = token.get('currentSide')||0;
-						idx += ('-'===this.operation ? -1 : 1)*this.count;
-						if(this.flag){
-							idx=Math.max(Math.min(idx,sides.length-1),0);
-						} else {
-							idx=(idx%sides.length)+(idx<0 ? sides.length : 0);
-						}
-						if(sides[idx]){
-							return {
-								currentSide: idx,
-								imgsrc: sides[idx]
-							};
-						}
-						return {};
-					}
-							
-				}
-				
-			}
-		}
+          getMods(token /*,mods */){
+            // get sides
+            let sides = token.get('sides').split(/\|/).map(decodeURIComponent).map(getCleanImgsrc);
+            switch(this.operation){
+              case '/':
+                return {};
+              case '=':
+                if(sides[this.count-1]){
+                  return {
+                    currentSide: this.count-1,
+                    imgsrc: sides[this.count-1]
+                  };
+                }
+                return {};
+              case '*': {
+                // get indexes that are valid
+                let idxs=sides.reduce((m,v)=> ({ c:m.c+1, i:(v?[...m.i,m.c]:m.i) }), {c:0,i:[]}).i;
+                if(idxs.length){
+                  let idx=_.sample(idxs);
+                  return {
+                    currentSide: idx,
+                    imgsrc: sides[idx]
+                  };
+                }
+                return {};
+              }
+            case '+':
+            case '-': {
+              let idx = token.get('currentSide')||0;
+              idx += ('-'===this.operation ? -1 : 1)*this.count;
+              if(this.flag){
+                idx=Math.max(Math.min(idx,sides.length-1),0);
+              } else {
+                idx=(idx%sides.length)+(idx<0 ? sides.length : 0);
+              }
+              if(sides[idx]){
+                return {
+                  currentSide: idx,
+                  imgsrc: sides[idx]
+                };
+              }
+              return {};
+            }
+
+            }
+
+          }
+        }
 
 
         ////////////////////////////////////////////////////////////
         // Colors
         ////////////////////////////////////////////////////////////
 
-		class Color {
-			static hsv2rgb(h, s, v) {
-				let r, g, b;
+        class Color {
+          static hsv2rgb(h, s, v) {
+            let r, g, b;
 
-				let i = Math.floor(h * 6);
-				let f = h * 6 - i;
-				let p = v * (1 - s);
-				let q = v * (1 - f * s);
-				let t = v * (1 - (1 - f) * s);
+            let i = Math.floor(h * 6);
+            let f = h * 6 - i;
+            let p = v * (1 - s);
+            let q = v * (1 - f * s);
+            let t = v * (1 - (1 - f) * s);
 
-				switch (i % 6) {
-					case 0: r = v, g = t, b = p; break;
-					case 1: r = q, g = v, b = p; break;
-					case 2: r = p, g = v, b = t; break;
-					case 3: r = p, g = q, b = v; break;
-					case 4: r = t, g = p, b = v; break;
-					case 5: r = v, g = p, b = q; break;
-				}
+            switch (i % 6) {
+              case 0: r = v, g = t, b = p; break;
+              case 1: r = q, g = v, b = p; break;
+              case 2: r = p, g = v, b = t; break;
+              case 3: r = p, g = q, b = v; break;
+              case 4: r = t, g = p, b = v; break;
+              case 5: r = v, g = p, b = q; break;
+            }
 
-				return { r , g , b };
-			}
+            return { r , g , b };
+          }
 
-			static rgb2hsv(r,g,b) {
-				let max = Math.max(r, g, b),
-					min = Math.min(r, g, b);
-				let h, s, v = max;
+          static rgb2hsv(r,g,b) {
+            let max = Math.max(r, g, b),
+            min = Math.min(r, g, b);
+            let h, s, v = max;
 
-				let d = max - min;
-				s = max == 0 ? 0 : d / max;
+            let d = max - min;
+            s = max == 0 ? 0 : d / max;
 
-				if (max == min) {
-					h = 0; // achromatic
-				} else {
-					switch (max) {
-						case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-						case g: h = (b - r) / d + 2; break;
-						case b: h = (r - g) / d + 4; break;
-					}
+            if (max == min) {
+              h = 0; // achromatic
+            } else {
+              switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+              }
 
-					h /= 6;
-				}
+              h /= 6;
+            }
 
-				return { h, s, v };
-			}
+            return { h, s, v };
+          }
 
-			static dec2hex (n){
-				n = (Math.max(Math.min(Math.round(n*255),255), 0)||0);
-				return `${n<16?'0':''}${n.toString(16)}`;
-			}
+          static dec2hex (n){
+            n = (Math.max(Math.min(Math.round(n*255),255), 0)||0);
+            return `${n<16?'0':''}${n.toString(16)}`;
+          }
 
-			static hex2dec (n){
-				return Math.max(Math.min(parseInt(n,16),255), 0)/255;
-			}
+          static hex2dec (n){
+            return Math.max(Math.min(parseInt(n,16),255), 0)/255;
+          }
 
-			static html2rgb(htmlstring){
-				let s=htmlstring.toLowerCase().replace(/[^0-9a-f]/,'');
-				if(3===s.length){
-					s=`${s[0]}${s[0]}${s[1]}${s[1]}${s[2]}${s[2]}`;
-				}
-				return {
-					r: this.hex2dec(s.substr(0,2)),
-					g: this.hex2dec(s.substr(2,2)),
-					b: this.hex2dec(s.substr(4,2))
-				};
-			}
+          static html2rgb(htmlstring){
+            let s=htmlstring.toLowerCase().replace(/[^0-9a-f]/,'');
+            if(3===s.length){
+              s=`${s[0]}${s[0]}${s[1]}${s[1]}${s[2]}${s[2]}`;
+            }
+            return {
+              r: this.hex2dec(s.substr(0,2)),
+              g: this.hex2dec(s.substr(2,2)),
+              b: this.hex2dec(s.substr(4,2))
+            };
+          }
 
-			static parseRGBParam(p){
-				if(/\./.test(p)){
-					return parseFloat(p);
-				}
-				return parseInt(p,10)/255;
-			}
-			static parseHSVParam(p,f){
-				if(/\./.test(p)){
-					return parseFloat(p);
-				}
-				switch(f){
-					case 'h':
-						return parseInt(p,10)/360;
-					case 's':
-					case 'v':
-						return parseInt(p,10)/100;
-				}
-			}
+          static parseRGBParam(p){
+            if(/\./.test(p)){
+              return parseFloat(p);
+            }
+            return parseInt(p,10)/255;
+          }
+          static parseHSVParam(p,f){
+            if(/\./.test(p)){
+              return parseFloat(p);
+            }
+            switch(f){
+              case 'h':
+                return parseInt(p,10)/360;
+              case 's':
+              case 'v':
+                return parseInt(p,10)/100;
+            }
+          }
 
-			static parseColor(input){
-				return Color.buildColor(input.toLowerCase().match(colorReg));
-			}
-			static buildColor(parsed){
-				const idx = {
-					transparent: 1,
-					html: 2,
-					rgb: 3,
-					hsv: 4
-				};
+          static parseColor(input){
+            return Color.buildColor(input.toLowerCase().match(colorReg));
+          }
+          static buildColor(parsed){
+            const idx = {
+              transparent: 1,
+              html: 2,
+              rgb: 3,
+              hsv: 4
+            };
 
-				if(parsed){
-					let c = new Color();
-					if(parsed[idx.transparent]){
-						c.type = 'transparent';
-					} else if(parsed[idx.html]){
-						c.type = 'rgb';
-						_.each(Color.html2rgb(parsed[idx.html]),(v,k)=>{
-							c[k]=v;
-						});
-					} else if(parsed[idx.rgb]){
-						c.type = 'rgb';
-						let params = parsed[idx.rgb].match(colorParams);
-						c.r= Color.parseRGBParam(params[1]);
-						c.g= Color.parseRGBParam(params[2]);
-						c.b= Color.parseRGBParam(params[3]);
-					} else if(parsed[idx.hsv]){
-						c.type = 'hsv';
-						let params = parsed[idx.hsv].match(colorParams);
-						c.h= Color.parseHSVParam(params[1],'h');
-						c.s= Color.parseHSVParam(params[2],'s');
-						c.v= Color.parseHSVParam(params[3],'v');
-					} 
-					return c;
-				}
-				return new Color();
-			}
+            if(parsed){
+              let c = new Color();
+              if(parsed[idx.transparent]){
+                c.type = 'transparent';
+              } else if(parsed[idx.html]){
+                c.type = 'rgb';
+                _.each(Color.html2rgb(parsed[idx.html]),(v,k)=>{
+                  c[k]=v;
+                });
+              } else if(parsed[idx.rgb]){
+                c.type = 'rgb';
+                let params = parsed[idx.rgb].match(colorParams);
+                c.r= Color.parseRGBParam(params[1]);
+                c.g= Color.parseRGBParam(params[2]);
+                c.b= Color.parseRGBParam(params[3]);
+              } else if(parsed[idx.hsv]){
+                c.type = 'hsv';
+                let params = parsed[idx.hsv].match(colorParams);
+                c.h= Color.parseHSVParam(params[1],'h');
+                c.s= Color.parseHSVParam(params[2],'s');
+                c.v= Color.parseHSVParam(params[3],'v');
+              } 
+              return c;
+            }
+            return new Color();
+          }
 
-			constructor(){
-				this.type='transparent';
-			}
+          constructor(){
+            this.type='transparent';
+          }
 
-			clone(){
-				return Object.assign(new Color(), this);
-			}
+          clone(){
+            return Object.assign(new Color(), this);
+          }
 
-			toRGB(){
-				if('hsv'===this.type){
-					_.each(Color.hsv2rgb(this.h,this.s,this.v),(v,k)=>{
-						this[k]=v;
-					});
-					this.type='rgb';
-				} else if ('transparent' === this.type){
-					this.type='rgb';
-					this.r=0.0;
-					this.g=0.0;
-					this.b=0.0;
-				}
-				delete this.h;
-				delete this.s;
-				delete this.v;
-				return this;
-			}
+          toRGB(){
+            if('hsv'===this.type){
+              _.each(Color.hsv2rgb(this.h,this.s,this.v),(v,k)=>{
+                this[k]=v;
+              });
+              this.type='rgb';
+            } else if ('transparent' === this.type){
+              this.type='rgb';
+              this.r=0.0;
+              this.g=0.0;
+              this.b=0.0;
+            }
+            delete this.h;
+            delete this.s;
+            delete this.v;
+            return this;
+          }
 
-			toHSV(){
-				if('rgb'===this.type){
-					_.each(Color.rgb2hsv(this.r,this.g,this.b),(v,k)=>{
-						this[k]=v;
-					});
-					this.type='hsv';
-				} else if('transparent' === this.type){
-					this.type='hsv';
-					this.h=0.0;
-					this.s=0.0;
-					this.v=0.0;
-				}
+          toHSV(){
+            if('rgb'===this.type){
+              _.each(Color.rgb2hsv(this.r,this.g,this.b),(v,k)=>{
+                this[k]=v;
+              });
+              this.type='hsv';
+            } else if('transparent' === this.type){
+              this.type='hsv';
+              this.h=0.0;
+              this.s=0.0;
+              this.v=0.0;
+            }
 
-				delete this.r;
-				delete this.g;
-				delete this.b;
+            delete this.r;
+            delete this.g;
+            delete this.b;
 
-				return this;
-			}
+            return this;
+          }
 
-			toHTML(){
-				switch(this.type){
-					case 'transparent':
-						return 'transparent';
-					case 'hsv': {
-						return this.clone().toRGB().toHTML();
-					}
-					case 'rgb':
-						return `#${Color.dec2hex(this.r)}${Color.dec2hex(this.g)}${Color.dec2hex(this.b)}`;
-				}
-			}
-		}
+          toHTML(){
+            switch(this.type){
+              case 'transparent':
+                return 'transparent';
+              case 'hsv': {
+                return this.clone().toRGB().toHTML();
+              }
+            case 'rgb':
+              return `#${Color.dec2hex(this.r)}${Color.dec2hex(this.g)}${Color.dec2hex(this.b)}`;
+            }
+          }
+        }
 
-		class ColorOp extends Color {
+        class ColorOp extends Color {
 
-			constructor( op ) {
-				super();
-				this.operation = op;
-			}
+          constructor( op ) {
+            super();
+            this.operation = op;
+          }
 
-			static parseColor(input){
-				const idx = {
-					ops: 1,
-					transparent: 2,
-					html: 3,
-					rgb: 4,
-					hsv: 5
-				};
+          static parseColor(input){
+            const idx = {
+              ops: 1,
+              transparent: 2,
+              html: 3,
+              rgb: 4,
+              hsv: 5
+            };
 
-				let parsed = input.toLowerCase().match(colorOpReg)||[];
+            let parsed = input.toLowerCase().match(colorOpReg)||[];
 
-				if(parsed.length) {
-					return Object.assign(new ColorOp(parsed[idx.ops]||'='), Color.buildColor(parsed.slice(1)));
-				} else {
-					return Object.assign(new ColorOp(parsed[idx.ops]||(input.length ? '*':'=')), Color.parseColor('transparent'));
-				}
-			}
+            if(parsed.length) {
+              return Object.assign(new ColorOp(parsed[idx.ops]||'='), Color.buildColor(parsed.slice(1)));
+            } else {
+              return Object.assign(new ColorOp(parsed[idx.ops]||(input.length ? '*':'=')), Color.parseColor('transparent'));
+            }
+          }
 
-			applyTo(c){
-				if( !(c instanceof Color) ){
-					c = Color.parseColor(c);
-				}
-				switch(this.operation){
-					case '=':
-						return this;
-					case '!':
-						return ('transparent'===c.type ? this : Color.parseColor('transparent'));
-				}
-				switch(this.type){
-					case 'transparent':
-						return c;
-					case 'hsv':
-						c.toHSV();
-						switch(this.operation){
-							case '*':
-								c.h*=this.h;
-								c.s*=this.s;
-								c.v*=this.v;
-								c.toRGB();
-								return c;
-							case '+':
-								c.h+=this.h;
-								c.s+=this.s;
-								c.v+=this.v;
-								c.toRGB();
-								return c;
-							case '-':
-								c.h-=this.h;
-								c.s-=this.s;
-								c.v-=this.v;
-								c.toRGB();
-								return c;
-						}
-						break;
-					case 'rgb':
-						c.toRGB();
-						switch(this.operation){
-							case '*':
-								c.r*=this.r;
-								c.g*=this.g;
-								c.b*=this.b;
-								return c;
-							case '+':
-								c.r+=this.r;
-								c.g+=this.g;
-								c.b+=this.b;
-								return c;
-							case '-':
-								c.r-=this.r;
-								c.g-=this.g;
-								c.b-=this.b;
-								return c;
-						}
-				}
+          applyTo(c){
+            if( !(c instanceof Color) ){
+              c = Color.parseColor(c);
+            }
+            switch(this.operation){
+              case '=':
+                return this;
+              case '!':
+                return ('transparent'===c.type ? this : Color.parseColor('transparent'));
+            }
+            switch(this.type){
+              case 'transparent':
+                return c;
+              case 'hsv':
+                c.toHSV();
+                switch(this.operation){
+                  case '*':
+                    c.h*=this.h;
+                    c.s*=this.s;
+                    c.v*=this.v;
+                    c.toRGB();
+                    return c;
+                  case '+':
+                    c.h+=this.h;
+                    c.s+=this.s;
+                    c.v+=this.v;
+                    c.toRGB();
+                    return c;
+                  case '-':
+                    c.h-=this.h;
+                    c.s-=this.s;
+                    c.v-=this.v;
+                    c.toRGB();
+                    return c;
+                }
+                break;
+              case 'rgb':
+                c.toRGB();
+                switch(this.operation){
+                  case '*':
+                    c.r*=this.r;
+                    c.g*=this.g;
+                    c.b*=this.b;
+                    return c;
+                  case '+':
+                    c.r+=this.r;
+                    c.g+=this.g;
+                    c.b+=this.b;
+                    return c;
+                  case '-':
+                    c.r-=this.r;
+                    c.g-=this.g;
+                    c.b-=this.b;
+                    return c;
+                }
+            }
 
-				return c;
-			}
+            return c;
+          }
 
 
-			toString(){
-				let extra ='';
-				switch (this.type){
-					case 'transparent':
-						extra='(0.0, 0.0, 0.0, 1.0)';
-						break;
-					case 'rgb':
-						extra=`(${this.r},${this.g},${this.b})`;
-						break;
-					case 'hsv':
-						extra=`(${this.h},${this.s},${this.v})`;
-						break;
-				}
-				return `${this.operation} ${this.type}${extra} ${this.toHTML()}`;
-			}
+          toString(){
+            let extra ='';
+            switch (this.type){
+              case 'transparent':
+                extra='(0.0, 0.0, 0.0, 1.0)';
+                break;
+              case 'rgb':
+                extra=`(${this.r},${this.g},${this.b})`;
+                break;
+              case 'hsv':
+                extra=`(${this.h},${this.s},${this.v})`;
+                break;
+            }
+            return `${this.operation} ${this.type}${extra} ${this.toHTML()}`;
+          }
 
-		}
+        }
 
         ////////////////////////////////////////////////////////////
         // StatusMarkers
@@ -1202,8 +1207,99 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             }
         }
 
+
+        ////////////////////////////////////////////////////////////
+        // moveOp //////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////
 
+        class moveOp {
+          static parse(args){
+            const identity = {getMods:() => ({})};
+            let angle = 0;
+            let relativeAngle = true;
+            let updateAngle = false;
+            let distance = 0;
+            let units = '';
+
+            if(args.length>1){
+              let match = args.shift().match(regex.moveAngle);
+              if(match) {
+                angle = transforms.degrees(match[2]);
+                relativeAngle = '='!==match[1];
+                updateAngle = '!'===match[3];
+              } else {
+                return identity;
+              }
+            }
+
+            {
+              let match = args.shift().match(regex.moveDistance);
+              if(match){
+                distance = match[1];
+                units = match[2];
+              } else {
+                return identity;
+              }
+            }
+            return new moveOp(
+              angle,
+              relativeAngle,
+              updateAngle,
+              distance,
+              units
+            );
+
+          }
+
+          constructor(angle,relativeAngle,updateAngle,distance,units){
+            this.angle = angle;
+            this.relativeAngle = relativeAngle;
+            this.updateAngle = updateAngle;
+            this.distance = distance;
+            this.units = units;
+          }
+
+          getMods(token,mods){
+            const getValue = (k) => mods.hasOwnProperty(k) ? mods[k] : token.get(k);
+            // find angle
+            // find postion from current by distance over angle.
+            // if current last move start with the token current position, update.
+            let angle = 0;
+            if(this.relativeAngle){
+              angle = parseFloat(getValue('rotation'));
+            }
+            angle = (transforms.degrees(angle+this.angle)||0);
+            let radAngle = (angle-90) * (Math.PI/180);
+
+            let page = getObj('page',token.get('pageid'));
+            if(page){
+              let distance = numberOp.ConvertUnitsPixel(this.distance,this.units,page);
+              let cx = getValue('left');
+              let cy = getValue('top');
+              let lm = getValue('lastmove');
+              if(mods.hasOwnProperty('lastmove')){
+                lm +=`,${cx},${cy}`;
+              } else {
+                lm = `${cx},${cy}`;
+              }
+
+              let x = cx+(distance*Math.cos(radAngle));
+              let y = cy+(distance*Math.sin(radAngle));
+              let props = {
+                lastmove: lm,
+                top: y,
+                left: x
+              };
+              if(this.updateAngle){
+                props.rotation = angle;
+              }
+              return props;
+            }
+            return {};
+          }
+        }
+
+        ////////////////////////////////////////////////////////////
 
 
 
@@ -1293,17 +1389,17 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/127392204/tAiDP73rpSKQobEYm5QZUw/thumb.png?15878425385";
 
         // find handout
-        let props = {type:'handout', name:'Help: TokenMod'};
+        let props = {type:'handout', name:`Help: ${scriptName}`};
         let hh = findObjs(props)[0];
         if(!hh) {
             hh = createObj('handout',Object.assign(props, {inplayerjournals: "all", avatar: helpIcon}));
             create = true;
         }
-        if(create || version !== state.TokenMod.lastHelpVersion){
+        if(create || version !== state[scriptName].lastHelpVersion){
             hh.set({
                 notes: helpParts.helpDoc({who:'handout',playerid:'handout'})
             });
-            state.TokenMod.lastHelpVersion = version;
+            state[scriptName].lastHelpVersion = version;
             log('  > Updating Help Handout to v'+version+' <');
         }
     };
@@ -1406,8 +1502,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             '[' : '#91',
             ']' : '#93',
             '"' : 'quot',
-			'*' : 'ast',
-			'/' : 'sol',
+            '*' : 'ast',
+            '/' : 'sol',
             ' ' : 'nbsp'
         };
 
@@ -1482,11 +1578,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                                 `--ignore-selected`,
                                 `--current-page`,
                                 `--active-pages`,
+                                `--api-as`,
                                 `--config`,
                                 `--on`,
                                 `--off`,
                                 `--flip`,
                                 `--set`,
+                                `--move`,
                                 `--report`,
                                 `--order`
                             ),
@@ -1524,11 +1622,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             `${_h.bold('--ignore-selected')} -- Prevents modifications to the selected tokens (only modifies tokens passed with --ids).`,
                             `${_h.bold('--current-page')} -- Only modifies tokens on the calling player${ch("'")}s current page.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
                             `${_h.bold('--active-pages')} -- Only modifies tokens on pages where there is a player or the GM.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
+                            `${_h.bold('--api-as')} ${_h.required('playerid')} -- Sets the player id to use as the player when the API is calling the script.`,
                             `${_h.bold('--config')} -- Sets Config options. `,
                             `${_h.bold('--on')} -- Turns on any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
                             `${_h.bold('--off')} -- Turns off any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
                             `${_h.bold('--flip')} -- Flips the value of any of the specified parameters (See ${_h.bold('Boolean Arguments')} below).`,
                             `${_h.bold('--set')} -- Each parameter is treated as a key and value, divided by a ${_h.code('|')} character.  Sets the key to the value.  If the value has spaces, you must enclose it ${_h.code(ch("'"))} or ${_h.code(ch('"'))}. See below for specific value handling logic.`,
+                            `${_h.bold('--move')} -- Moves each token in a direction and distance based on its facing.`,
                             `${_h.bold('--order')} -- Changes the ordering of tokens.  Specify one of ${_h.code('tofront')}, ${_h.code('front')}, ${_h.code('f')}, ${_h.code('top')} to bring something to the front or ${_h.code('toback')}, ${_h.code('back')}, ${_h.code('b')}, ${_h.code('bottom')} to push it to the back.`,
                             `${_h.bold('--report')} -- Displays a report of what changed for each token. ${_h.experimental()}`,
                             `${_h.bold('--ids')} -- Each parameter is a Token ID, usually supplied with something like ${_h.attr.target(`Target 1${ch('|')}token_id`)}. By default, only a GM can use this argument.  You can enable players to use it as well with ${_h.bold('--config players-can-ids|on')}.`
@@ -1544,6 +1644,41 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.paragraph(`${_h.italic('--ignore-selected')} can be used when you want to be sure selected tokens are not affected.  This is particularly useful when specifying the id of a known token, such as moving a graphic from the gm layer to the objects layer, or coloring an object on the map.`)
                     )
                 ),
+        move: (/* context */) => _h.join(
+                _h.section('Move',
+                  _h.paragraph(`Use ${_h.code('--move')} to supply a sequence of move operations to apply to a token.  By default, moves are relative to the current facing of the token as defined by the rotation handle (generally, the "up" direction when the token is unrotated).  Each operation can be either a distance, or a rotation followed by a distance, separated by a pipe ${_h.code('|')}.  Distances can use the unit specifiers (${_h.code('g')},${_h.code('u')},${_h.code('ft')},etc -- see the ${_h.bold('Numbers')} section for more) and may be positive or negative.  Rotations can be positive or negative.  They can be prefaced by a ${_h.code('=')} to ignore the current rotation of the character and instead move based on up being 0.  They can further be followed by a ${_h.code('!')} to also rotate the token to the new direction.`),
+                  _h.paragraph(`Moving 3 grid spaces in the current facing.`),
+                  _h.inset(
+                    _h.preformatted(
+                      '!token-mod --move 3g'
+                    )
+                  ),
+                  _h.paragraph(`Moving 3 grid spaces at 45 degrees to the current facing.`),
+                  _h.inset(
+                    _h.preformatted(
+                      '!token-mod --move 45|3g'
+                    )
+                  ),
+                  _h.paragraph(`Moving 2 units to the right, ignoring the current facing.`),
+                  _h.inset(
+                    _h.preformatted(
+                      '!token-mod --move =90|2u'
+                    )
+                  ),
+                  _h.paragraph(`Moving 10ft in the direction 90 degrees to the left of the current facing, and updating the facing to that new direction.`),
+                  _h.inset(
+                    _h.preformatted(
+                      '!token-mod --move -90!|10ft'
+                    )
+                  ),
+                  _h.paragraph(`Moving forward 2 grid spaces, then right 10ft, then 3 units at 45 degrees to the current facing and updating to that face that direction. `),
+                  _h.inset(
+                    _h.preformatted(
+                      '!token-mod --move 2g =90|10ft 45!|3u'
+                    )
+                  )
+                )
+              ),
 
         booleans: (/* context */) => _h.join(
                 // SECTION: --on, --off, --flip, etc...
@@ -2448,6 +2583,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 helpParts.commands(context),
                 helpParts.booleans(context),
                 helpParts.sets(context),
+                helpParts.move(context),
                 helpParts.reports(context),
                 helpParts.config(context),
                 helpParts.apiInterface(context)
@@ -2585,36 +2721,34 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     retr[cmd].push('');
                     break;
 
-				case 'sideNumber':
-					{
-						let c = sideNumberOp.parseSideNumber(args.shift());
-						if(c){
-							retr[cmd].push(c);
-						} else {
-							retr = undefined;
-						}
-					}
-					
-					break;
-                case 'image':
-					{
-						let c = imageOp.parseImage(args.shift());
-						if(c){
-							retr[cmd].push(c);
-						} else {
-							retr = undefined;
-						}
-					}
+                  case 'sideNumber': {
+                      let c = sideNumberOp.parseSideNumber(args.shift());
+                      if(c){
+                        retr[cmd].push(c);
+                      } else {
+                        retr = undefined;
+                      }
+                    }
                     break;
 
-                case 'color': {
-						let c = ColorOp.parseColor(args.shift());
-						if(c){
-							retr[cmd].push(c);
-						} else {
-							retr = undefined;
-						}
-					}
+                  case 'image': {
+                      let c = imageOp.parseImage(args.shift());
+                      if(c){
+                        retr[cmd].push(c);
+                      } else {
+                        retr = undefined;
+                      }
+                    }
+                    break;
+
+                  case 'color': {
+                      let c = ColorOp.parseColor(args.shift());
+                      if(c){
+                        retr[cmd].push(c);
+                      } else {
+                        retr = undefined;
+                      }
+                    }
                     break;
 
                 case 'character_id':
@@ -2743,6 +2877,15 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             },base)
             .value();
     };
+
+    const parseMoveArguments = (list,base) =>
+        list
+            .reduce((m,a)=>{
+                let args=a.replace(/(\|#|##)/g,'|%%HASHMARK%%').split(/[|#]/).map((v)=>v.replace('%%HASHMARK%%','#'));
+                m.push(moveOp.parse(args));
+                return m;
+            },base)
+            ;
 
     const parseReportArguments = (list,base) =>
         list
@@ -2900,13 +3043,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'bar1_reset':
                 case 'bar2_reset':
                 case 'bar3_reset': {
-						let field = k.replace(/_reset$/,'_max');
-						delta = mods[field] || token.get(field);
-						if(!_.isUndefined(delta)) {
-							mods[k.replace(/_reset$/,'_value')]=delta;
-						}
-					}
-                    break;
+                    let field = k.replace(/_reset$/,'_max');
+                    delta = mods[field] || token.get(field);
+                    if(!_.isUndefined(delta)) {
+                      mods[k.replace(/_reset$/,'_value')]=delta;
+                    }
+                  }
+                  break;
 
                 case 'bar1_value':
                 case 'bar2_value':
@@ -2921,25 +3064,32 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     }
                     break;
 
-				case 'currentSide':
-				case 'currentside':
-					mods = Object.assign( mods, f[0].getMods(token,mods));
-					break;
-				case 'imgsrc':
-					mods = Object.assign( mods, f[0].getMods(token,mods));
-					break;
+                  case 'currentSide':
+                  case 'currentside':
+                    mods = Object.assign( mods, f[0].getMods(token,mods));
+                    break;
+                  case 'imgsrc':
+                    mods = Object.assign( mods, f[0].getMods(token,mods));
+                    break;
 
-				case 'aura1_color':
-				case 'aura2_color':
-				case 'tint_color':
+                  case 'aura1_color':
+                  case 'aura2_color':
+                  case 'tint_color':
                     mods[k]=f[0].applyTo(token.get(k)).toHTML();
-					break;
+                    break;
 
                 default:
                     mods[k]=f[0];
                     break;
             }
         });
+
+      // move ops
+        _.each(modlist.move,function(f){
+          mods = Object.assign(mods, f.getMods(token,mods));
+        });
+
+
         token.set(mods);
         notifyObservers('tokenChange',token,ctx.prev);
         return ctx;
@@ -3111,6 +3261,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     on: [],
                     off: [],
                     set: {},
+                    move: [],
                     order: []
                 };
             let reports=[];
@@ -3208,8 +3359,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             case 'order':
                                 modlist.order=parseOrderArguments(cmds,modlist.order);
                                 break;
+
                             case 'report':
                                 reports= parseReportArguments(cmds,reports);
+                                break;
+
+                            case 'move':
+                                modlist.move = parseMoveArguments(cmds,modlist.move);
                                 break;
 
                             case 'ignore-selected':
