@@ -5,8 +5,8 @@
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.58';
-    const lastUpdate = 1592828703;
+    const version = '0.8.59';
+    const lastUpdate = 1593140188;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -175,7 +175,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
         class numberOp {
             static parse(field, str, permitBlank=true) {
-                const regexp = /^([=+\-/*!])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?$/i;
+                const regexp = /^([=+\-/*!])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?(!)?$/i;
 
                 if(!str.length && permitBlank){
                     return new numberOp(field, '','','' );
@@ -187,17 +187,19 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     let oper = m[1]||'';
                     let num = parseFloat(m[2]);
                     let scale = m[3]||'';
+                    let enforceBounds = '!'===m[4];
 
-                    return new numberOp(field, oper, num, scale.toLowerCase());
+                    return new numberOp(field, oper, num, scale.toLowerCase(),enforceBounds);
                 }
                 return {getMods:()=>({})};
             }
 
-            constructor(field,op,num,units){
+            constructor(field,op,num,units,enforce){
                 this.field=field;
                 this.operation = op;
                 this.num = num;
                 this.units = units;
+                this.enforce = enforce;
             }
 
             static ConvertUnitsPixel(num,unit,page){
@@ -282,6 +284,19 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
                 let current = parseFloat(token.get(this.field))||0;
                 const getValue = (k,m,t) => m.hasOwnProperty(k) ? m[k] : t.get(k);
+
+                let adjuster = (a)=>a;
+
+                if(this.enforce){
+                  switch(this.field){
+                    case 'bar1_value':
+                    case 'bar2_value':
+                    case 'bar3_value':
+                      adjuster = (a,t)=>Math.max(0,Math.min(a,t.get(this.field.replace(/_value/,'_max'))));
+                      break;
+                  }
+                }
+
                 switch(this.operation){
                     default:
                     case '=': {
@@ -296,14 +311,14 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                                     low_light_distance: (parseFloat(getValue('bright_light_distance',mods,token))+num)
                                 };
                             default:
-                                return {[this.field]:num};
+                                return {[this.field]:adjuster(num,token)};
                         }
                     }
-                    case '!': return {[this.field]:(current===0 ? num : '')};
-                    case '+': return {[this.field]:(current+num)};
-                    case '-': return {[this.field]:(current-num)};
-                    case '/': return {[this.field]:(current/(num||1))};
-                    case '*': return {[this.field]:(current*num)};
+                    case '!': return {[this.field]:adjuster((current===0 ? num : ''),token)};
+                    case '+': return {[this.field]:adjuster((current+num),token)};
+                    case '-': return {[this.field]:adjuster((current-num),token)};
+                    case '/': return {[this.field]:adjuster((current/(num||1)),0)};
+                    case '*': return {[this.field]:adjuster((current*num),0)};
                 }
             }
 
@@ -1973,6 +1988,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.inset(
                         _h.pre(`!token-mod --set name|${ch('"')}Sir Thomas${ch('"')} bar1_value|23`)
                     ),
+                    _h.paragraph(`Setting a bar to a numeric value will be treated as a relative change if prefaced by ${_h.code('+')}, ${_h.code('-')}, ${_h.code(ch('*'))}, or ${_h.code('/')}, or will be explicitly set when prefaced with a ${_h.code('=')}.  If you are setting a bar value, you can append a ${_h.code('!')} to the value to force it to be bounded between ${_h.code('0')} and ${_h.code('max')} for the bar.`),
                     _h.paragraph(`${_h.italic('bar1')}, ${_h.italic('bar2')} and ${_h.italic('bar3')} are special.  Any value set on them will be set in both the ${_h.italic('_value')} and ${_h.italic('_max')} fields for that bar.  This is most useful for setting hit points, particularly if the value comes from an inline roll.`),
                     _h.inset(
                         _h.pre(`!token-mod --set bar1|${ch('[')}${ch('[')}3d6+8${ch(']')}${ch(']')}`)
@@ -3054,6 +3070,15 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'bar1_value':
                 case 'bar2_value':
                 case 'bar3_value':
+                    delta=getRelativeChange(token.get(k),f[0]);
+                    if(_.isNumber(delta) || _.isString(delta)) {
+                      if(/!$/.test(f[0])) {
+                        delta = Math.max(0,Math.min(delta,token.get(k.replace(/_value$/,'_max'))));
+                      }
+                      mods[k]=delta;
+                    }
+                    break;
+
                 case 'bar1_max':
                 case 'bar2_max':
                 case 'bar3_max':
