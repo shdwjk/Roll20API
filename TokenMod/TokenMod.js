@@ -5,8 +5,8 @@
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.59';
-    const lastUpdate = 1593140188;
+    const version = '0.8.60';
+    const lastUpdate = 1595380861;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -31,12 +31,16 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             fliph: {type: 'boolean'},
             aura1_square: {type: 'boolean'},
             aura2_square: {type: 'boolean'},
-            
-                // UDL settings
+
+            // UDL settings
             has_bright_light_vision: {type: 'boolean'},
             has_night_vision: {type: 'boolean'},
             emits_bright_light: {type: 'boolean'},
             emits_low_light: {type: 'boolean'},
+            has_limit_field_of_vision: {type: 'boolean'},
+            has_limit_field_of_night_vision: {type: 'boolean'},
+            has_directional_bright_light: {type: 'boolean'},
+            
 
             // bounded by screen size
             left: {type: 'number', transform: 'screen'},
@@ -49,6 +53,16 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             rotation: {type: 'degrees'},
             light_angle: {type: 'circleSegment'},
             light_losangle: {type: 'circleSegment'},
+
+            limit_field_of_vision_center: {type: 'degrees'},
+            limit_field_of_night_vision_center: {type: 'degrees'},
+            directional_bright_light_center: {type: 'degrees'},
+
+            limit_field_of_vision_total: {type: 'circleSegment'},
+            limit_field_of_night_vision_total: {type: 'circleSegment'},
+            directional_bright_light_total: {type: 'circleSegment'},
+
+
 
             // distance
             light_radius: {type: 'numberBlank'},
@@ -82,6 +96,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             aura1_color: {type: 'color'},
             aura2_color: {type: 'color'},
             tint_color: {type: 'color'},
+            night_vision_tint: {type: 'color'},
 
             // Text : special
             name: {type: 'text'},
@@ -421,7 +436,6 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
           }
 
           constructor(op,set,indicies,urls){
-            //$d({op,set,indicies,urls});
             this.op = op||'/';
             this.set = set || false;
             this.indicies=indicies||[];
@@ -725,7 +739,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
           }
 
           static parseColor(input){
-            return Color.buildColor(input.toLowerCase().match(colorReg));
+            return Color.buildColor(`${input}`.toLowerCase().match(colorReg));
           }
           static buildColor(parsed){
             const idx = {
@@ -837,7 +851,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
               hsv: 5
             };
 
-            let parsed = input.toLowerCase().match(colorOpReg)||[];
+            let parsed = `${input}`.toLowerCase().match(colorOpReg)||[];
 
             if(parsed.length) {
               return Object.assign(new ColorOp(parsed[idx.ops]||'='), Color.buildColor(parsed.slice(1)));
@@ -1558,7 +1572,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         ol: (...o) => `<ol>${_h.items(o)}</ol>`,
         ul: (...o) => `<ul>${_h.items(o)}</ul>`,
         grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`, 
-        cell: (o) =>  `<div style="width: 160px; padding: 0 3px; float: left;">${o}</div>`,
+        cell: (o) =>  `<div style="width: 200px; padding: 0 3px; float: left;">${o}</div>`,
         statusCell: (o) =>  {
             let text = `${o.getName()}${o.getName()!==o.getTag()?` [${o.getTag()}]`:''}`;
             return `<div style="width: auto; padding: .2em; margin: .1em .25em; border: 1px solid #ccc; border-radius: .25em; background-color: #eee; line-height:1.5em; height: 1.5em;float:left;">${o.getHTML()}${text}</div>`;
@@ -1728,6 +1742,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell(''),
 
                             _h.cell("has_bright_light_vision"),
+                            _h.cell("has_limit_field_of_vision"),
+                            _h.cell("has_limit_field_of_night_vision"),
+                            _h.cell("has_directional_bright_light"),
                             _h.cell("bright_vision"),
                             _h.cell("has_night_vision"),
                             _h.cell("night_vision"),
@@ -1860,7 +1877,10 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.minorhead('Available Degrees Properties:'),
                     _h.inset(
                         _h.grid(
-                            _h.cell('rotation')
+                            _h.cell('rotation'),
+                            _h.cell("limit_field_of_vision_center"),
+                            _h.cell("limit_field_of_night_vision_center"),
+                            _h.cell("directional_bright_light_center")
                         )
                     ),
                     _h.paragraph('Rotating a token by 180 degrees.'),
@@ -1878,7 +1898,10 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.inset(
                         _h.grid(
                             _h.cell('light_angle'),
-                            _h.cell('light_losangle')
+                            _h.cell('light_losangle'),
+                            _h.cell("limit_field_of_vision_total"),
+                            _h.cell("limit_field_of_night_vision_total"),
+                            _h.cell("directional_bright_light_total")
                         )
                     ),
                     _h.paragraph('Setting line of sight angle to 90 degrees.'),
@@ -1905,7 +1928,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.grid(
                             _h.cell('tint_color'),
                             _h.cell('aura1_color'),
-                            _h.cell('aura2_color')
+                            _h.cell('aura2_color'),
+                            _h.cell('night_vision_tint')
                         )
                     ),
                     _h.paragraph('Turning off the tint and setting aura1 to a reddish color.  All of the following are the same:'),
@@ -2709,11 +2733,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'degrees':
                     if( '=' === args[0][0] ) {
                         t='=';
-                        args[0]=_.rest(args[0]);
+                        args[0]=args[0].slice(1);
                     } else {
                         t='';
                     }
-                    retr[cmd].push(t+(_.contains(['-','+'],args[0][0]) ? args[0][0] : '') + Math.abs(transforms.degrees(args.shift())));
+                    retr[cmd].push(t+(['-','+'].includes(args[0][0]) ? args[0][0] : '') + Math.abs(transforms.degrees(args.shift())));
                     break;
 
                 case 'circleSegment':
@@ -3027,14 +3051,20 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     break;
 
                 case 'rotation':
+                case 'limit_field_of_vision_center':
+                case 'limit_field_of_night_vision_center':
+                case 'directional_bright_light_center':
                     delta=getRelativeChange(token.get(k),f[0]);
                     if(_.isNumber(delta)) {
-                        mods[k]=(delta%360);
+                        mods[k]=(((delta%360)+360)%360);
                     }
                     break;
 
                 case 'light_angle':
                 case 'light_losangle':
+                case 'limit_field_of_vision_total':
+                case 'limit_field_of_night_vision_total':
+                case 'directional_bright_light_total':
                     delta=getRelativeChange(token.get(k),f[0]);
                     if(_.isNumber(delta)) {
                         mods[k] = Math.min(360,Math.max(0,delta));
@@ -3100,6 +3130,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                   case 'aura1_color':
                   case 'aura2_color':
                   case 'tint_color':
+                  case 'night_vision_tint':
                     mods[k]=f[0].applyTo(token.get(k)).toHTML();
                     break;
 
@@ -3113,7 +3144,6 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         _.each(modlist.move,function(f){
           mods = Object.assign(mods, f.getMods(token,mods));
         });
-
 
         token.set(mods);
         notifyObservers('tokenChange',token,ctx.prev);
