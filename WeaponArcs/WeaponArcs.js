@@ -6,8 +6,8 @@
 const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'WeaponArcs';
-  const version = '0.1.0';
-  const lastUpdate = 1595644370;
+  const version = '0.1.1';
+  const lastUpdate = 1595854094;
   const schemaVersion = 0.1;
 
   const defaults = {
@@ -614,8 +614,8 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
                   width = angle;
                   angle = 0;
                 }
-                angle = rangeAngle(angle);
-                width = boundAngle(width);
+                angle = rangeAngle(angle)||0;
+                width = boundAngle(width)||0;
 
                 let distanceParts = cmds.shift().match(regex.numberUnit);
                 let distance = Math.abs(ConvertUnitsPixel(distanceParts[1],distanceParts[2],page));
