@@ -6,8 +6,8 @@
 const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'WeaponArcs';
-  const version = '0.1.1';
-  const lastUpdate = 1595854094;
+  const version = '0.1.2';
+  const lastUpdate = 1596221214;
   const schemaVersion = 0.1;
 
   const defaults = {
@@ -346,11 +346,13 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
 
   const PathPropsPreserved = [ 'height','width','top','left','scaleX','scaleY','rotation','controlledby'];
   const onPathChange = (obj,prev) => {
-    let pod = simpleObj(obj);
-    let propsIn = PathPropsPreserved.reduce((m,k)=>({...m,[k]:pod[k]}),{});
-    let props = diffAtoB(propsIn,prev);
-    if(Object.keys(props)){
-      obj.set(props);
+    if(lookupArcInfo.hasOwnProperty(obj.id)){
+        let pod = simpleObj(obj);
+        let propsIn = PathPropsPreserved.reduce((m,k)=>({...m,[k]:pod[k]}),{});
+        let props = diffAtoB(propsIn,prev);
+        if(Object.keys(props)){
+          obj.set(props);
+        }
     }
   };
 
