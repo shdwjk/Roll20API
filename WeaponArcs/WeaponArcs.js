@@ -6,8 +6,8 @@
 const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'WeaponArcs';
-  const version = '0.1.2';
-  const lastUpdate = 1596221214;
+  const version = '0.1.3';
+  const lastUpdate = 1596546985;
   const schemaVersion = 0.1;
 
   const defaults = {
@@ -139,7 +139,8 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
             `!weapon-arc`,
             _h.optional(
               '--help',
-              `--add ${_h.required(`${_h.optional('angle|')}width`)} ${_h.required("range")} ${_h.optional("fill color")} ${_h.optional("stroke color")} ${_h.optional("stroke thickness")}`,
+              `--add ${_h.required(`${_h.optional('angle|')}width`)} ${_h.required(`${_h.optional('offset|')}range`)} ${_h.optional("fill color")} ${_h.optional("stroke color")} ${_h.optional("stroke thickness")}`,
+              `--addEdge ${_h.required(`${_h.optional('angle|')}width`)} ${_h.required(`${_h.optional('offset|')}range`)} ${_h.optional("fill color")} ${_h.optional("stroke color")} ${_h.optional("stroke thickness")}`,
               `--remove-at ${_h.required("angle")} ${_h.optional("angle ...")}`,
               '--clear'
             )
@@ -149,12 +150,13 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
             `${_h.bold('--add')} -- Creates an arc attached to each selected token.${
               _h.ul(
                 `${_h.bold('angle|width')} -- A pair of numbers in degrees. ${_h.bold('angle')} is the direction off of the token that the arc will be centered on.  0 is up on the token (the direction of the Rotation handle), and numbers proceed clockwise.  ${_h.bold('width')} is the width of the arc, to be centered on the ${_h.bold('angle')} direction. If ${_h.bold('angle|')} is omitted, it is treated as 0.`,
-                `${_h.bold('range')} -- The distance the arc should extend from the center of the token.  You can use ${_h.code('u')} for  Roll20 Units (70px), ${_h.code('g')} for grid scale units, or any of ${_h.code('s')}, ${_h.code('ft')}, ${_h.code('m')}, ${_h.code('km')}, ${_h.code('mi')}, ${_h.code('in')}, ${_h.code('cm')}, ${_h.code('un')}, ${_h.code('hex')}, or ${_h.code('sq')} for map scale units.`,
+                `${_h.bold('offset|range')} -- A pair of numbers that describe the distance where the arc begins and how long it is. ${_h.code('offset')} moves the origin of the arc away from the default (center of the token for ${_h.code('--add')}).  ${_h.code('offset')} defaults to ${_h.code('0')}. ${_h.code('distance')} is the length of the arc from the arc origin to the outer edge.  You can use ${_h.code('u')} for  Roll20 Units (70px), ${_h.code('g')} for grid scale units, or any of ${_h.code('s')}, ${_h.code('ft')}, ${_h.code('m')}, ${_h.code('km')}, ${_h.code('mi')}, ${_h.code('in')}, ${_h.code('cm')}, ${_h.code('un')}, ${_h.code('hex')}, or ${_h.code('sq')} for map scale units.`,
                 `${_h.bold('fill color')} -- ${_h.bold('(Optional)')} This is the color the arc will be filled with.  It must be an HTML color code and can include an opacity.  It can be any of 3, 4, 6, or 8 letter formats: ${_h.code('#RGB')}, ${_h.code('#RGBA')}, ${_h.code('#RRGGBB')}, or ${_h.code('#RRGGBBAA')}  Omitting the opacity will default to ${_h.code(defaults.color1Opacity)}. The color defaults to ${_h.code(defaults.color1)}.`,
                 `${_h.bold('stroke color')} -- ${_h.bold('(Optional)')} This is the color of the line around the arc.  It must be an HTML color code and can include an opacity.  It can be any of 3, 4, 6, or 8 letter formats: ${_h.code('#RGB')}, ${_h.code('#RGBA')}, ${_h.code('#RRGGBB')}, or ${_h.code('#RRGGBBAA')}  Omitting the opacity will default to ${_h.code(defaults.color2Opacity)}. The color defaults to ${_h.code(defaults.color2)}.`,
                 `${_h.bold('stroke thickness')} -- ${_h.bold('(Optional)')} This is the thickness of the line around the arc.  It can be any positive number and will default to ${_h.code(defaults.strokeWidth)}.`
               )
             }`,
+            `${_h.bold('--addEdge')} -- Identical to ${_h.code('--add')}, except it starts from the edge of the token.`,
             `${_h.bold('--remove-at')} -- Removes arcs at the specified angles from all selected tokens.`,
             `${_h.bold('--clear')} -- Removes all arcs attached to the selected tokens.`
           )
@@ -188,6 +190,27 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
           _h.inset(
             _h.preformatted(
               '!weapon-arc --add 15 7u'
+            )
+          ),
+
+          _h.paragraph(`Creating an arc in the forward direction, starting 3 units from the center of the token, which is 15 degrees wide and 7 units long with the default colors and strokes:`),
+          _h.inset(
+            _h.preformatted(
+              '!weapon-arc --add 15 3u|7u'
+            )
+          ),
+
+          _h.paragraph(`Creating an arc in the forward direction, starting at the edge of the token, which is 15 degrees wide and 7 units long with the default colors and strokes:`),
+          _h.inset(
+            _h.preformatted(
+              '!weapon-arc --addEdge 15 7u'
+            )
+          ),
+
+          _h.paragraph(`Creating an arc in the forward direction, starting 3 units from the edge of the token, which is 15 degrees wide and 7 units long with the default colors and strokes:`),
+          _h.inset(
+            _h.preformatted(
+              '!weapon-arc --addEdge 15 3u|7u'
             )
           ),
 
@@ -464,31 +487,40 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
     });
   })();
 
-  const addWeaponArc = (token,rotation,angle,length,c1,c2,stroke) => {
-    let data = buildArc(angle,length);
-    let visible = 'objects' === token.get('layer');
+  const addWeaponArc = (options) => {
+    // token,rotation,angle,length,c1,c2,stroke,align
+
+    let data = buildArc(options.width, options.distance);
+    let padding = options.offset*2;
+    switch(options.align){
+      case 'edge':
+        padding+=(parseInt(options.token.get('width'))||0);
+        break;
+    }
+
+    let visible = 'objects' === options.token.get('layer');
     let arc = createObj('path',{
-      fill: c1,
-      stroke: c2,
-      stroke_width: stroke,
-      rotation: token.get('rotation')+rotation,
+      fill: options.color1,
+      stroke: options.color2,
+      stroke_width: options.strokeWidth,
+      rotation: options.token.get('rotation')+options.angle,
       width: 2*data.maxX,
-      height: 2*data.maxY,
-      top: token.get('top'),
-      left: token.get('left'),
+      height: 2*data.maxY+padding,
+      top: options.token.get('top'),
+      left: options.token.get('left'),
       scaleX: 1,
       scaleY: 1,
-      controlledby: token.id,
+      controlledby: options.token.id,
       layer: visible ? 'map' : 'gmlayer',
-      path: pathDataFromPoints(data.points,rotation),
-      pageid: token.get('pageid')
+      path: pathDataFromPoints(data.points),
+      pageid: options.token.get('pageid')
     });
 
     if(visible){
       toFrontFixed(arc);
     }
 
-    registerArc(token.id,arc.id,rotation);
+    registerArc(options.token.id,arc.id,options.angle);
   };
 
   const ConvertUnitsPixel = (num,unit,page) => {
@@ -597,13 +629,24 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
         args.forEach(arg=>{
           let cmds = arg.split(/\s+/);
           /*
-          !weapon-arc --add 90|60 5u #ff0000 #0000ff
+          !weapon-arc --add 90|60 6u|5u #ff0000 #0000ff
+          !weapon-arc --addEdge 90|60 5u #ff0000 #0000ff
+          !weapon-arc --addE 90|60 5u #ff0000 #0000ff
           !weapon-arc --clear
           !weapon-arc --list
           !weapon-arc --remove 3
           !weapon-arc --remove-at 90
           */
+          let options = {
+            align: 'center'
+          };
+
           switch(cmds.shift().toLowerCase()){
+            case 'addedge':
+            case 'adde':
+              options.align='edge';
+              /* break; // intentional dropthrough */ /* falls through */
+
             case 'add': {
               if(tokens.length){
                 let page = getObj('page', tokens[0].get('pageid'));
@@ -619,7 +662,19 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
                 angle = rangeAngle(angle)||0;
                 width = boundAngle(width)||0;
 
-                let distanceParts = cmds.shift().match(regex.numberUnit);
+                let offsetRead;
+                let distanceRead;
+                [offsetRead,distanceRead] = cmds.shift().split(/\|/);
+
+                if(undefined == distanceRead){
+                  distanceRead = offsetRead;
+                  offsetRead = '0';
+                }
+
+                let offsetParts = offsetRead.match(regex.numberUnit);
+                let offset = Math.abs(ConvertUnitsPixel(offsetParts[1],offsetParts[2],page));
+
+                let distanceParts = distanceRead.match(regex.numberUnit);
                 let distance = Math.abs(ConvertUnitsPixel(distanceParts[1],distanceParts[2],page));
 
                 let color1 = `${defaults.color1}${defaults.color1Opacity}`;
@@ -632,7 +687,7 @@ const WeaponArcs = (() => { // eslint-disable-line no-unused-vars
                 }
                 let strokeWidth = parseFloat(cmds[0]) || defaults.strokeWidth;
 
-                tokens.forEach( t => addWeaponArc(t,angle,width,distance,color1,color2,strokeWidth));
+                tokens.forEach( token => addWeaponArc({...options,token,angle,width,offset,distance,color1,color2,strokeWidth}));
               }
             }
             break;
