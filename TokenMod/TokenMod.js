@@ -5,8 +5,8 @@
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.60';
-    const lastUpdate = 1595380861;
+    const version = '0.8.61';
+    const lastUpdate = 1597179245;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -1111,7 +1111,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             }
 
             static parse(status) {
-                let s = status.split(/:/);
+                let s = status.split(/[:;]/);
                 if(s.hasOwnProperty(1) && 0 === s[1].length){
                     s = [`${s[0]}::${s[2]}`,...s.slice(3)];
                 }
@@ -2070,6 +2070,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     ),
                     _h.paragraph(`${_h.bold('Note:')} TokenMod will now show 0 on status markers everywhere that makes sense to do.`),
 
+                    _h.paragraph(`You can use a semicolon (${_h.code(';')}) in place of a colon (${_h.code(':')}) to allow setting statuses with numbers from API Buttons.`),
+                    _h.inset(
+                        _h.pre('[Set some statuses](!token-mod --set statusmarkers|blue;0|red;3|green|padlock;2|broken-shield;7)')
+                    ),
+
                     _h.paragraph(`The numbers following a status can be prefaced with a ${_h.code('+')} or ${_h.code('-')}, which causes their value to be applied to the current value. Here${ch("'")}s an example showing blue getting incremented by 2, and padlock getting decremented by 1.  Values will be bounded between 0 and 9.`),
                     _h.inset(
                         _h.pre('!token-mod --set statusmarkers|blue:+2|padlock:-1')
@@ -2126,17 +2131,26 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.pre('!token-mod --set statusmarkers|-blue[]')
                     ),
 
+                    _h.paragraph('All of these operations can be combine in a single statusmarkers command.'),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|blue:3|-dead|red:3')
+                    ),
+
                     _h.minorhead('Available Status Markers:'),
                     _h.inset(
                         _h.grid(
                             ...StatusMarkers.getOrderedList().map(tm=>_h.statusCell(tm))
                         )
                     ),
-
-                    _h.paragraph('All of these operations can be combine in a single statusmarkers command.'),
+                    _h.paragraph(`Status Markers with a space in the name must be specified using the tag name, which appears in ${_h.code('[')}${_h.code(']')} above.`),
                     _h.inset(
-                        _h.pre('!token-mod --set statusmarkers|blue:3|-dead|red:3')
+                        _h.pre('!token-mod --set statusmarkers|Mountain_Pass::1234568')
+                    ),
+                    _h.paragraph(`You can use a semicolon (${_h.code(';')}) in place of a colon (${_h.code(':')}) to allow setting statuses with numbers from API Buttons.`),
+                    _h.inset(
+                        _h.pre('[3 Mountain Pass](!token-mod --set statusmarkers|Mountain_Pass;;1234568;3)')
                     )
+
                 )
             ),
 

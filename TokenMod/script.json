@@ -1,7 +1,7 @@
 {
   "name": "TokenMod",
   "script": "TokenMod.js",
-  "version": "0.8.60",
+  "version": "0.8.61",
   "description": "TokenMod provides an interface to setting almost all settable properties of a token.\r\rFor instructions see the *Help: TokenMod* Handout in game, or run `!token-mod --help`.",
   "authors": "The Aaron",
   "roll20userid": "104025",
