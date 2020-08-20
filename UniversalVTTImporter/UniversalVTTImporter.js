@@ -5,8 +5,8 @@
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.1';
-  const lastUpdate = 1592794899;
+  const version = '0.1.2';
+  const lastUpdate = 1597942573;
   const schemaVersion = 0.1;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -21,7 +21,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     let props = {type:'handout', name:`Help: ${scriptName}`};
     let hh = findObjs(props)[0];
     if(!hh) {
-      hh = createObj('handout',Object.assign(props, {inplayerjournals: "all", avatar: helpIcon}));
+      hh = createObj('handout',Object.assign(props, {avatar: helpIcon}));
       create = true;
     }
     if(create || version !== state[scriptName].lastHelpVersion){
@@ -351,9 +351,18 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
             name: '',
             aura1_radius: -0.5,
             aura1_color: LightColor,
+
+            // LDL
             light_otherplayers: true,
             light_dimradius: ld.dr,
             light_radius: ld.r,
+
+            // UDL
+            emits_bright_light: true,
+            emits_low_light: true,
+            bright_light_distance: ld.r,
+            low_light_distance: ld.dr,
+
             width:70,
             height:70,
             top: ld.pt.y,
@@ -364,6 +373,11 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
           });
           
         });
+    }
+
+    if(true === page.get('dynamic_lighting_enabled')){
+      page.set('dynamic_lighting_enabled',false);
+      setTimeout(()=>page.set('dynamic_lighting_enabled',true),100);
     }
 
     return stats;
