@@ -4,9 +4,10 @@
 
 const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
 
-  const version = '0.4.2';
-  const lastUpdate = 1586578353;
-  const schemaVersion = 0.1;
+  const scriptName = "SpinTokens";
+  const version = '0.4.3';
+  const lastUpdate = 1599507725;
+  const schemaVersion = 0.2;
   const stepRate = 200;
   const defaultSecondsPerCycle = 20;
   const millisecondsPerSecond = 1000;
@@ -14,15 +15,33 @@ const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
 //  let spinInterval = false;
 
   const checkInstall = () => {
-        log('-=> SpinTokens v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+        log(`-=> ${scriptName} v${version} <=-  [${new Date(lastUpdate*1000)}]`);
 
-        if( ! _.has(state,'SpinTokens') || state.SpinTokens.version !== schemaVersion) {
+        if( ! _.has(state,scriptName) || state[scriptName].version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
+            switch(state[scriptName] && state[scriptName].version) {
+              case 0.1:
+                Object.keys(state[scriptName].spinners)
+                  .forEach(id => state[scriptName].spinners[id] = {
+                    ...state[scriptName].spinners[id],
+                    angle: false,
+                    base: false,
+                    direction: 1
+                  });
 
-            state.SpinTokens = {
-              version: schemaVersion,
-              spinners: {}
-            };
+                /* break; // intentional dropthrough */ /* falls through */
+
+              case 'UpdateSchemaVersion':
+                state[scriptName].version = schemaVersion;
+                break;
+
+              default:
+                state[scriptName] = {
+                  version: schemaVersion,
+                  spinners: {}
+                };
+                break;
+            }
         }
 
        /* spinInterval = */ setInterval(animateRotation,stepRate);
@@ -95,6 +114,7 @@ const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
               _h.font.command(
                 `!spin-start`,
                 _h.optional(`Seconds Per Cycle`),
+                _h.optional(`Angle Restriction`),
                 _h.optional(`--help`, 
                   _h.optional(
                     `--ids`,
@@ -105,7 +125,8 @@ const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
               ),
               _h.paragraph('Starts all specified tokens spinning.  Tokens are specified by selecting them, and optionally by specifying their token_ids using the --ids argument.'),
               _h.ul(
-                `${_h.bold('Seconds Per Cycle')} -- specifies how fast the tokens should spin.  This is the number of seconds before the token spins around in one complete circle.  A second hand would use the number 60, for example.`,
+                `${_h.bold('Seconds Per Cycle')} -- specifies how fast the tokens should spin.  This is the number of seconds before the token spins around in one complete circle.  A second hand would use the number ${_h.code('60')}, for example.  For a restricted angle, this is how long it takes to make one forward and backward sweep.`,
+                `${_h.bold('Angle Restriction')} -- restricts the rotation to the specified angle.  ${_h.code('180')} will restrict the sweep to only half a circle.`,
                 `${_h.bold('--ids')} -- specifies additional tokens to apply the spin to.`,
                 `${_h.bold('--help')} -- shows this help message.`
               ),
@@ -154,16 +175,18 @@ const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
         }
     };
 
-    const startSpinning = (rate,token) => {
-      state.SpinTokens.spinners[token.id]={
+    const startSpinning = (rate,token,angle) => {
+      state[scriptName].spinners[token.id]={
         id: token.id,
+        angle: (angle ? angle : false),
+        base: parseInt(token.get('rotation')),
         page: token.get('pageid'),
         rate: rate*millisecondsPerSecond
       };
     };
 
     const stopSpinning = (token) => {
-      delete state.SpinTokens.spinners[token.id];
+      delete state[scriptName].spinners[token.id];
     };
 
 
@@ -186,6 +209,8 @@ const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
         return false;
     };
 
+    const bound = (n,m,M)=>Math.min(M,Math.max(m,n));
+
     const handleInput = (msg) => {
       let match = msg.content.match(/^!spin-start|stop(?:\b\s|$)/);
       if ( "api" === msg.type && match) {
@@ -196,6 +221,7 @@ const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
         let ids = (msg.selected || []).map(o=>o._id);
 
         let secondsPerCycle = defaultSecondsPerCycle;
+        let restrictedAngle = false;
         let operation = ()=>{};
         let GMAuthority = playerIsGM(msg.playerid) || 'API' === msg.playerid;
         let exitWithHelp = false;
@@ -216,7 +242,11 @@ const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
 
               case '!spin-start':
                 secondsPerCycle = parseFloat(cmds[1]) || secondsPerCycle;
-                operation = (o)=>startSpinning(secondsPerCycle,o);
+                restrictedAngle = parseFloat(cmds[2]);
+                if(restrictedAngle){
+                  restrictedAngle = bound(restrictedAngle,0,360);
+                }
+                operation = (o)=>startSpinning(secondsPerCycle,o,restrictedAngle);
                 break;
 
               case '!spin-stop':
@@ -265,9 +295,21 @@ const SpinTokens = (()=>{ // eslint-disable-line no-unused-vars
 				if(!s) {
 					delete state.SpinTokens.spinners[sdata.id];
 				} else {
-					s.set({
-						rotation: (( (Date.now()%sdata.rate)/sdata.rate )*360)
-					});
+                    if(sdata.angle){
+                      let p = (4*((Date.now()%sdata.rate)/sdata.rate ));
+                      if(p>2) {
+                        p=3-p;
+                      } else {
+                        p-=1;
+                      }
+                        s.set({
+                            rotation: (sdata.base + ((sdata.angle/2)*p))
+                        });
+                    } else {
+                        s.set({
+                            rotation: (( (Date.now()%sdata.rate)/sdata.rate )*360)
+                        });
+                    }
 				}
 			});
 
