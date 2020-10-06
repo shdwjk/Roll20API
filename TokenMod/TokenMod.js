@@ -1748,7 +1748,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell("has_limit_field_of_vision"),
                             _h.cell("has_limit_field_of_night_vision"),
                             _h.cell("has_directional_bright_light"),
-                            _h.cell("has_directional_low_light"),
+                            //_h.cell("has_directional_low_light"), //TODO: add when the Roll20 app renders directional low light properties correctly
                             _h.cell("bright_vision"),
                             _h.cell("has_night_vision"),
                             _h.cell("night_vision"),
@@ -1884,8 +1884,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell('rotation'),
                             _h.cell("limit_field_of_vision_center"),
                             _h.cell("limit_field_of_night_vision_center"),
-                            _h.cell("directional_bright_light_center"),
-                            _h.cell("directional_low_light_center")
+                            _h.cell("directional_bright_light_center")//, //TODO: add when the Roll20 app renders directional low light properties correctly
+                            //_h.cell("directional_low_light_center") //TODO: add when the Roll20 app renders directional low light properties correctly
                         )
                     ),
                     _h.paragraph('Rotating a token by 180 degrees.'),
@@ -1906,8 +1906,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell('light_losangle'),
                             _h.cell("limit_field_of_vision_total"),
                             _h.cell("limit_field_of_night_vision_total"),
-                            _h.cell("directional_bright_light_total"),
-                            _h.cell("directional_low_light_total")
+                            _h.cell("directional_bright_light_total")//, //TODO: add when the Roll20 app renders directional low light properties correctly
+                            //_h.cell("directional_low_light_total") //TODO: add when the Roll20 app renders directional low light properties correctly
                         )
                     ),
                     _h.paragraph('Setting line of sight angle to 90 degrees.'),
