@@ -3077,14 +3077,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     delta=getRelativeChange(token.get(k),f[0]);
                     if(_.isNumber(delta)) {
                         mods[k]=(((delta%360)+360)%360);
-                        
                     }
                     break;
+                    
                 case 'directional_low_light_center':
                     delta=getRelativeChange(token.get(k),f[0]);
                     if(_.isNumber(delta)) {
                         mods[k]=(((delta%360)+360)%360);
-                        
                     }
                     break;
 
@@ -3098,13 +3097,14 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         mods[k] = Math.min(360,Math.max(0,delta));
                     }
                     break;
+                    
                 case 'directional_low_light_total':
                     delta=getRelativeChange(token.get(k),f[0]);
                     if(_.isNumber(delta)) {
                         mods[k] = Math.min(360,Math.max(0,delta));
-                        
                     }
                     break;
+                    
                 case 'light_radius':
                 case 'light_dimradius':
                 case 'light_multiplier':
