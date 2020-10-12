@@ -6,8 +6,8 @@ var globalconfig = globalconfig || undefined;
 var MonsterHitDice = MonsterHitDice || (function() {
     'use strict';
 
-    var version = '0.3.8',
-        lastUpdate = 1588630167,
+    var version = '0.3.9',
+        lastUpdate = 1602527802,
         schemaVersion = 0.2,
         tokenIds = [],
 
@@ -73,11 +73,11 @@ var MonsterHitDice = MonsterHitDice || (function() {
                         globalconfigCache: {lastsaved:0},
                         config: {
                             bar: 3,
-                            hitDiceAttribute: 'npc_HP_hit_dice',
+                            hitDiceAttribute: 'npc_hpformula',
                             findSRDFormula: false,
-                            useConBonus: true,
-                            conBonusAttribute: 'npc_constitution',
-                            conBonusIsStat: true
+                            useConBonus: false,
+                            conBonusAttribute: '',
+                            conBonusIsStat: false
                         }
                     };
             }
