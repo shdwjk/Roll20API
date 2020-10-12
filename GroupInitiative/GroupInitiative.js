@@ -5,8 +5,8 @@
 const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "GroupInitiative";
-    const version = '0.9.34';
-    const lastUpdate = 1589282532;
+    const version = '0.9.35';
+    const lastUpdate = 1602510347;
     const schemaVersion = 1.3;
 
     const isString = (s)=>'string'===typeof s || s instanceof String;
@@ -110,9 +110,28 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
           state[scriptName].dieSize = 20;
           state[scriptName].diceCount = 0;
         }
+      },
+      'stargaterpgofficial': {
+        title: `Stargate RPG by Wyvern Gaming`,
+        desc: `This will configure GroupInitiative to work with the Official Stargate RPG sheet. It adds Initiative & Moxie options for rolling, with Initiative enabled by default.  You can swap between using Initiative and Moxie by issuing the command "!group-init --promote 2" in the chat, with subsequent calls again reversing the selection.`,
+        func: ()=>{
+          state[scriptName].bonusStatGroups = [
+            [
+              {
+                "attribute": "init"
+              }
+            ],
+            [
+              {
+                "attribute": "moxie"
+              }
+            ]
+          ];
+          state[scriptName].dieSize = 20;
+          state[scriptName].diceCount = 1;
+        }
       }
     };
-
 
     const HE = (() => {
         const esRE = (s) => s.replace(/(\\|\/|\[|\]|\(|\)|\{|\}|\?|\+|\*|\||\.|\^|\$)/g,'\\$1');
@@ -799,7 +818,7 @@ const _h = {
 
           sortOptionsConfig: ( /* context */ ) => _h.section('Sorter Options',
             _h.paragraph(
-              `Sorting adjusts the order of entries in the Turn Order when the Sort command is issued.`
+              `The Sorter is used to determine how to reorder entries in the Turn Order whenever GroupInitiative performs a sort.  Sorting occurs when the sort command (${_h.code('!group-init --sort')}) is issued, when stack entries are merged into the current Turn Order, and when new entries are added to the Turn Order with a GroupInitiative command (like ${_h.code('!group-init')}).`
             ),
             _h.inset(
               _h.ul(
