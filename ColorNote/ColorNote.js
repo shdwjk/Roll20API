@@ -1,11 +1,15 @@
+// Github:   https://github.com/shdwjk/Roll20API/blob/master/ColorNote/ColorNote.js
+// By:       The Aaron, Arcane Scriptomancer
+// Contact:  https://app.roll20.net/users/104025/the-aaron
+
 var ColorNote = ColorNote || (function() {
     'use strict';
  
-    var version = '0.2.2',
-        lastUpdate = 1490368932,
+    var version = '0.2.3',
+        lastUpdate = 1606428285,
  
     ch = function (c) {
-    	var entities = {
+        var entities = {
 			'<' : 'lt',
 			'>' : 'gt',
 			"'" : '#39',
@@ -38,13 +42,13 @@ var ColorNote = ColorNote || (function() {
 		+'ColorNote v'+version
 	+'</div>'
 	+'<div style="padding-left:10px;margin-bottom:3px;">'
-		+'<p>ColorNote provides the <b>!note</b> command, which looks like /em but but colored differently.</p>'
+		+'<p>ColorNote provides a way for players to output text similar to <code>/em</code>, but colored based on their player color.</p>'
 	+'</div>'
 	+'<b>Commands</b>'
 	+'<div style="padding-left:10px;">'
 		+'<b><span style="font-family: serif;">!note '+ch('<')+'message'+ch('>')+'</span></b>'
 		+'<div style="padding-left: 10px;padding-right:20px">'
-			+'<p>Sends a message in the same manner as <i>/em</i> does, but with dark green text on a light green background.</p>'
+			+'<p>Sends a message in the same manner as <i>/em</i> does, but with their player color as the background. Foreground text will be white or black based on the brightness of the player color.</p>'
 			+'<ul>'
 				+'<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">'
 					+'<b><span style="font-family: serif;">'+ch('<')+'message'+ch('>')+'</span></b> '+ch('-')+' The message to output as part of the note.'
