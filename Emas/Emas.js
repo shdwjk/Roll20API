@@ -1,12 +1,16 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/Emas/Emas.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.Emas={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.Emas.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const Emas = (() => {
     'use strict';
 
-	const version = '0.8.3',
-        lastUpdate = 1532274889,
+	const version = '0.8.4';
+    API_Meta.Emas.version = version;
+    const lastUpdate = 1609295567,
 
 	ch = function (c) {
 		var entities = {
@@ -209,3 +213,5 @@ on("ready",function(){
 	Emas.CheckInstall();
 	Emas.RegisterEventHandlers();
 });
+
+{try{throw new Error('');}catch(e){API_Meta.Emas.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.Emas.offset);}}

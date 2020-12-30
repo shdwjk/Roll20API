@@ -1,12 +1,16 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/BounceTokens/BounceTokens.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.BounceTokens={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.BounceTokens.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 var BounceTokens = BounceTokens || (function(){
     'use strict';
 
-	var version = '0.1.2',
-        lastUpdate = 1523205020,
+	var version = '0.1.3';
+    API_Meta.BounceTokens.version = version;
+    var lastUpdate = 1609295654,
 		schemaVersion = 0.1,
 		stepRate = 200,
 		defaultSecondsPerCycle = 20,
@@ -202,3 +206,5 @@ on("ready",function(){
 	BounceTokens.CheckInstall();
 	BounceTokens.RegisterEventHandlers();
 });
+
+{try{throw new Error('');}catch(e){API_Meta.BounceTokens.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.BounceTokens.offset);}}

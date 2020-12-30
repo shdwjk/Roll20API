@@ -1,12 +1,16 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/InitiativeAssistant/InitiativeAssistant.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.InitiativeAssistant={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.InitiativeAssistant.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 var InitiativeAssistant = InitiativeAssistant || (function() {
     'use strict';
 
-    var version = '0.1.5',
-        lastUpdate = 1551928364,
+    var version = '0.1.6';
+    API_Meta.InitiativeAssistant.version = version;
+    var lastUpdate = 1609295237,
         schemaVersion = 0.2,
         sorters = {
             'None': function(to) {
@@ -345,3 +349,5 @@ on('ready',function() {
     InitiativeAssistant.CheckInstall();
     InitiativeAssistant.RegisterEventHandlers();
 });
+
+{try{throw new Error('');}catch(e){API_Meta.InitiativeAssistant.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.InitiativeAssistant.offset);}}

@@ -1,12 +1,16 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/TokenMod/TokenMod.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.TokenMod.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.61';
-    const lastUpdate = 1597179245;
+    const version = '0.8.62';
+    API_Meta.TokenMod.version = version;
+    const lastUpdate = 1609291902;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -317,13 +321,15 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     case '=': {
                         switch(this.field){
                             case 'bright_light_distance':
+                                num=num||0;
                                 return {
                                     bright_light_distance: num,
-                                    low_light_distance: (parseFloat(getValue('low_light_distance',mods,token))-parseFloat(getValue('bright_light_distance',mods,token))+num)
+                                    low_light_distance: (parseFloat(getValue('low_light_distance',mods,token)||0)-(parseFloat(getValue('bright_light_distance',mods,token))||0)+num)
                                 };
                             case 'low_light_distance':
+                                num=num||0;
                                 return {
-                                    low_light_distance: (parseFloat(getValue('bright_light_distance',mods,token))+num)
+                                    low_light_distance: ((parseFloat(getValue('bright_light_distance',mods,token))||0)+num)
                                 };
                             default:
                                 return {[this.field]:adjuster(num,token)};
@@ -969,7 +975,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             }
 
             getHTML(scale = 1.4){
-                return `<div style="width: ${scale*.9}em; height: ${scale*.9}em; border-radius:${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; background-color: ${this.color}"></div>`;
+                return `<div style="width: ${scale*.9}em; height: 1em; border-radius:${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; background-color: ${this.color}; text-align: center; line-height: 1em;"></div>`;
             }
         }
 
@@ -1574,8 +1580,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`, 
         cell: (o) =>  `<div style="width: 200px; padding: 0 3px; float: left;">${o}</div>`,
         statusCell: (o) =>  {
-            let text = `${o.getName()}${o.getName()!==o.getTag()?` [${o.getTag()}]`:''}`;
-            return `<div style="width: auto; padding: .2em; margin: .1em .25em; border: 1px solid #ccc; border-radius: .25em; background-color: #eee; line-height:1.5em; height: 1.5em;float:left;">${o.getHTML()}${text}</div>`;
+            let text = `${o.getName()}${o.getName()!==o.getTag()?` [${_h.code(o.getTag())}]`:''}`;
+            return `<div style="width: auto; padding: .2em; margin: .1em .25em; border: 1px solid #ccc; border-radius: .25em; background-color: #eee; line-height:1.5em; height: auto;float:left;">${o.getHTML()}${text}</div>`;
         },
         inset: (...o) => `<div style="padding-left: 10px;padding-right:20px">${o.join(' ')}</div>`,
         join: (...o) => o.join(' '),
@@ -2321,7 +2327,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.pre('!token-mod --set currentside|?-30')
                     ),
 
-                    _h.paragraph(`If you want to chose a random image, you can use ${_h.code(ch('*'))}.  This will choose one of the valid images at random (all equally weighted):`),
+                    _h.paragraph(`If you want to choose a random image, you can use ${_h.code(ch('*'))}.  This will choose one of the valid images at random (all equally weighted):`),
                     _h.inset(
                         _h.pre(`!token-mod --set currentside|${ch('*')}`)
                     )
@@ -2946,7 +2952,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             .filter(filters.hasArgument)
             .reduce((m,a)=>{
                 let args=a.replace(/(\|#|##)/g,'|%%HASHMARK%%').split(/[|#]/).map((v)=>v.replace('%%HASHMARK%%','#'));
-                let whose=args.shift().toLowerCase().split(/:/);
+                let whose=args.shift().toLowerCase().split(/[:;]/);
                 let msg = args.shift();
                 if(/^(".*")|('.*')$/.test(msg)){
                     msg=msg.slice(1,-1);
@@ -3207,9 +3213,57 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             }
         };
 
+        const HE = (() => {
+            const esRE = (s) => s.replace(/(\\|\/|\[|\]|\(|\)|\{|\}|\?|\+|\*|\||\.|\^|\$)/g,'\\$1');
+            const e = (s) => `&${s};`;
+            const entities = {
+                '<' : e('lt'),
+                '>' : e('gt'),
+                "'" : e('#39'),
+                '@' : e('#64'),
+                '{' : e('#123'),
+                '|' : e('#124'),
+                '}' : e('#125'),
+                '[' : e('#91'),
+                ']' : e('#93'),
+                '"' : e('quot')
+            };
+            const re = new RegExp(`(${Object.keys(entities).map(esRE).join('|')})`,'g');
+            return (s) => s.replace(re, (c) => (entities[c] || c) );
+        })();
+
+        const getChange = (()=> {
+          const charName = (cid) => (getObj('character',cid)||{get:()=>'[Missing]'}).get('name');
+          const attrName = (aid) => (/^sheetattr_/.test(aid) ? aid.replace(/^sheetattr_/,'') : (getObj('attribute',aid)||{get:()=>'[Missing]'}).get('name'));
+          const playerName = (pid) => (getObj('player',pid)||{get:()=>pid}).get('_displayname');
+          const nameList = (pl) => pl.split(/\s*,\s*/).filter(s=>s.length).map(playerName).join(', ');
+          const boolName = (b) => (b ? 'true' : 'false');
+          
+          const diffNum = (was,is) => is-was;
+          const showDiff = (was,is) => `${was} -> ${is}`;
+          const funcs = {
+            boolean:  (was,is) => showDiff(boolName(was),boolName(is)), 
+            number: diffNum,
+            degrees: diffNum,
+            circleSegment: diffNum,
+            numberBlank: diffNum,
+            sideNumber: diffNum,
+            text: (was,is) => showDiff(was,is),
+            status: (was,is) => showDiff(was,is),
+            layer: (was,is) => showDiff(was,is),
+            character_id: (was,is) => showDiff(charName(was),charName(is)),
+            attribute: (was,is) => showDiff(attrName(was),attrName(is)),
+            player: (was,is) => showDiff(nameList(was),nameList(is)),
+            defaulttoken: (was,is) => showDiff(HE(was),HE(is))
+          };
+
+          return (type,was,is) => (funcs.hasOwnProperty(type) ? funcs[type] : ()=>'[not supported]')(was,is);
+
+        })();
+
         reports.forEach( r =>{
             let pmsg = r.msg.replace(/\{(.+?)\}/g, (m,n)=>{
-                let parts=n.toLowerCase().split(/:/);
+                let parts=n.toLowerCase().split(/[:;]/);
                 let prop=unalias(parts[0]);
                 let t = getTransform(prop);
     
@@ -3223,7 +3277,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         return t(Math.abs((parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0))));
 
                     case 'change':
-                        return t((parseFloat(ctx.token.get(prop))||0) - (parseFloat(ctx.prev[prop]||0)));
+                        return t(getChange((fields[prop]||{type:'unknown'}).type,ctx.prev[prop],ctx.token.get(prop)));
 
                     default:
                         return t(ctx.token.get(prop));
@@ -3506,7 +3560,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     `<div style="margin: .1em 1em 1em 1em;"><code>${msg_orig.content}</code></div>`+
                     `<div>Please <a class="showtip tipsy" title="The Aaron's profile on Roll20." style="color:blue; text-decoration: underline;" href="https://app.roll20.net/users/104025/the-aaron">send me this information</a> so I can make sure this doesn't happen again (triple click for easy select in most browsers.):</div>`+
                     `<div style="font-size: .6em; line-height: 1em;margin:.1em .1em .1em 1em; padding: .1em .3em; color: #666666; border: 1px solid #999999; border-radius: .2em; background-color: white;">`+
-                        JSON.stringify({msg: msg_orig, version:version, stack: e.stack})+
+                        JSON.stringify({msg: msg_orig, version:version, stack: e.stack, API_Meta})+
                     `</div>`+
                 `</div>`
             );
@@ -3529,6 +3583,4 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     };
 })();
 
-
-
-
+{try{throw new Error('');}catch(e){API_Meta.TokenMod.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.TokenMod.offset);}}

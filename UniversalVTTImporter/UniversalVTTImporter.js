@@ -1,12 +1,16 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/UniversalVTTImporter/UniversalVTTImporter.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.UniversalVTTImporter={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.UniversalVTTImporter.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.4';
-  const lastUpdate = 1604861007;
+  const version = '0.1.5';
+  API_Meta.UniversalVTTImporter.version = version;
+  const lastUpdate = 1609292066;
   const schemaVersion = 0.1;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -146,7 +150,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       bare: (o)=>`${ch('@')}${ch('{')}${o}${ch('}')}`,
       selected: (o)=>`${ch('@')}${ch('{')}selected${ch('|')}${o}${ch('}')}`,
       target: (o)=>`${ch('@')}${ch('{')}target${ch('|')}${o}${ch('}')}`,
-      char: (o,c)=>`${ch('@')}${ch('{')}${c||'CHARACTER NAME'}${ch('|')}${o}${ch('}')}`
+      char: (o,c)=>`${ch('@')}${ch('{')}${c||'CHARACTER UniversalVTTImporter'}${ch('|')}${o}${ch('}')}`
     },
     bold: (...o) => `<b>${o.join(' ')}</b>`,
     italic: (...o) => `<i>${o.join(' ')}</i>`,
@@ -669,3 +673,4 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
 })();
 
+{try{throw new Error('');}catch(e){API_Meta.UniversalVTTImporter.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.UniversalVTTImporter.offset);}}

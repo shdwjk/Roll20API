@@ -1,11 +1,15 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/Facing/Facing.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.Facing={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.Facing.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const Facing = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.1.5';
-    const lastUpdate = 1560010028;
+    const version = '0.1.6';
+    API_Meta.Facing.version = version;
+    const lastUpdate = 1609294448;
     const schemaVersion = 0.3;
     const defaults = {
         image: 'https://s3.amazonaws.com/files.d20.io/images/9183999/XcViJVf7-cGOXcZq1KWp-A/thumb.png?1430541914',
@@ -604,3 +608,5 @@ const Facing = (() => { // eslint-disable-line no-unused-vars
     });
     
 })();
+
+{try{throw new Error('');}catch(e){API_Meta.Facing.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.Facing.offset);}}

@@ -1,11 +1,15 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/libTokenMarkers/libTokenMarkers.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.libTokenMarkers={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.libTokenMarkers.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const libTokenMarkers = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.1.0';
-    const lastUpdate = 1579579271;
+    const version = '0.1.1';
+    API_Meta.libTokenMarkers.version = version;
+    const lastUpdate = 1609294229;
     const schemaVersion = 0.1;
 
     const isString = (s) => 'string' === typeof s || s instanceof String;
@@ -61,7 +65,7 @@ const libTokenMarkers = (() => { // eslint-disable-line no-unused-vars
         }
 
         getHTML(scale = 1.4, style=''){
-            return `<div style="width: 1em; height: ${scale}em; font-size: ${scale}em; display:inline-block; margin: 0; border:0; font-weight: bold; color: ${this.color};${style}">${this.letter}</div>`;
+            return `<div style="width: 1em; height: 1em; font-size: ${scale}em; line-height: 1em; display:inline-block; margin: 0; border:0; font-weight: bold; color: ${this.color}; text-align: center;${style}">${this.letter}</div>`;
         }
     }
 
@@ -168,3 +172,4 @@ const libTokenMarkers = (() => { // eslint-disable-line no-unused-vars
 
 })();
 
+{try{throw new Error('');}catch(e){API_Meta.libTokenMarkers.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.libTokenMarkers.offset);}}

@@ -1,12 +1,16 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/UDLWindows/UDLWindows.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.UDLWindows={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.UDLWindows.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const UDLWindows = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UDLWindows';
-  const version = '0.1.0';
-  const lastUpdate = 1606066214;
+  const version = '0.1.1';
+  API_Meta.UDLWindows.version = version;
+  const lastUpdate = 1609292809;
   const schemaVersion = 0.1;
 
   const assureHelpHandout = (create = false) => {
@@ -297,3 +301,4 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
 
 })();
 
+{try{throw new Error('');}catch(e){API_Meta.UDLWindows.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.UDLWindows.offset);}}

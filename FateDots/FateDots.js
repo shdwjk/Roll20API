@@ -1,12 +1,16 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/FateDots/FateDots.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+var API_Meta = API_Meta||{};
+API_Meta.FateDots={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.FateDots.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 var FateDots = FateDots || (function(){
     'use strict';
 
-    var version = '0.2.2',
-        lastUpdate = 1487692335,
+    var version = '0.2.3';
+    API_Meta.FateDots.version = version;
+    var lastUpdate = 1609294802,
         schemaVersion = 0.3,
 		regex = {
 			statuses: /^(?:red|blue|green|brown|purple|pink|yellow|skull|sleepy|half-heart|half-haze|interdiction|snail|lightning-helix|spanner|chained-heart|chemical-bolt|death-zone|drink-me|edge-crack|ninja-mask|stopwatch|fishing-net|overdrive|strong|fist|padlock|three-leaves|fluffy-wing|pummeled|tread|arrowed|aura|back-pain|black-flag|bleeding-eye|bolt-shield|broken-heart|cobweb|broken-shield|flying-flag|radioactive|trophy|broken-skull|frozen-orb|rolling-bomb|white-tower|grab|screaming|grenade|sentry-gun|all-for-one|angel-outfit|archery-target)$/
@@ -219,3 +223,5 @@ on("ready",function(){
 	FateDots.CheckInstall();
 	FateDots.RegisterEventHandlers();
 });
+
+{try{throw new Error('');}catch(e){API_Meta.FateDots.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.FateDots.offset);}}
