@@ -8,9 +8,9 @@ API_Meta.UniversalVTTImporter={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.5';
+  const version = '0.1.6';
   API_Meta.UniversalVTTImporter.version = version;
-  const lastUpdate = 1609292066;
+  const lastUpdate = 1609371922;
   const schemaVersion = 0.1;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -507,8 +507,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     }
 
     if(true === page.get('dynamic_lighting_enabled')){
-      page.set('dynamic_lighting_enabled',false);
-      setTimeout(()=>page.set('dynamic_lighting_enabled',true),100);
+      page.set('force_lighting_refresh',true);
     }
 
     return stats;

@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.62';
+    const version = '0.8.63';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1609291902;
+    const lastUpdate = 1609382931;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -161,6 +161,22 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
       }
       return;
     };
+
+    const forceLightUpdateOnPage = (()=>{
+        const forPage = (pid) => (getObj('page',pid)||{set:()=>{}}).set('force_lighting_refresh',true);
+        let pids = new Set();
+        let t;
+
+        return (pid) => {
+          pids.add(pid);
+          clearTimeout(t);
+          t = setTimeout(() => {
+            let activePages = getActivePages();
+            [...pids].filter(p=>activePages.includes(p)).forEach(forPage);
+            pids.clear();
+          },100);
+        };
+    })();
 
     const regex = {
       moveAngle: /^(=)?([+-]?(?:0|[1-9][0-9]*))(!)?$/,
@@ -1344,28 +1360,31 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 tokenChange: []
         };
 
-        const getPageForPlayer =( pid ) => {
-            if(playerIsGM(pid)){
-                return  getObj('player',pid).get('lastpage');
-            }
-            let ppages = Campaign().get('playerspecificpages');
-            if(ppages[pid]){
-                return ppages[pid];
-            }
-            return Campaign().get('playerpageid');
-        };
-
-        const getActivePages = () => _.union([
-            Campaign().get('playerpageid')],
-            _.values(Campaign().get('playerspecificpages')),
-            _.chain(findObjs({
+        const getActivePages = () => [...new Set([
+            Campaign().get('playerpageid'),
+            ...Object.values(Campaign().get('playerspecificpages')),
+            ...findObjs({
                 type: 'player',
                 online: true
-            }))
+            })
             .filter((p)=>playerIsGM(p.id))
             .map((p)=>p.get('lastpage'))
-            .value()
-        );
+        ])
+        ];
+
+        const getPageForPlayer = (playerid) => {
+            let player = getObj('player',playerid);
+            if(playerIsGM(playerid)){
+                return player.get('lastpage') || Campaign().get('playerpageid');
+            }
+
+            let psp = Campaign().get('playerspecificpages');
+            if(psp[playerid]){
+                return psp[playerid];
+            }
+
+            return Campaign().get('playerpageid');
+        };
 
 
         const transforms = {
@@ -3020,6 +3039,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     } else {
                         mods[k]=controlList.join(',');
                     }
+                    forceLightUpdateOnPage(token.get('pageid'));
                     break;
 
                 case 'defaulttoken':
