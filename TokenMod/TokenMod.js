@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.63';
+    const version = '0.8.64';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1609382931;
+    const lastUpdate = 1613697184;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -44,6 +44,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             has_limit_field_of_vision: {type: 'boolean'},
             has_limit_field_of_night_vision: {type: 'boolean'},
             has_directional_bright_light: {type: 'boolean'},
+            has_directional_low_light: {type: 'boolean'},
+            dim_light_opacity: {type: 'number'},
             
 
             // bounded by screen size
@@ -61,10 +63,12 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             limit_field_of_vision_center: {type: 'degrees'},
             limit_field_of_night_vision_center: {type: 'degrees'},
             directional_bright_light_center: {type: 'degrees'},
+            directional_low_light_center: {type: 'degrees'},
 
             limit_field_of_vision_total: {type: 'circleSegment'},
             limit_field_of_night_vision_total: {type: 'circleSegment'},
             directional_bright_light_total: {type: 'circleSegment'},
+            directional_low_light_total: {type: 'circleSegment'},
 
 
 
@@ -1770,6 +1774,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell("has_limit_field_of_vision"),
                             _h.cell("has_limit_field_of_night_vision"),
                             _h.cell("has_directional_bright_light"),
+                            _h.cell("has_directional_low_light"),
                             _h.cell("bright_vision"),
                             _h.cell("has_night_vision"),
                             _h.cell("night_vision"),
@@ -1905,7 +1910,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell('rotation'),
                             _h.cell("limit_field_of_vision_center"),
                             _h.cell("limit_field_of_night_vision_center"),
-                            _h.cell("directional_bright_light_center")
+                            _h.cell("directional_bright_light_center"),
+                            _h.cell("directional_low_light_center")
                         )
                     ),
                     _h.paragraph('Rotating a token by 180 degrees.'),
@@ -1926,7 +1932,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell('light_losangle'),
                             _h.cell("limit_field_of_vision_total"),
                             _h.cell("limit_field_of_night_vision_total"),
-                            _h.cell("directional_bright_light_total")
+                            _h.cell("directional_bright_light_total"),
+                            _h.cell("directional_low_light_total")
                         )
                     ),
                     _h.paragraph('Setting line of sight angle to 90 degrees.'),
@@ -3083,6 +3090,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     break;
 
 
+                case 'dim_light_opacity':
                 case 'left':
                 case 'top':
                 case 'width':
@@ -3094,6 +3102,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'limit_field_of_vision_center':
                 case 'limit_field_of_night_vision_center':
                 case 'directional_bright_light_center':
+                case 'directional_low_light_center':
                     delta=getRelativeChange(token.get(k),f[0]);
                     if(_.isNumber(delta)) {
                         mods[k]=(((delta%360)+360)%360);
@@ -3105,6 +3114,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'limit_field_of_vision_total':
                 case 'limit_field_of_night_vision_total':
                 case 'directional_bright_light_total':
+                case 'directional_low_light_total':
                     delta=getRelativeChange(token.get(k),f[0]);
                     if(_.isNumber(delta)) {
                         mods[k] = Math.min(360,Math.max(0,delta));
