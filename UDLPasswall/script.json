@@ -1,0 +1,18 @@
+{
+  "name": "UDLPasswall",
+  "script": "UDLPasswall.js",
+  "version": "0.1.0",
+  "description": "",
+  "authors": "The Aaron",
+  "roll20userid": "104025",
+  "patreon": "https://www.patreon.com/shdwjk",
+  "useroptions":{
+  },
+  "dependencies": {
+  },
+  "modifies": {
+    "state.UDLPasswall": "read,write"
+  },
+  "conflicts": [
+  ]
+}
