@@ -1,6 +1,7 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/UDLWindows/UDLWindows.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+// Forum:    https://app.roll20.net/forum/permalink/9521203/
 var API_Meta = API_Meta||{};
 API_Meta.UDLWindows={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 {try{throw new Error('');}catch(e){API_Meta.UDLWindows.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
@@ -8,9 +9,9 @@ API_Meta.UDLWindows={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const UDLWindows = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UDLWindows';
-  const version = '0.1.1';
+  const version = '0.1.2';
   API_Meta.UDLWindows.version = version;
-  const lastUpdate = 1609292809;
+  const lastUpdate = 1616861563;
   const schemaVersion = 0.1;
 
   const assureHelpHandout = (create = false) => {
@@ -57,6 +58,7 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
       }
     }
     assureHelpHandout();
+    migrateOldUDLWindows();
   };
 
   const ch = (c) => {
@@ -131,16 +133,19 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
           _h.font.command(
             `!to-window`,
             _h.optional(
-              '--help'
+              '--help',
+              '--glass'
             )
           ),
           _h.ul(
             `${_h.bold('--help')} -- Displays this help`,
+            `${_h.bold('--glass')} -- Draw a transparent blue window line on the map layer`,
             )
         ),
         _h.section('Usage',
           _h.paragraph(`Select path objects on the Dynamic Lighting Layer and run the ${_h.code('!to-window')} command.  Each of the path objects will get replaced with a version that won't block vision or light, but will block movement.  The original objects are removed in the process.`),
-          _h.paragraph(`This works with poly lines, boxes, and circles.`)
+          _h.paragraph(`This works with poly lines, boxes, and circles.`),
+          _h.paragraph(`Specifying the ${_h.code('--glass')} argument will create a 5px thick, blue transparent line on the map layer to simulate window glass.  The glass line will automatically be removed if the window line on the dynamic lighting layer is removed.`)
         )
     ),
     helpDoc: (context) => _h.join(
@@ -163,10 +168,62 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
     sendChat('', '/w "'+who+'" '+ helpParts.helpChat(context));
   };
 
+  const toFrontFixed = (()=>{
+      let queue=[];
+      let last=0;
+      const DELAY = 1000;
+      const burndownQueue = ()=>{
+          let o = queue.shift();
+          toFront(o);
+          last = Date.now();
+          if(queue.length){
+              setTimeout(burndownQueue,DELAY);
+          }
+      };
+      return (obj=>{
+          if(queue.length){
+              queue.push(obj);
+          } else {
+              let t = Date.now();
+              if(last+DELAY > t){
+                  queue.push(obj);
+                  setTimeout(burndownQueue,(last+DELAY-t));
+              } else {
+                  toFront(obj);
+                  last = t;
+              }
+          }
+      });
+  })();
 
+  const isLegacyWindowPath = (p) => {
+    if('path' === p.get('type')){
+      return /^MQ/.test(JSON.parse(p.get('path')||'[]').map(s=>s[0]).join(''));
+    }
+    return false;
+  };
 
+  const migrateOldUDLWindows = () => {
+    let oldWindows = findObjs({
+      type: 'path',
+      layer: 'walls'
+    })
+    .filter(isLegacyWindowPath);
 
+    let count = oldWindows.length;
 
+    const burndown = ()=>{
+      let p = oldWindows.shift();
+      if(p){
+          convertToWindowPath(p);
+          setTimeout(burndown,0);
+      } else {
+        sendChat('UDLWindows',`/w gm <div><b>Converted <code>${count}</code> legacy windows to new representation.`);
+      }
+
+    };
+    burndown();
+  };
 
   const isCirclePath = (p) => {
     if('path' === p.get('type')){
@@ -200,46 +257,25 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
     return acc.map((v,i)=>([(i?'L':'M'),w2+v[0],h2+v[1]]));
   };
 
-  const isClosedPath = (p) => {
-    let x1 = p[0][1];
-    let y1 = p[0][2];
-    let x2 = p.slice(-1)[0][1];
-    let y2 = p.slice(-1)[0][2];
-    return ((x1 === x2) && (y1 === y2));
-  };
-
-  const retracePath = (data) => {
-    let newData = [...data, ...data.slice().reverse().slice(1)];
-    let lIdx = newData.length-1;
-    newData[lIdx] = ['L', newData[lIdx][1],newData[lIdx][2]];
-    return newData;
-  };
-
-  const toFreehandPath = (data) => {
-    let newData = [data.shift()];
-    data.forEach(p=>{
-      newData.push(['Q',p[1],p[2],p[1],p[2]]);
-    });
-
-    return newData;
-  };
+  const toTransparentPath = (data) => data.map(p=>['M',p[1],p[2]]);
 
   const simpleObject = (o)=>JSON.parse(JSON.stringify(o));
 
-  const convertToFreehandWindow = (p)=>{
+  const convertToWindowPath = (p, options)=>{
+    options = options || {};
     let data;
     if(isCirclePath(p)){
       data = approximateCircle(p.get('width'),p.get('height'));
     } else {
       data = JSON.parse(p.get('path'));
     }
-    if(!isClosedPath(data)){
-      data = retracePath(data);
-    }
-    data = toFreehandPath(data);
+
+    let transPath = toTransparentPath(data);
+
     let objData ={
       ...simpleObject(p),
-      path: JSON.stringify(data)
+      controlledby: '',
+      path: JSON.stringify(transPath)
     };
     objData.page = objData._page;
     delete objData._path;
@@ -251,6 +287,29 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
     if(newPath) {
       p.remove();
     }
+
+    if(options.hasOwnProperty('glass')){
+      let glassData = {
+        ...objData,
+        path: JSON.stringify(data),
+        layer: 'map',
+        stroke_width: options.glass.width||3,
+        stroke: options.glass.color||'#cfe2f399',
+        controlledby: `DLWindow_${newPath.id}`
+      };
+      glassData.page = glassData._page;
+      delete glassData._path;
+      delete glassData._id;
+      delete glassData._type;
+      delete glassData._page;
+      let glass = createObj('path', glassData);
+      toFrontFixed(glass);
+    }
+
+  };
+
+  const handleDestroyPath = (obj) => {
+    findObjs({controlledby: `DLWindow_${obj.id}`}).forEach(o=>o.remove());
   };
 
   const handleInput = (msg) => {
@@ -263,6 +322,11 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
         showHelp(msg.playerid);
         return;
       }
+      let options = {};
+
+      if(args.includes('glass')){
+        options.glass = {width:5};
+      }
 
       let paths = (msg.selected || [])
         .map(o=>getObj('path',o._id))
@@ -274,7 +338,7 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
         let page = getObj('page',paths[0].get('pageid'));
         if(page) {
           if(true === page.get('dynamic_lighting_enabled')){
-            paths.map(convertToFreehandWindow);
+            paths.map(p=>convertToWindowPath(p,options));
             sendChat('UDLWindows',`/w "${who}" Converted ${paths.length} path${1===paths.length?'':'s'}.`);
           } else {
             sendChat('UDLWindows',`/w "${who}" UDLWindows only works with Updated Dynamic Lighting.  Please enable Updated Dynamic Lighting on the current page to use it.`);
@@ -288,6 +352,7 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
 
   const registerEventHandlers = () => {
     on('chat:message', handleInput);
+    on('destroy:path', handleDestroyPath);
   };
 
   on('ready', () => {
