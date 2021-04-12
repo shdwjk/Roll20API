@@ -1,41 +1,60 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/Bump/Bump.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
+// Forum:    https://app.roll20.net/forum/permalink/8584976/
+var API_Meta = API_Meta||{}; //eslint-disable-line no-var
+API_Meta.Bump={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
+{try{throw new Error('');}catch(e){API_Meta.Bump.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-7);}}
 
 /* global GroupInitiative TokenMod */
 const Bump = (() => { // eslint-disable-line no-unused-vars
 
-	const scriptName = "Bump";
-    const version = '0.2.19';
-    const lastUpdate = 1588691367;
-    const schemaVersion = 0.5;
-    const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
-    const checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461';
+  const scriptName = "Bump";
+  const version = '0.2.21';
+  API_Meta.Bump.version = version;
+  const lastUpdate = 1618240253;
+  const schemaVersion = 0.5;
+  const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
+  const checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461';
 
     const regex = {
 			colors: /(transparent|(?:#?[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?))/
         };
 
-    const mirroredProps = [
-            'name', 'left', 'top', 'width', 'height', 'rotation',
-            'flipv', 'fliph', 'bar1_value', 'bar1_max',
-            'bar2_value', 'bar2_max', 'bar3_value', 'bar3_max',
-            'tint_color', 'lastmove', 'controlledby', 'light_hassight',
-            'light_radius', 'light_dimradius', 'light_angle', 'light_losangle','lastmove',
-            'represents','bar1_link','bar2_link','bar3_link'
+        const mirroredPropsNoBar = [
+          'name', 'left', 'top', 'width', 'height', 'rotation', 'flipv', 'fliph',
+
+          // Bar settings (except max fields)
+          'bar1_value', 'bar2_value', 'bar3_value',
+          'bar1_link','bar2_link','bar3_link',
+
+          'tint_color', 'lastmove', 'controlledby', 'represents',
+
+          //LDL settings
+          'light_hassight', 'light_radius', 'light_dimradius', 'light_angle',
+          'light_losangle','light_multiplier', 'adv_fow_view_distance',
+
+          //UDL settings
+          "has_bright_light_vision", "has_night_vision", "night_vision_tint",
+          "night_vision_distance", "emits_bright_light", "bright_light_distance",
+          "emits_low_light", "low_light_distance", "has_limit_field_of_vision",
+          "limit_field_of_vision_center", "limit_field_of_vision_total",
+          "has_limit_field_of_night_vision", "limit_field_of_night_vision_center",
+          "limit_field_of_night_vision_total", "has_directional_bright_light",
+          "directional_bright_light_total", "directional_bright_light_center",
+          "has_directional_low_light", "directional_low_light_total",
+          "directional_low_light_center", "dim_light_opacity"
         ];
 
-    const mirroredPropsNoBar = [
-            'name', 'left', 'top', 'width', 'height', 'rotation',
-            'flipv', 'fliph', 'bar1_value',
-            'bar2_value', 'bar3_value',
-            'tint_color', 'lastmove', 'controlledby', 'light_hassight',
-            'light_radius', 'light_dimradius', 'light_angle', 'light_losangle','lastmove',
-            'represents'
+        const mirroredProps = [
+          ...mirroredPropsNoBar,
+          // Bar settings (max fields)
+          'bar1_max', 'bar2_max', 'bar3_max'
         ];
 
 
-    const defaults = {
+
+        const defaults = {
             css: {
                 button: {
                     'border': '1px solid #cccccc',
@@ -132,7 +151,7 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
     };
 
 	const checkGlobalConfig = () => {
-		var s=state[scriptName],
+		let s=state[scriptName],
 		g=globalconfig && globalconfig.bump;
 
 		if(g && g.lastsaved && g.lastsaved > s.globalconfigCache.lastsaved
@@ -292,17 +311,15 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
 
     const createMirrored = (id, push, who) => {
         // get root obj
-        var master = getObj('graphic',id),
-            slave = getMirrored(id),
-            baseObj,
-            layer;
+        let master = getObj('graphic',id);
+        let slave = getMirrored(id);
 
         if(!slave && master) {
-            layer=((state[scriptName].config.autoPush || push || 'gmlayer' === master.get('layer')) ? 'objects' : 'gmlayer');
+            let layer=((state[scriptName].config.autoPush || push || 'gmlayer' === master.get('layer')) ? 'objects' : 'gmlayer');
             if(state[scriptName].config.autoPush || push) {
                 master.set({layer: 'gmlayer'});
             }
-            baseObj = {
+            let baseObj = {
                 imgsrc: clearURL,
                 layer: layer,
                 pageid: master.get('pageid'),
@@ -346,7 +363,7 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
     };
 
     const bumpToken = (id,who) => {
-        var pair=getMirroredPair(id);
+        let pair=getMirroredPair(id);
         if(pair && pair.master && pair.slave) {
             switch(pair.master.get('layer')){
                 case 'gmlayer':
@@ -369,7 +386,7 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
     };
 
     const removeMirrored = (id) => {
-        var pair=getMirroredPair(id);
+        let pair=getMirroredPair(id);
         if(pair) {
             pair.slave.remove();
             delete state[scriptName].mirrored[pair.master.id];
@@ -397,7 +414,7 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
 
     
     const handleTokenChange = (obj,prev) => {
-        var pair = getMirroredPair(obj.id);
+        let pair = getMirroredPair(obj.id);
         if(pair && obj) {
             // status markers
             if(obj.id === pair.slave.id && obj.get('statusmarkers') !== prev.statusmarkers){
@@ -462,8 +479,8 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
     };
 
     const makeConfigOption = (config,command,text) => {
-        var onOff = (config ? 'On' : 'Off' ),
-            color = (config ? '#5bb75b' : '#faa732' );
+        let onOff = (config ? 'On' : 'Off' );
+        let color = (config ? '#5bb75b' : '#faa732' );
         return '<div style="'+
                 'border: 1px solid #ccc;'+
                 'border-radius: .2em;'+
@@ -481,8 +498,8 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
     };
 
     const makeConfigOptionColor = (config,command,text) => {
-        var color = ('transparent' === config ? "background-image: url('"+checkerURL+"');" : "background-color: "+config+";"),
-            buttonText ='<div style="border:1px solid #1d1d1d;width:40px;height:40px;display:inline-block;'+color+'">&nbsp;</div>';
+        let color = ('transparent' === config ? "background-image: url('"+checkerURL+"');" : "background-color: "+config+";");
+        let buttonText ='<div style="border:1px solid #1d1d1d;width:40px;height:40px;display:inline-block;'+color+'">&nbsp;</div>';
         return '<div style="'+
                 'border: 1px solid #ccc;'+
                 'border-radius: .2em;'+
@@ -649,137 +666,135 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
     };
 
     const handleInput = (msg) => {
-        var args, who;
+      if (msg.type !== "api") {
+        return;
+      }
+      let who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
-        if (msg.type !== "api") {
+      let args = msg.content.split(/\s+/);
+      switch(args.shift()) {
+        case '!bump':
+          if(!msg.selected || args.includes('--help')) {
+            showHelp(msg.playerid);
             return;
-        }
-		who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
+          }
+          msg.selected.forEach( (s) => bumpToken(s._id,who) );
+          break;
 
-        args = msg.content.split(/\s+/);
-        switch(args.shift()) {
-            case '!bump':
-                if(!msg.selected || args.includes('--help')) {
-                    showHelp(msg.playerid);
-                    return;
+        case '!bump-slave':
+          if(!msg.selected || args.includes('--help')) {
+            showHelp(msg.playerid);
+            return;
+          }
+          msg.selected.forEach( (s) => createMirrored(s._id, args.includes('--push'), who) );
+          break;
+
+        case '!bump-unslave':
+          if(!msg.selected || args.includes('--help')) {
+            showHelp(msg.playerid);
+            return;
+          }
+          msg.selected.forEach( (s) => removeMirrored(s._id) );
+          break;
+
+
+        case '!bump-config':
+          if(args.includes('--help')) {
+            showHelp(msg.playerid);
+            return;
+          }
+          if(!playerIsGM(msg.playerid)){
+            break;
+          }
+          if(!args.length) {
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+              '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
+              'Bump v'+version+
+              '</div>'+
+              getAllConfigOptions()+
+              '</div>'
+            );
+            return;
+          }
+          args.forEach((a) => {
+            let opt=a.split(/\|/);
+            let omsg='';
+            switch(opt.shift()) {
+              case '--gm-layer-color':
+                if(opt[0].match(regex.colors)) {
+                  state[scriptName].config.layerColors.gmlayer=opt[0];
+                } else {
+                  omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
                 }
-                msg.selected.forEach( (s) => bumpToken(s._id,who) );
+                sendChat('','/w "'+who+'" '+
+                  '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                  omsg+
+                  getConfigOption_GMLayerColor()+
+                  '</div>'
+                );
                 break;
 
-            case '!bump-slave':
-                if(!msg.selected || args.includes('--help')) {
-                    showHelp(msg.playerid);
-                    return;
+              case '--objects-layer-color':
+                if(opt[0].match(regex.colors)) {
+                  state[scriptName].config.layerColors.objects=opt[0];
+                } else {
+                  omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
                 }
-                msg.selected.forEach( (s) => createMirrored(s._id, args.includes('--push'), who) );
+                sendChat('','/w "'+who+'" '+
+                  '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                  omsg+
+                  getConfigOption_ObjectsLayerColor()+
+                  '</div>'
+                );
                 break;
 
-            case '!bump-unslave':
-                if(!msg.selected || args.includes('--help')) {
-                    showHelp(msg.playerid);
-                    return;
-                }
-                msg.selected.forEach( (s) => removeMirrored(s._id) );
+              case '--toggle-auto-push':
+                state[scriptName].config.autoPush=!state[scriptName].config.autoPush;
+                sendChat('','/w "'+who+'" '+
+                  '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                  getConfigOption_AutoPush()+
+                  '</div>'
+                );
                 break;
 
-
-            case '!bump-config':
-                if(args.includes('--help')) {
-                    showHelp(msg.playerid);
-                    return;
-                }
-                if(!playerIsGM(msg.playerid)){
-                    break;
-                }
-                if(!args.length) {
-                    sendChat('','/w "'+who+'" '+
-                        '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-                            '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
-                                'Bump v'+version+
-                            '</div>'+
-                            getAllConfigOptions()+
-                        '</div>'
-                    );
-                    return;
-                }
-                args.forEach((a) => {
-                    var opt=a.split(/\|/),
-                        omsg='';
-                    switch(opt.shift()) {
-                        case '--gm-layer-color':
-                            if(opt[0].match(regex.colors)) {
-                               state[scriptName].config.layerColors.gmlayer=opt[0];
-                            } else {
-                                omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
-                            }
-                            sendChat('','/w "'+who+'" '+
-                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-                                    omsg+
-                                    getConfigOption_GMLayerColor()+
-                                '</div>'
-                            );
-                            break;
-
-                        case '--objects-layer-color':
-                            if(opt[0].match(regex.colors)) {
-                               state[scriptName].config.layerColors.objects=opt[0];
-                            } else {
-                                omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
-                            }
-                            sendChat('','/w "'+who+'" '+
-                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-                                    omsg+
-                                    getConfigOption_ObjectsLayerColor()+
-                                '</div>'
-                            );
-                            break;
-
-                        case '--toggle-auto-push':
-                            state[scriptName].config.autoPush=!state[scriptName].config.autoPush;
-                            sendChat('','/w "'+who+'" '+
-                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-                                    getConfigOption_AutoPush()+
-                                '</div>'
-                            );
-                            break;
-                        
-                        case '--toggle-auto-slave':
-                            state[scriptName].config.autoSlave=!state[scriptName].config.autoSlave;
-                            sendChat('','/w "'+who+'" '+
-                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-                                    getConfigOption_AutoSlave()+
-                                '</div>'
-                            );
-                            break;
-
-                        case '--toggle-auto-unslave':
-                            state[scriptName].config.autoUnslave=!state[scriptName].config.autoUnslave;
-                            sendChat('','/w "'+who+'" '+
-                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-                                    getConfigOption_AutoUnslave()+
-                                '</div>'
-                            );
-                            break;
-
-                        case '--toggle-no-bars':
-                            state[scriptName].config.noBars=!state[scriptName].config.noBars;
-                            fixupSlaveBars();
-                            sendChat('','/w "'+who+'" '+
-                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-                                    getConfigOption_NoBars()+
-                                '</div>'
-                            );
-                            break;
-
-                        default:
-                            sendChat('','/w "'+who+'" '+
-                            '<div><b>Unsupported Option:</div> '+a+'</div>');
-                    }
-                            
-                });
-
+              case '--toggle-auto-slave':
+                state[scriptName].config.autoSlave=!state[scriptName].config.autoSlave;
+                sendChat('','/w "'+who+'" '+
+                  '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                  getConfigOption_AutoSlave()+
+                  '</div>'
+                );
                 break;
-        }
+
+              case '--toggle-auto-unslave':
+                state[scriptName].config.autoUnslave=!state[scriptName].config.autoUnslave;
+                sendChat('','/w "'+who+'" '+
+                  '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                  getConfigOption_AutoUnslave()+
+                  '</div>'
+                );
+                break;
+
+              case '--toggle-no-bars':
+                state[scriptName].config.noBars=!state[scriptName].config.noBars;
+                fixupSlaveBars();
+                sendChat('','/w "'+who+'" '+
+                  '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                  getConfigOption_NoBars()+
+                  '</div>'
+                );
+                break;
+
+              default:
+                sendChat('','/w "'+who+'" '+
+                '<div><b>Unsupported Option:</div> '+a+'</div>');
+            }
+
+          });
+
+          break;
+      }
     };
     
     const handleTurnOrderChange = () => {
@@ -823,3 +838,4 @@ on('ready', () => {
     Bump.RegisterEventHandlers();
 });
 
+{try{throw new Error('');}catch(e){API_Meta.Bump.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.Bump.offset);}}
