@@ -532,7 +532,7 @@ var TurnMarker = TurnMarker || (function(){
                         'text-decoration: underline;'+
                         'font-size: 130%;'                        +
                     '\'>'+
-                        previousToken.get('name')+
+                        previousToken.get('name').replace(/[^a-z0-9áéíóúñü \.,_-]/gim,"").trim()+
                     '</span>\'s turn is done.';                
             }
             
@@ -543,7 +543,7 @@ var TurnMarker = TurnMarker || (function(){
                     'text-decoration: underline;'+
                     'font-size: 130%;'+
                 '\'>'+
-                    currentToken.get('name')+
+                    currentToken.get('name').replace(/[^a-z0-9áéíóúñü \.,_-]/gim,"").trim()+
                 '</span>, it\'s now your turn!';
             }
  
@@ -577,7 +577,7 @@ var TurnMarker = TurnMarker || (function(){
                                     var player=getObj('player',c);
                                     if(player) {
                                         var PlayerColor=player.get('color');
-                                        var PlayerName=player.get('displayname');
+                                        var PlayerName=player.get('displayname').replace(/[^a-z0-9áéíóúñü \.,_-]/gim,"").trim();
                                         PlayerAnnounceExtra+='<div style="'+
                                                 'padding: 5px;'+
                                                 'text-align: center;'+
