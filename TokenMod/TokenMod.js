@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.64';
+    const version = '0.8.65';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1613710516;
+    const lastUpdate = 1619280901;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -186,7 +186,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     const regex = {
       moveAngle: /^(=)?([+-]?(?:0|[1-9][0-9]*))(!)?$/,
       moveDistance: /^([+-]?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?$/i,
-      numberString: /^[-+*/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][+-]?[0-9]+)?$/,
+      numberString: /^[-+*/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][-+]?[0-9]+)?$/,
       stripSingleQuotes: /'([^']+(?='))'/g,
       stripDoubleQuotes: /"([^"]+(?="))"/g,
       layers: /^(?:gmlayer|objects|map|walls)$/,
@@ -3190,23 +3190,31 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'bar1_value':
                 case 'bar2_value':
                 case 'bar3_value':
-                    delta=getRelativeChange(token.get(k),f[0]);
-                    if(_.isNumber(delta) || _.isString(delta)) {
-                      if(/!$/.test(f[0])) {
-                        delta = Math.max(0,Math.min(delta,token.get(k.replace(/_value$/,'_max'))));
+                    if(regex.numberString.test(f[0])){
+                        delta=getRelativeChange(token.get(k),f[0]);
+                        if(_.isNumber(delta) || _.isString(delta)) {
+                          if(/!$/.test(f[0])) {
+                            delta = Math.max(0,Math.min(delta,token.get(k.replace(/_value$/,'_max'))));
+                          }
+                          mods[k]=delta;
+                        }
+                      } else {
+                          mods[k]=f[0];
                       }
-                      mods[k]=delta;
-                    }
                     break;
 
                 case 'bar1_max':
                 case 'bar2_max':
                 case 'bar3_max':
                 case 'name':
-                    delta=getRelativeChange(token.get(k),f[0]);
-                    if(_.isNumber(delta) || _.isString(delta)) {
-                        mods[k]=delta;
-                    }
+                    if(regex.numberString.test(f[0])){
+                        delta=getRelativeChange(token.get(k),f[0]);
+                        if(_.isNumber(delta) || _.isString(delta)) {
+                            mods[k]=delta;
+                        }
+                      } else {
+                          mods[k]=f[0];
+                      }
                     break;
 
                   case 'currentSide':
