@@ -8,9 +8,9 @@ API_Meta.UniversalVTTImporter={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.6';
+  const version = '0.1.7';
   API_Meta.UniversalVTTImporter.version = version;
-  const lastUpdate = 1609371922;
+  const lastUpdate = 1619367527;
   const schemaVersion = 0.1;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -491,8 +491,8 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
             // UDL
             emits_bright_light: true,
             emits_low_light: true,
-            bright_light_distance: ld.r,
-            low_light_distance: ld.dr,
+            bright_light_distance: ld.r-ld.dr,
+            low_light_distance: ld.r,
 
             width:70,
             height:70,
