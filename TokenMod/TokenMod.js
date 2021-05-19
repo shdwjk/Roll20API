@@ -1,16 +1,16 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/TokenMod/TokenMod.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
-var API_Meta = API_Meta||{};
+var API_Meta = API_Meta||{}; // eslint-disable-line no-var
 API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 {try{throw new Error('');}catch(e){API_Meta.TokenMod.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.66';
+    const version = '0.8.67';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1621047993;
+    const lastUpdate = 1621427905;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -160,7 +160,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         };
 
     const getCleanImgsrc = (imgsrc) => {
-      var parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
+      let parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
       if(parts) {
         return parts[1]+'thumb'+parts[3]+(parts[4]?parts[4]:`?${Math.round(Math.random()*9999999)}`);
       }
@@ -186,7 +186,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     const regex = {
       moveAngle: /^(=)?([+-]?(?:0|[1-9][0-9]*))(!)?$/,
       moveDistance: /^([+-]?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?$/i,
-      numberString: /^[-+*/]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][-+]?[0-9]+)?(!)?$/,
+      numberString: /^[-+*/]?[-+]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][-+]?[0-9]+)?(!)?$/,
       stripSingleQuotes: /'([^']+(?='))'/g,
       stripDoubleQuotes: /"([^"]+(?="))"/g,
       layers: /^(?:gmlayer|objects|map|walls)$/,
@@ -1105,7 +1105,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
             static decomposeStatuses(statuses){
                 return _.reduce(statuses.split(/,/),function(memo,st,idx){
-                    var parts=st.split(/@/),
+                    let parts=st.split(/@/),
                     entry = {
                         mark: parts[0],
                         num: parseInt(parts[1],10),
@@ -1405,14 +1405,14 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                   return n;
                 },
             degrees: function(t){
-                    var n = parseFloat(t);
+                    let n = parseFloat(t);
                     if(!_.isNaN(n)) {
                         n %= 360;
                     }
                     return n;
                 },
             circleSegment: function(t){
-                    var n = Math.abs(parseFloat(t));
+                    let n = Math.abs(parseFloat(t));
                     if(!_.isNaN(n)) {
                         n = Math.min(360,Math.max(0,n));
                     }
@@ -1441,7 +1441,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         };
 
     const checkGlobalConfig = function(){
-        var s=state.TokenMod,
+        let s=state.TokenMod,
             g=globalconfig && globalconfig.tokenmod;
 
         if(g && g.lastsaved && g.lastsaved > s.globalconfigCache.lastsaved){
@@ -1561,7 +1561,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     }());
 
     const ch = function (c) {
-        var entities = {
+        let entities = {
             '<' : 'lt',
             '>' : 'gt',
             "'" : '#39',
@@ -1584,7 +1584,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     };
 
     const getConfigOption_PlayersCanIDs = function() {
-        var text = ( state.TokenMod.playersCanUse_ids ?
+        let text = ( state.TokenMod.playersCanUse_ids ?
                 '<span style="color: red; font-weight:bold; padding: 0px 4px;">ON</span>' :
                 '<span style="color: #999999; font-weight:bold; padding: 0px 4px;">OFF</span>'
             );
@@ -1822,7 +1822,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.minorhead('Available Percentage Properties:'),
                         _h.inset(
                             _h.grid(
-                                _h.cell('dim_light_opacity'),
+                                _h.cell('dim_light_opacity')
                             )
                         ),
                         _h.paragraph(`Setting the low light opacity to 30%:`),
@@ -1846,7 +1846,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                                 _h.cell('top'),
                                 _h.cell('width'),
                                 _h.cell('height'),
-                                _h.cell('scale'),
+                                _h.cell('scale')
                             )
                         ),
                         _h.paragraph( `It${ch("'")}s probably a good idea not to set the location of a token off screen, or the width or height to 0.`),
@@ -2731,7 +2731,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
 
     const getRelativeChange = function(current,update) {
-        var cnum,unum,op='=';
+        let cnum,unum,op='=';
         if(_.isString(update)){
             if( _.has(update,0) && ('=' === update[0]) ){
                 return parseFloat(_.rest(update).join(''));
@@ -2886,7 +2886,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             t2=findObjs({type: 'character',archived: false});
                             t=_.chain([ args[0].replace(regex.stripSingleQuotes,'$1').replace(regex.stripDoubleQuotes,'$1') ])
                                 .map(function(n){
-                                    var l=_.filter(t2,function(c){
+                                    let l=_.filter(t2,function(c){
                                         return c.get('name').toLowerCase() === n.toLowerCase();
                                     });
                                     return ( 1 === l.length ? l : _.filter(t2,function(c){
@@ -2945,7 +2945,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     };
 
     const expandMetaArguments = function(memo,a) {
-        var args=a.split(/[|#]/),
+        let args=a.split(/[|#]/),
             cmd=args.shift();
         switch(cmd) {
             case 'bar1':
@@ -3401,7 +3401,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     };
 
     const handleConfig = function(config, id) {
-        var args, cmd, who=(getObj('player',id)||{get:()=>'API'}).get('_displayname');
+        let args, cmd, who=(getObj('player',id)||{get:()=>'API'}).get('_displayname');
 
         if(config.length) {
             while(config.length) {
@@ -3471,7 +3471,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             if(_.has(msg,'inlinerolls')){
                 msg.content = _.chain(msg.inlinerolls)
                     .reduce(function(m,v,k){
-                        var ti=_.reduce(v.results.rolls,function(m2,v2){
+                        let ti=_.reduce(v.results.rolls,function(m2,v2){
                             if(_.has(v2,'table')){
                                 m2.push(_.reduce(v2.results,function(m3,v3){
                                     m3.push(v3.tableItem.name);
