@@ -10,9 +10,9 @@ API_Meta.Bump={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const Bump = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = "Bump";
-  const version = '0.2.21';
+  const version = '0.2.22';
   API_Meta.Bump.version = version;
-  const lastUpdate = 1618240253;
+  const lastUpdate = 1622420279;
   const schemaVersion = 0.5;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
   const checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461';
@@ -26,7 +26,6 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
 
           // Bar settings (except max fields)
           'bar1_value', 'bar2_value', 'bar3_value',
-          'bar1_link','bar2_link','bar3_link',
 
           'tint_color', 'lastmove', 'controlledby', 'represents',
 
@@ -49,7 +48,8 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
         const mirroredProps = [
           ...mirroredPropsNoBar,
           // Bar settings (max fields)
-          'bar1_max', 'bar2_max', 'bar3_max'
+          'bar1_max', 'bar2_max', 'bar3_max',
+          'bar1_link','bar2_link','bar3_link'
         ];
 
 
