@@ -10,9 +10,9 @@ API_Meta.Bump={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const Bump = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = "Bump";
-  const version = '0.2.22';
+  const version = '0.2.23';
   API_Meta.Bump.version = version;
-  const lastUpdate = 1622420279;
+  const lastUpdate = 1622551362;
   const schemaVersion = 0.5;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
   const checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461';
@@ -24,7 +24,7 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
         const mirroredPropsNoBar = [
           'name', 'left', 'top', 'width', 'height', 'rotation', 'flipv', 'fliph',
 
-          // Bar settings (except max fields)
+          // Bar settings (except max & link fields)
           'bar1_value', 'bar2_value', 'bar3_value',
 
           'tint_color', 'lastmove', 'controlledby', 'represents',
@@ -45,11 +45,15 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
           "directional_low_light_center", "dim_light_opacity"
         ];
 
-        const mirroredProps = [
-          ...mirroredPropsNoBar,
-          // Bar settings (max fields)
+        const mirroredPropsWithBar = [
+          // Bar settings (max & link fields)
           'bar1_max', 'bar2_max', 'bar3_max',
           'bar1_link','bar2_link','bar3_link'
+        ];
+
+        const mirroredProps = [
+          ...mirroredPropsNoBar,
+          ...mirroredPropsWithBar
         ];
 
 
@@ -122,8 +126,6 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
             });
     };
 
-    const simpleObj = (o)=>JSON.parse(JSON.stringify(o));
-
     const fixupSlaveBars = () => {
       let ids = Object.values(state[scriptName].mirrored);
       const burndown = () =>{
@@ -140,9 +142,10 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
                 bar2_link: '',
                 bar3_link: ''
               });
+            } else {
+                let master = getMirrored(id);
+                slave.set(mirroredPropsWithBar.reduce((m,p)=>({...m,[p]:master.get(p)}),{}));
             }
-            let prev = simpleObj(slave);
-            handleTokenChange(slave,prev);
           }
           setTimeout(burndown,0);
         }
