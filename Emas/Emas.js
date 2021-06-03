@@ -8,9 +8,9 @@ API_Meta.Emas={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const Emas = (() => {
     'use strict';
 
-	const version = '0.8.4';
+	const version = '0.8.5';
     API_Meta.Emas.version = version;
-    const lastUpdate = 1609295567,
+    const lastUpdate = 1622730930,
 
 	ch = function (c) {
 		var entities = {
@@ -152,21 +152,21 @@ const Emas = (() => {
 		const who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 		switch(args.shift()) {
 			case '!emas':
-				if(1 === args.length) {
+				if(0 === args.length) {
 					showHelp(who);
 				} else {
 					sendChat(args[0],`/emas ${args.join(' ')}`);
 				}
 				break;
 			case '!as':
-				if(1 === args.length) {
+				if(0 === args.length) {
 					showHelp(who);
 				} else {
 					sendChat(args[0],`/as ${args.join(' ')}`);
 				}
 				break;
 			case '!w':
-				if(1 === args.length) {
+				if(0 === args.length) {
 					showHelp(who);
 				} else {
 					sendChat(msg.who,`/w "${who}" ${args.slice(1).join(' ')}`);
@@ -174,21 +174,21 @@ const Emas = (() => {
 				}
 				break;
 			case '!r':
-				if(1 === args.length) {
+				if(0 === args.length) {
 					showHelp(who);
 				} else {
 					sendChat('',`/r ${args.join(' ')}`);
 				}
 				break;
 			case '!gr':
-				if(1 === args.length) {
+				if(0 === args.length) {
 					showHelp(who);
 				} else {
 					sendChat('',`/gr ${args.join(' ')}`);
 				}
 				break;
 			case '!desc':
-				if(1 === args.length) {
+				if(0 === args.length) {
 					showHelp(who);
 				} else {
 					sendChat('',`/desc ${args.join(' ')}`);
