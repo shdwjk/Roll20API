@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.68';
+    const version = '0.8.69';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1621430801;
+    const lastUpdate = 1622745645;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -45,6 +45,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             has_limit_field_of_night_vision: {type: 'boolean'},
             has_directional_bright_light: {type: 'boolean'},
             has_directional_low_light: {type: 'boolean'},
+            light_sensitivity_multiplier: {type: 'number'},
+            night_vision_effect: {type: 'option'},
             
 
             // bounded by screen size
@@ -99,6 +101,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             bar2_reset: {type: 'text'},
             bar3_reset: {type: 'text'},
 
+            bar_location: {type: 'option'},
+            compact_bar: {type: 'option'},
+
 
             // colors
             aura1_color: {type: 'color'},
@@ -143,7 +148,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             'gm', 'player', 'all', 'control', 'token', 'character'
         ];
 
-    const propBool = {
+    const probBool = {
       couldbe:   ()=>(randomInteger(8)<=1),
       sometimes: ()=>(randomInteger(8)<=2),
       maybe:     ()=>(randomInteger(8)<=4),
@@ -182,6 +187,32 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
           },100);
         };
     })();
+
+    const option_fields = {
+      night_vision_effect: {
+        __default__: 'None',
+        off: 'None',
+        ['none']: 'None',
+        ['dimming']: 'Dimming',
+        ['nocturnal']: 'Nocturnal'
+      },
+      bar_location: {
+        __default__: null,
+        off: null,
+        none: null,
+        ['above']: null,
+        ['overlap_top']: 'overlap_top',
+        ['overlap_bottom']: 'overlap_bottom',
+        ['below']: 'below'
+      },
+      compact_bar: {
+        __default__: null,
+        off: null,
+        none: null,
+        ['compact']: 'compact',
+        ['on']: 'compact'
+      }
+    };
 
     const regex = {
       moveAngle: /^(=)?([+-]?(?:0|[1-9][0-9]*))(!)?$/,
@@ -318,6 +349,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         break;
 
                     case 'light_multiplier':
+                    case 'light_sensitivity_multiplier':
                         break;
 
                 }
@@ -1839,6 +1871,105 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     )
                 ),
 
+        setNightVisionEffect: (/* context*/) => _h.join(
+                    _h.subhead('Night Vision Effect'),
+                    _h.inset(
+                        _h.paragraph(`Night Vision Effect specifes how the region of night vision around a token looks.  There are two effects that can be turned on: ${_h.code('dimming')} and ${_h.code('nocturnal')}. You can disable Night Vision Effects using ${_h.code('off')}, ${_h.code('none')}, or leave the field blank.  Any other value is ignored.`),
+                        _h.minorhead('Available Night Vision Effect Properties:'),
+                        _h.inset(
+                            _h.grid(
+                                _h.cell('night_vision_effect')
+                            )
+                        ),
+                        _h.paragraph(`Enable the nocturnal Night Vision Effect on a token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set night_vision_effect|nocturnal' )
+                        ),
+                        _h.paragraph(`Enable the dimming Night Vision Effect on a token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set night_vision_effect|dimming' )
+                        ),
+                        _h.paragraph(`Disable any Night Vision Effects on a token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set night_vision_effect|off' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set night_vision_effect|none' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set night_vision_effect|' )
+                        )
+                      )
+                    ),
+
+        setCompactBar: (/* context*/) => _h.join(
+                    _h.subhead('Compact Bar'),
+                    _h.inset(
+                        _h.paragraph(`Compact Bar specifes how the bar looks.  A compact bar is much smaller than the normal presentation and does not have numbers overlaying it.  To enable Compact Bar for a token, use ${_h.code('compact')} or ${_h.code('on')}. You can disable Compact Bar using ${_h.code('off')}, ${_h.code('none')}, or leave the field blank.  Any other value is ignored.`),
+                        _h.minorhead('Available Compact Bar Properties:'),
+                        _h.inset(
+                            _h.grid(
+                                _h.cell('compact_bar')
+                            )
+                        ),
+                        _h.paragraph(`Enable Compact Bar on a token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set compact_bar|compact' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set compact_bar|on' )
+                        ),
+                        _h.paragraph(`Disable Compact Bar on a token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set compact_bar|off' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set compact_bar|none' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set compact_bar|' )
+                        )
+                      )
+                    ),
+
+        setBarLocation: (/* context*/) => _h.join(
+                    _h.subhead('Bar Location'),
+                    _h.inset(
+                        _h.paragraph(`Bar Location specifes where the bar on a token appears.  There are 4 options: ${_h.code('above')}, ${_h.code('overlap_top')}, ${_h.code('overlap_bottom')}, and ${_h.code('below')}. You can also use ${_h.code('off')}, ${_h.code('none')}, or leave the field blank as an alias for ${_h.code('above')}.  Any other value is ignored.`),
+                        _h.minorhead('Available Bar Location Properties:'),
+                        _h.inset(
+                            _h.grid(
+                                _h.cell('bar_location')
+                            )
+                        ),
+                        _h.paragraph(`Setting the bar location to below the token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar_location|below' )
+                        ),
+                        _h.paragraph(`Setting the bar location to overlap the top of the token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar_location|overlap_top' )
+                        ),
+                        _h.paragraph(`Setting the bar location to overlap the bottom of the token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar_location|overlap_bottom' )
+                        ),
+                        _h.paragraph(`Setting the bar location to above the token:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar_location|above' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set dim_light_opacity|none' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set dim_light_opacity|off' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set dim_light_opacity|' )
+                        )
+                    )
+                ),
+
         setNumbers: (/* context*/) => _h.join(
                     _h.subhead('Numbers'),
                     _h.inset(
@@ -1850,7 +1981,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                                 _h.cell('top'),
                                 _h.cell('width'),
                                 _h.cell('height'),
-                                _h.cell('scale')
+                                _h.cell('scale'),
+                                _h.cell('light_sensitivity_multiplier')
                             )
                         ),
                         _h.paragraph( `It${ch("'")}s probably a good idea not to set the location of a token off screen, or the width or height to 0.`),
@@ -2140,7 +2272,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
                     _h.paragraph(`You can use a semicolon (${_h.code(';')}) in place of a colon (${_h.code(':')}) to allow setting statuses with numbers from API Buttons.`),
                     _h.inset(
-                        _h.pre('[Set some statuses](!token-mod --set statusmarkers|blue;0|red;3|green|padlock;2|broken-shield;7)')
+                        _h.pre(`${ch('[')}[Set some statuses](!token-mod --set statusmarkers|blue;0|red;3|green|padlock;2|broken-shield;7)`)
                     ),
 
                     _h.paragraph(`The numbers following a status can be prefaced with a ${_h.code('+')} or ${_h.code('-')}, which causes their value to be applied to the current value. Here${ch("'")}s an example showing blue getting incremented by 2, and padlock getting decremented by 1.  Values will be bounded between 0 and 9.`),
@@ -2216,7 +2348,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     ),
                     _h.paragraph(`You can use a semicolon (${_h.code(';')}) in place of a colon (${_h.code(':')}) to allow setting statuses with numbers from API Buttons.`),
                     _h.inset(
-                        _h.pre('[3 Mountain Pass](!token-mod --set statusmarkers|Mountain_Pass;;1234568;3)')
+                        _h.pre(`${ch('[')}3 Mountain Pass](!token-mod --set statusmarkers|Mountain_Pass;;1234568;3)`)
                     )
 
                 )
@@ -2592,6 +2724,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         helpParts.setCircleSegment(context),
                         helpParts.setColors(context),
                         helpParts.setText(context),
+                        helpParts.setNightVisionEffect(context),
+                        helpParts.setBarLocation(context),
+                        helpParts.setCompactBar(context),
                         helpParts.setLayer(context),
                         helpParts.setStatus(context),
                         helpParts.setImage(context),
@@ -2793,8 +2928,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                       let v = args.shift().toLowerCase();
                       if(filters.isTruthyArgument(v)){
                         retr[cmd].push(true);
-                      } else if (propBool.hasOwnProperty(v)){
-                        retr[cmd].push(propBool[v]());
+                      } else if (probBool.hasOwnProperty(v)){
+                        retr[cmd].push(probBool[v]());
                       } else {
                         retr[cmd].push(false);
                       }
@@ -2804,6 +2939,20 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'text':
                     retr[cmd].push(args.shift().replace(regex.stripSingleQuotes,'$1').replace(regex.stripDoubleQuotes,'$1'));
                     break;
+
+                case 'option': {
+                      let o = option_fields[cmd];
+                      let ks = Object.keys(o);
+                      let arg = args.shift().toLowerCase();
+                      if(0 === arg.length){
+                        arg='__default__';
+                      }
+                      if(ks.includes(arg)){
+                        retr[cmd].push(o[arg]);
+                      }
+                    }
+                    break;
+
 
                 case 'numberBlank':
                     retr[cmd].push(numberOp.parse(cmd,args.shift()));
@@ -3168,6 +3317,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'light_radius':
                 case 'light_dimradius':
                 case 'light_multiplier':
+                case 'light_sensitivity_multiplier':
                 case 'aura2_radius':
                 case 'aura1_radius':
                 case 'adv_fow_view_distance':
@@ -3180,6 +3330,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     mods = Object.assign( mods, f[0].getMods(token,mods));
                     break;
 
+
                 case 'bar1_reset':
                 case 'bar2_reset':
                 case 'bar3_reset': {
@@ -3190,6 +3341,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     }
                   }
                   break;
+
 
                 case 'bar1_value':
                 case 'bar2_value':
@@ -3235,6 +3387,24 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                   case 'night_vision_tint':
                     mods[k]=f[0].applyTo(token.get(k)).toHTML();
                     break;
+
+
+/*
+                case 'light_sensitivity_multiplier':
+                    // {type: 'number'},
+                    break;
+
+                case 'night_vision_effect':
+                    // 'None', 'Dimming', 'Nocturnal'
+                    break;
+                case 'bar_location':
+                  // null, 'overlap_top', 'overlap_bottom', 'below'
+                  break;
+
+                case 'compact_bar':
+                  // null, 'compact'
+                  break;
+*/
 
                 default:
                     mods[k]=f[0];
