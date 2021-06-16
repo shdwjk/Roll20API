@@ -7,41 +7,43 @@ API_Meta.TokenNameNumber={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 
 /* global libTokenMarkers */
 const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
-  const version = '0.5.13';
+
+  const scriptName = "TokenNameNumber";
+  const version = '0.5.14';
   API_Meta.TokenNameNumber.version = version;
-  const lastUpdate = 1623212078;
+  const lastUpdate = 1623803990;
   const schemaVersion = 0.7;
 
   let tokenIds = [];
 
   const checkInstall = () => {    
-    log('-=> TokenNameNumber v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
+    log(`-=> ${scriptName} v${version} <=-  [${new Date(lastUpdate*1000)}]`);
 
-    if( ! state.hasOwnProperty('TokenNameNumber') || state.TokenNameNumber.version !== schemaVersion) {
+    if( ! state.hasOwnProperty(scriptName) || state[scriptName].version !== schemaVersion) {
       log('  > Updating Schema to v'+schemaVersion+' <');
-      switch(state.TokenNameNumber && state.TokenNameNumber.version) {
+      switch(state[scriptName] && state[scriptName].version) {
         case 0.3: 
         case 0.4:
-          delete state.TokenNameNumber.globalConfigCache;
-          state.TokenNameNumber.globalconfigCache = {lastsaved:0};
+          delete state[scriptName].globalConfigCache;
+          state[scriptName].globalconfigCache = {lastsaved:0};
 
           /* falls through */
         case 0.5:
-          state.TokenNameNumber.config.autoNumber = false;
-          state.TokenNameNumber.config.autoNumberPosition = "End";
-          state.TokenNameNumber.config.autoNumberSeparator = '';
+          state[scriptName].config.autoNumber = false;
+          state[scriptName].config.autoNumberPosition = "End";
+          state[scriptName].config.autoNumberSeparator = '';
 
           /* falls through */
         case 0.6:
-          delete state.TokenNameNumber.globalconfigCache;
+          delete state[scriptName].globalconfigCache;
 
           /* falls through */
         case 'UpdateSchemaVersion':
-          state.TokenNameNumber.version = schemaVersion;
+          state[scriptName].version = schemaVersion;
           break;
 
         default:
-          state.TokenNameNumber = {
+          state[scriptName] = {
             version: schemaVersion,
             config: {
               randomSpace: 0,
@@ -68,6 +70,20 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
     } else {
       return true;
     }
+  };
+
+  const getPageForPlayer = (playerid) => {
+    let player = getObj('player',playerid);
+    if(playerIsGM(playerid)){
+      return player.get('lastpage') || Campaign().get('playerpageid');
+    }
+
+    let psp = Campaign().get('playerspecificpages');
+    if(psp[playerid]){
+      return psp[playerid];
+    }
+
+    return Campaign().get('playerpageid');
   };
 
   const esRE = (s) => s.replace(/(\\|\/|\[|\]|\(|\)|\{|\}|\?|\+|\*|\||\.|\^|\$)/g,'\\$1');
@@ -132,20 +148,20 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
   ////////////////////////////////////////////////////////////
 
   const getConfigOption_RandomSpace = () => {
-    let text = ( state.TokenNameNumber.config.randomSpace > 0 ?
-      '<span style="color: green; font-weight:bold;">'+ state.TokenNameNumber.config.randomSpace+ '</span>' :
+    let text = ( state[scriptName].config.randomSpace > 0 ?
+      '<span style="color: green; font-weight:bold;">'+ state[scriptName].config.randomSpace+ '</span>' :
     '<span style="color: red; font-weight:bold;">Off</span>' );
     return '<div>'+
       'Random Space of numbers between each consecutively generated token number:'+
       text+'. '+
-      '<a href="!tnn-config --random-space|?{size of the random gap between token numbers (0 for off, any number for a range from 1 to that number)?|'+state.TokenNameNumber.config.randomSpace+'}">'+
+      '<a href="!tnn-config --random-space|?{size of the random gap between token numbers (0 for off, any number for a range from 1 to that number)?|'+state[scriptName].config.randomSpace+'}">'+
       'Set Random Space'+
       '</a>'+
       '</div>';
   };
 
   const getConfigOption_UseDots = () => {
-    let text = (state.TokenNameNumber.config.useDots ?
+    let text = (state[scriptName].config.useDots ?
       '<span style="color: green; font-weight:bold;">On</span>' :
     '<span style="color: red; font-weight:bold;">Off</span>');
 
@@ -158,7 +174,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
   };
 
   const getConfigOption_ZeroBiased = () => {
-    let text = (state.TokenNameNumber.config.zeroBiased ?
+    let text = (state[scriptName].config.zeroBiased ?
       '<span style="color: green; font-weight:bold;">On</span>' :
     '<span style="color: red; font-weight:bold;">Off</span>');
 
@@ -180,7 +196,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
       '<div>'+
       '<div style="font-weight: bold;">Dots (Click to move between pools).</div>'+
       '<div style="border: 1px solid #999999;border-radius: 10px; background-color: #eeffee;">'+
-      state.TokenNameNumber.config.dots.map((s) => {
+      state[scriptName].config.dots.map((s) => {
         return getStatusButton(s);
       }).join('')+
         '</div>'+
@@ -189,7 +205,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
         '<div style="font-weight: bold;">Available Statuses</div>'+
         '<div style="border: 1px solid #999999;border-radius: 10px; background-color: #ffeeee;">'+
         allStatuses
-          .filter(s => !state.TokenNameNumber.config.dots.includes(s.getTag()))
+          .filter(s => !state[scriptName].config.dots.includes(s.getTag()))
           .map(s =>getStatusButton(s.getTag()) ).join('')+
         '</div>'+
         '</div>'+
@@ -206,7 +222,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
     const showHelp = (who) => {
       sendChat('',`/w "${who}" `+
         _h.outer(
-          _h.title('TokenNameNumber', version),
+          _h.title(scriptName, version),
           _h.header(
             _h.paragraph(`Provides automatic numbering of tokens dragged into onto the tabletop.  Token names need to have the special word ${_h.bold('%%NUMBERED%%')} somewhere in them.`)
           ),
@@ -219,7 +235,6 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
                 `--renumber`
               )
             ),
-            _h.paragraph('Currently, this just displays the help, which is used for configuring.'),
             _h.ul(
               `${_h.bold('--help')} -- Displays the help and configuration options.`,
               `${_h.bold('--renumber')} -- Renumbers tokens based on the current rules.`
@@ -241,7 +256,17 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
       let args = msg.content.split(/\s+--/);
       switch(args.shift()) {
         case '!tnn':
-          showHelp(who);
+          if(0 === args.length || args.includes('help')) {
+              showHelp(who);
+          }
+          args.forEach(a=>{
+            switch(a){
+              case 'renumber':
+                RenumberPage(getPageForPlayer(msg.playerid));
+                break;
+            }
+          });
+
           break;
 
         case '!tnn-config':
@@ -253,7 +278,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
             sendChat('','/w '+who+' '+
               '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
               '<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
-              'TokenNameNumber v'+version+
+              `${scriptName} v${version}`+
               '</div>'+
               getAllConfigOptions()+
               '</div>'
@@ -264,7 +289,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
             let opt=a.split(/\|/);
             switch(opt.shift()) {
               case 'toggle-use-dots':
-                state.TokenNameNumber.config.useDots=!state.TokenNameNumber.config.useDots;
+                state[scriptName].config.useDots=!state[scriptName].config.useDots;
                 sendChat('',`/w "${who}" `+
                   '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                   getConfigOption_UseDots()+
@@ -273,7 +298,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
                 break;
 
               case 'toggle-zero-biased':
-                state.TokenNameNumber.config.zeroBiased=!state.TokenNameNumber.config.zeroBiased;
+                state[scriptName].config.zeroBiased=!state[scriptName].config.zeroBiased;
                 sendChat('',`/w "${who}" `+
                   '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                   getConfigOption_ZeroBiased()+
@@ -283,10 +308,10 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
 
               case 'toggle-dot': {
                   let tag = opt[0].replace(/;/g,':');
-                  if(state.TokenNameNumber.config.dots.includes(tag)){
-                    state.TokenNameNumber.config.dots = state.TokenNameNumber.config.dots.filter(d=>d !==tag);
+                  if(state[scriptName].config.dots.includes(tag)){
+                    state[scriptName].config.dots = state[scriptName].config.dots.filter(d=>d !==tag);
                   } else {
-                    state.TokenNameNumber.config.dots.push(tag);
+                    state[scriptName].config.dots.push(tag);
                   }
                   sendChat('',`/w "${who}" `+
                     '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
@@ -296,9 +321,8 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
                 }
                 break;
 
-
               case 'random-space':
-                state.TokenNameNumber.config.randomSpace=parseInt(opt[0],10);
+                state[scriptName].config.randomSpace=(parseInt(opt[0],10)||0);
                 sendChat('',`/w "${who}" `+
                   '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                   getConfigOption_RandomSpace()+
@@ -322,9 +346,9 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
 
     const getMatchers = (pageid,represents) => {
       let matchers = [];
-      if(state.TokenNameNumber.registry.hasOwnProperty(pageid) &&
-      state.TokenNameNumber.registry[pageid].hasOwnProperty(represents) ) {
-        state.TokenNameNumber.registry[pageid][represents].forEach((regstr) => {
+      if(state[scriptName].registry.hasOwnProperty(pageid) &&
+      state[scriptName].registry[pageid].hasOwnProperty(represents) ) {
+        state[scriptName].registry[pageid][represents].forEach((regstr) => {
           matchers.push(new RegExp(regstr));
         });
       }
@@ -332,13 +356,13 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
     };
 
     const addMatcher = (pageid,represents,matcherRegExpStr) => {
-      if( ! state.TokenNameNumber.registry.hasOwnProperty(pageid) ) {
-        state.TokenNameNumber.registry[pageid] = {};
+      if( ! state[scriptName].registry.hasOwnProperty(pageid) ) {
+        state[scriptName].registry[pageid] = {};
       }
-      if( ! state.TokenNameNumber.registry[pageid].hasOwnProperty(represents) ) {
-        state.TokenNameNumber.registry[pageid][represents]=[matcherRegExpStr];
+      if( ! state[scriptName].registry[pageid].hasOwnProperty(represents) ) {
+        state[scriptName].registry[pageid][represents]=[matcherRegExpStr];
       } else {
-        state.TokenNameNumber.registry[pageid][represents].push(matcherRegExpStr);
+        state[scriptName].registry[pageid][represents] = [...new Set([...state[scriptName].registry[pageid][represents],matcherRegExpStr])];
       }
     };
 
@@ -348,28 +372,58 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
     };
 
     const getDotNumber = (num) => {
-      const rebase = toN(state.TokenNameNumber.config.dots.length);
+      const rebase = toN(state[scriptName].config.dots.length);
       return rebase(num);
     };
 
     const saveTokenId = (obj) => {
       tokenIds.push(obj.id);
-      let token_id = obj.id;
-
-      setTimeout(()=>{
-        let token=getObj('graphic',token_id);
-        if(token){
-          setNumberOnToken(token);
-        }
-      },100);
     };
 
-    const setNumberOnToken = (obj) => {
-      if(tokenIds.includes(obj.id)){
-        tokenIds=tokenIds.filter(id => id !== obj.id);
+    const RenumberPage = (pageid) =>{
+      let queue = findObjs({
+        type: 'graphic',
+        subtype: 'token',
+        pageid: pageid
+      });
+      let renameQueue = [...queue];
 
-        if( 'graphic' === obj.get('type') &&
-        'token'   === obj.get('subtype') ) {
+      const renumberBurndown = () => {
+        let t = queue.shift();
+        if(t){
+          setNumberOnToken(t,{},true);
+          setTimeout(renumberBurndown,0);
+        }
+      };
+
+      const renameBurndown = () => {
+        let t = renameQueue.shift();
+        if(t){
+          resetNameOnToken(t);
+          setTimeout(renameBurndown,0);
+        } else {
+          renumberBurndown();
+        }
+
+      };
+      renameBurndown();
+    };
+
+    const resetNameOnToken = (obj) => {
+      let matchers = (getMatchers(obj.get('pageid'), obj.get('represents'))) || [];
+      let tokenName = obj.get('name');
+      let match;
+      matchers.find(m=>match=tokenName.match(m));
+
+      if(match){
+        obj.set('name', `${match[1]}%%NUMBERED%%${match[3]}`);
+      }
+    };
+
+    const setNumberOnToken = (obj,prev,force=false) => {
+      if(tokenIds.includes(obj.id) || force){
+
+        if( 'graphic' === obj.get('type') && 'token'   === obj.get('subtype') ) {
 
           let matchers = (getMatchers(obj.get('pageid'), obj.get('represents'))) || [];
           let tokenName = (obj.get('name'));
@@ -377,6 +431,8 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
           let renamer;
 
           if(tokenName.match( /%%NUMBERED%%/ ) || matchers.some((m) => { return m.test(tokenName);}) ) {
+            tokenIds=tokenIds.filter(id => id !== obj.id);
+
             if( 0 === matchers.length || !matchers.some((m) => { return m.test(tokenName);}) ) {
               matcher=`^(${esRE(tokenName).replace(/%%NUMBERED%%/,')(\\d+)(')})$`;
               addMatcher(obj.get('pageid'), obj.get('represents'), matcher );
@@ -408,12 +464,12 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
                 },0)
             );
 
-            num += ( state.TokenNameNumber.config.randomSpace ? (randomInteger(state.TokenNameNumber.config.randomSpace)-1) : 0);
+            num += ( state[scriptName].config.randomSpace ? (randomInteger(state[scriptName].config.randomSpace)-1) : 0);
 
-            if(state.TokenNameNumber.config.useDots) {
-              let digits = getDotNumber(num + (state.TokenNameNumber.config.zeroBiased ? 0 : 1) );
+            if(state[scriptName].config.useDots) {
+              let digits = getDotNumber(num + (state[scriptName].config.zeroBiased ? 0 : 1) );
               let statuspart = digits.map( (n) => {
-                return state.TokenNameNumber.config.dots[n];
+                return state[scriptName].config.dots[n];
               }).join(',');
               if(statuspart) {
                 obj.set({
