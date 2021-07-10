@@ -10,9 +10,9 @@ API_Meta.Bump={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const Bump = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = "Bump";
-  const version = '0.2.23';
+  const version = '0.2.24';
   API_Meta.Bump.version = version;
-  const lastUpdate = 1622551362;
+  const lastUpdate = 1625931176;
   const schemaVersion = 0.5;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
   const checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461';
@@ -34,21 +34,33 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
           'light_losangle','light_multiplier', 'adv_fow_view_distance',
 
           //UDL settings
-          "has_bright_light_vision", "has_night_vision", "night_vision_tint",
-          "night_vision_distance", "emits_bright_light", "bright_light_distance",
-          "emits_low_light", "low_light_distance", "has_limit_field_of_vision",
+          // Vision
+          "has_bright_light_vision", "has_limit_field_of_vision",
           "limit_field_of_vision_center", "limit_field_of_vision_total",
-          "has_limit_field_of_night_vision", "limit_field_of_night_vision_center",
-          "limit_field_of_night_vision_total", "has_directional_bright_light",
-          "directional_bright_light_total", "directional_bright_light_center",
-          "has_directional_low_light", "directional_low_light_total",
-          "directional_low_light_center", "dim_light_opacity"
+          "light_sensitivity_multiplier",
+
+          // Bright Light
+          "emits_bright_light", "bright_light_distance",
+          "has_directional_bright_light", "directional_bright_light_total",
+          "directional_bright_light_center",
+
+          // Dim Light
+          "emits_low_light", "low_light_distance", "has_directional_low_light",
+          "directional_low_light_total", "directional_low_light_center",
+          "dim_light_opacity",
+
+          // Night Vision
+          "has_night_vision", "night_vision_tint", "night_vision_distance",
+          "night_vision_effect", "has_limit_field_of_night_vision",
+          "limit_field_of_night_vision_center",
+          "limit_field_of_night_vision_total"
         ];
 
         const mirroredPropsWithBar = [
           // Bar settings (max & link fields)
           'bar1_max', 'bar2_max', 'bar3_max',
-          'bar1_link','bar2_link','bar3_link'
+          'bar1_link','bar2_link','bar3_link',
+          "bar_location", "compact_bar"
         ];
 
         const mirroredProps = [
@@ -341,6 +353,7 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
             (state[scriptName].config.noBars ? mirroredPropsNoBar : mirroredProps ).forEach( p => baseObj[p]=master.get(p) );
             slave = createObj('graphic',baseObj);
             state[scriptName].mirrored[master.id]=slave.id;
+            forceLightUpdateOnPage(master.get('page_id'));
         } else {
             if(!slave) {
                 sendChat('',`/w "${who}" `+
@@ -365,6 +378,34 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
         });
     };
 
+    const getActivePages = () => [...new Set([
+        Campaign().get('playerpageid'),
+        ...Object.values(Campaign().get('playerspecificpages')),
+        ...findObjs({
+            type: 'player',
+            online: true
+        })
+        .filter((p)=>playerIsGM(p.id))
+        .map((p)=>p.get('lastpage'))
+      ])
+    ];
+
+    const forceLightUpdateOnPage = (()=>{
+        const forPage = (pid) => (getObj('page',pid)||{set:()=>{}}).set('force_lighting_refresh',true);
+        let pids = new Set();
+        let t;
+
+        return (pid) => {
+          pids.add(pid);
+          clearTimeout(t);
+          t = setTimeout(() => {
+            let activePages = getActivePages();
+            [...pids].filter(p=>activePages.includes(p)).forEach(forPage);
+            pids.clear();
+          },100);
+        };
+    })();
+
     const bumpToken = (id,who) => {
         let pair=getMirroredPair(id);
         if(pair && pair.master && pair.slave) {
@@ -383,9 +424,12 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
                     setSlaveLayer(pair.slave,'objects');
                     break;
             }
+            forceLightUpdateOnPage(pair.master.get('page_id'));
         } else if(state[scriptName].config.autoSlave) {
             createMirrored(id, false, who);
         }
+
+
     };
 
     const removeMirrored = (id) => {
