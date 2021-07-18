@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.70';
+    const version = '0.8.71';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1625628947;
+    const lastUpdate = 1626643208;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -193,7 +193,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     const option_fields = {
       night_vision_effect: {
         __default__: ()=>()=>'None',
-        off: ()=>'None',
+        off: ()=>()=>'None',
         ['none']: ()=>()=>'None',
         ['dimming']: (amount='5ft')=>(token,mods)=>{
           const regexp = /^([=+\-/*])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq|%)?$/i;
@@ -1508,7 +1508,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             })
             .filter((p)=>playerIsGM(p.id))
             .map((p)=>p.get('lastpage'))
-        ])
+          ])
         ];
 
         const getPageForPlayer = (playerid) => {
