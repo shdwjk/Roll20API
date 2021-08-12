@@ -5,8 +5,8 @@
 var ImperialCalendar = ImperialCalendar || (function() {
     'use strict';
 
-    var version = '0.1.2',
-        lastUpdate = 1490707355,
+    var version = '0.1.3',
+        lastUpdate = 1628804948,
         schemaVersion = 0.2,
         Uw = (w)=>`&${w};`,
         Un = (n)=>`&#${n};`,
@@ -267,7 +267,7 @@ var ImperialCalendar = ImperialCalendar || (function() {
     },
 
     keyFormat = function(text) {
-        return (text && text.toLowerCase().replace(/\s+/,'')) || undefined;
+        return (text && text.toLowerCase().replace(/\s+/g,'')) || undefined;
     },
     matchKey = function (keys,subject){
         return subject && !_.isUndefined(_.find(keys,(o)=>(-1 !== subject.indexOf(o))));
@@ -664,7 +664,7 @@ var ImperialCalendar = ImperialCalendar || (function() {
                                 state.ImperialCalendar.config.holidayName=opt[1];
                             } else {
                                 let key=parseInt(opt[0],10);
-                                if(_.contains(_.keys(state.ImperialCalendar.config.dayNames),key)){
+                                if(state.ImperialCalendar.config.dayNames.hasOwnProperty(key)){
                                     state.ImperialCalendar.config.dayNames[key]=opt[1];
                                 }
                             }
