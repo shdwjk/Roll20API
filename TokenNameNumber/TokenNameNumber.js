@@ -9,9 +9,9 @@ API_Meta.TokenNameNumber={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = "TokenNameNumber";
-  const version = '0.5.14';
+  const version = '0.5.15';
   API_Meta.TokenNameNumber.version = version;
-  const lastUpdate = 1623803990;
+  const lastUpdate = 1631838318;
   const schemaVersion = 0.7;
 
   let tokenIds = [];
@@ -58,6 +58,10 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
       }
     }
 
+    if(state[scriptName].config.useDots && (0 === state[scriptName].config.dots.length)){
+      sendChat('',`/w gm <div style="color:red;font-weight:bold;border:2px solid red;background-color:black;border-radius:1em;padding:1em;">TokenNameNumber is configured to use Dots, but no dots are selected!  Configure dots in the help: <a href="!tnn">Config</a></div>`);
+    }
+
     // Make sure libTokenMarkers exists, and has the functions that are expected
     if('undefined' === typeof libTokenMarkers
       || (['getStatus','getStatuses','getOrderedList'].find(k=>
@@ -70,6 +74,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
     } else {
       return true;
     }
+
   };
 
   const getPageForPlayer = (playerid) => {
@@ -466,7 +471,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
 
             num += ( state[scriptName].config.randomSpace ? (randomInteger(state[scriptName].config.randomSpace)-1) : 0);
 
-            if(state[scriptName].config.useDots) {
+            if(state[scriptName].config.useDots && state[scriptName].config.dots.length) {
               let digits = getDotNumber(num + (state[scriptName].config.zeroBiased ? 0 : 1) );
               let statuspart = digits.map( (n) => {
                 return state[scriptName].config.dots[n];
