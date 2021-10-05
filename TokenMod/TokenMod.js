@@ -8,14 +8,15 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.71';
+    const version = '0.8.72';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1626643208;
+    const lastUpdate = 1633460834;
     const schemaVersion = 0.4;
 
     const fields = {
             // booleans
             showname: {type: 'boolean'},
+            show_tooltip: {type: 'boolean'},
             showplayers_name: {type: 'boolean'},
             showplayers_bar1: {type: 'boolean'},
             showplayers_bar2: {type: 'boolean'},
@@ -114,6 +115,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
             // Text : special
             name: {type: 'text'},
+            tooltip: {type: 'text'},
+
             statusmarkers: {type: 'status'},
             layer: {type: 'layer'},
             represents: {type: 'character_id'},
@@ -1918,6 +1921,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.inset(
                         _h.grid(
                             _h.cell('showname'),
+                            _h.cell('show_tooltip'),
                             _h.cell('showplayers_name'),
                             _h.cell('showplayers_bar1'),
                             _h.cell('showplayers_bar2'),
@@ -2331,6 +2335,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.inset(
                         _h.grid(
                             _h.cell('name'),
+                            _h.cell('tooltip'),
                             _h.cell('bar1_value'),
                             _h.cell('bar2_value'),
                             _h.cell('bar3_value'),
