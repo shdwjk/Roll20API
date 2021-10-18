@@ -1,21 +1,61 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/UniversalVTTImporter/UniversalVTTImporter.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
-var API_Meta = API_Meta||{};
+var API_Meta = API_Meta||{}; //eslint-disable-line no-var
 API_Meta.UniversalVTTImporter={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 {try{throw new Error('');}catch(e){API_Meta.UniversalVTTImporter.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.7';
+  const version = '0.1.8';
   API_Meta.UniversalVTTImporter.version = version;
-  const lastUpdate = 1619367527;
-  const schemaVersion = 0.1;
+  const lastUpdate = 1634537177;
+  const schemaVersion = 0.2;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
+  const OpenPortalOptions = {
+    WINDOW: "Movement Blocking Window",
+    GLASS_WINDOW: "Movement Blocking Window with Glass",
+    GM_LINE: "GM Layer Line",
+    NONE: "None"
+  };
+
   const regex = {
-    colors: /(transparent|(?:#?[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?))/
+    colors: /^(transparent|(?:#?[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?))$/,
+    colorsRGBA: /^(transparent|(?:#?[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?)|(?:#?[0-9a-fA-F]{4}(?:[0-9a-fA-F]{4})?))$/
+  };
+
+  const argb2rgba = (c) => {
+    let m = c.match(/^#?(?:([0-9a-fA-F]{2})([0-9a-fA-F]{6})|([0-9a-fA-F]{1})([0-9a-fA-F]{3}))$/);
+    if(m) {
+      if(m[1]) {
+        return `#${m[2]}${m[1]}`;
+      } else if(m[3]) {
+        return `#${m[4]}${m[2]}`;
+      }
+    }
+    return c;
+  };
+
+  const getNonAlphaColor = (c) => {
+    let m = c.match(/^#?(?:([0-9a-fA-F]{6})(?:[0-9a-fA-F]{2})|([0-9a-fA-F]{3})(?:[0-9a-fA-F]{1}))$/);
+    return m ? `#${m[1]||m[2]}` : c;
+  };
+
+  const getNonAlphaColorScaled = (c) => {
+    let m = c.match(/^#?(?:([0-9a-fA-F]{6})([0-9a-fA-F]{2})|([0-9a-fA-F]{3})([0-9a-fA-F]{1}))$/);
+    const sh = (n,s) => `00${Math.round(parseInt(n,16)*s).toString(16)}`.slice(-2);
+    if(m) {
+      if(m[1]) {
+        let s = parseInt(m[2],16)/255;
+        return `#${sh(m[1].substring(0,2),s)}${sh(m[1].substring(2,4),s)}${sh(m[1].substring(4,6),s)}`;
+      } else if(m[3]) {
+        let s = parseInt(m[4],16)/15;
+        return `#${sh(m[3].substring(0,1),s)}${sh(m[3].substring(1,2),s)}${sh(m[3].substring(2,3),s)}`;
+      }
+    }
+    return c;
   };
 
   const assureHelpHandout = (create = false) => {
@@ -48,6 +88,17 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       switch(state[scriptName] && state[scriptName].version) {
 
         case 0.1:
+          state[scriptName].config.windowColor='#cfe2f399';
+          state[scriptName].config.windowWidth=3;
+          state[scriptName].config.objectColor='#00ff00';
+          state[scriptName].config.objectWidth=1;
+          state[scriptName].config.objectTransparent=true;
+          state[scriptName].config.openPortalsMode=( state[scriptName].config.openPortalsMode ? 'GM_LINE' : 'NONE' );
+          state[scriptName].config.dlLightMarkerColor = state[scriptName].config.lightColor;
+          state[scriptName].config.useLightColor = true;
+          /* break; // intentional dropthrough */ /* falls through */
+
+        case 0.2:
           /* break; // intentional dropthrough */ /* falls through */
 
         case 'UpdateSchemaVersion':
@@ -58,12 +109,18 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
           state[scriptName] = {
             version: schemaVersion,
             config: {
+              windowColor: '#cfe2f399',
+              windowWidth: 3,
               wallColor: '#e4a21e',
               wallWidth: 15,
               doorColor: '#ff0000',
               doorWidth: 5,
-              lightColor: '#9900ff',
-              createOpenPortals: true
+              objectColor: '#00ff00',
+              objectWidth: 1,
+              objectTransparent: true,
+              dlLightMarkerColor: '#9900ff',
+              useLightColor: true,
+              openPortalsMode: 'WINDOW'
             }
 
           };
@@ -72,6 +129,34 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     }
     assureHelpHandout();
   };
+
+  const toFrontFixed = (()=>{
+      let queue=[];
+      let last=0;
+      const DELAY = 1000;
+      const burndownQueue = ()=>{
+          let o = queue.shift();
+          toFront(o);
+          last = Date.now();
+          if(queue.length){
+              setTimeout(burndownQueue,DELAY);
+          }
+      };
+      return (obj=>{
+          if(queue.length){
+              queue.push(obj);
+          } else {
+              let t = Date.now();
+              if(last+DELAY > t){
+                  queue.push(obj);
+                  setTimeout(burndownQueue,(last+DELAY-t));
+              } else {
+                  toFront(obj);
+                  last = t;
+              }
+          }
+      });
+  })();
 
   const ch = (c) => {
     const entities = {
@@ -182,7 +267,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     };
 
     const makeConfigOptionColor = (config,command,text) => {
-        const color = ('transparent' === config ? "background-image: url('"+checkerURL+"');" : "background-color: "+config+";");
+        const color = ('transparent' === config ? `background-image: url('${checkerURL}');` : `background-color: ${getNonAlphaColor(config)};`);
         const buttonText =`<div style="border:1px solid #1d1d1d;width:40px;height:40px;display:inline-block;${color}">&nbsp;</div>`;
 
         return _h.configRow(
@@ -192,15 +277,33 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
           );
     };
 
-    const getConfigOption_CreateOpenPortals = () => makeConfigOption(
-      state[scriptName].config.createOpenPortals,
-      `!uvtt-config --toggle-create-open-portals`,
-      `${_h.bold('Create Open Portals')} controls if open portals are drawn on the GM Layer.  These are usually windows, so not drawing them can remove some clutter on the GM Layer if you never plan to close them.`
+
+    const getOptionsWithDefault = (opts, def) => {
+      let keys = Object.keys(opts).filter(k=>def !== k);
+      return [def,...keys].map(k=>`${opts[k]},${k}`).join('|');
+    };
+
+    const getConfigOption_OpenPortalsMode = () => makeConfigOptionNum(
+      state[scriptName].config.openPortalsMode,
+     // `!uvtt-config --toggle-create-open-portals`,
+      `!uvtt-config --open-portals-mode|?{Open Portal Draw Style|${getOptionsWithDefault(OpenPortalOptions,state[scriptName].config.openPortalsMode)}}`,
+      `${_h.bold('Open Portals Mode')} controls how open portals are drawn.  These are usually windows, so with UDL, you can draw them to block movement, not sight.  Or you can draw them as a line on the GM layer which you can move the the DL layer to "close" them.  Or just leave them off entirely. Current setting: ${_h.bold(OpenPortalOptions[state[scriptName].config.openPortalsMode])}`
+    );
+
+    const getConfigOption_WindowColor = () => makeConfigOptionColor(
+      state[scriptName].config.windowColor,
+      `!uvtt-config --window-color|?{What color for window lines? (transparent for none, #RRGGBBAA for a color)|${state[scriptName].config.windowColor}}`,
+      `${_h.bold('Window Color')} is the color that windows are drawn in on the Dynamic Lighting Layer.`
+    );
+    const getConfigOption_WindowWidth = () => makeConfigOptionNum(
+      state[scriptName].config.windowWidth,
+      `!uvtt-config --window-width|?{How many pixels wide for window lines?|${state[scriptName].config.windowWidth}}`,
+      `${_h.bold('Window Width')} is the width that windows are drawn in on the Dynamic Lighting Layer in pixels. Current value: ${_h.bold(state[scriptName].config.windowWidth)}`
     );
 
     const getConfigOption_WallColor = () => makeConfigOptionColor(
       state[scriptName].config.wallColor,
-      `!uvtt-config --wall-color|?{What color wall lines? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.wallColor}}`,
+      `!uvtt-config --wall-color|?{What color for wall lines? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.wallColor}}`,
       `${_h.bold('Wall Color')} is the color that walls are drawn in on the Dynamic Lighting Layer.`
     );
     const getConfigOption_WallWidth = () => makeConfigOptionNum(
@@ -211,7 +314,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
     const getConfigOption_DoorColor = () => makeConfigOptionColor(
       state[scriptName].config.doorColor,
-      `!uvtt-config --door-color|?{What color door lines? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.doorColor}}`,
+      `!uvtt-config --door-color|?{What color for door lines? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.doorColor}}`,
       `${_h.bold('Door Color')} is the color that doors are drawn in on the Dynamic Lighting Layer.`
     );
 
@@ -221,18 +324,49 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       `${_h.bold('Door Width')} is the width that doors are drawn in on the Dynamic Lighting Layer in pixels. Current value: ${_h.bold(state[scriptName].config.doorWidth)}`
     );
 
-    const getConfigOption_LightColor = () => makeConfigOptionColor(
-      state[scriptName].config.lightColor,
-      `!uvtt-config --light-color|?{What aura color lights? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.lightColor}}`,
-      `${_h.bold('Light Color')} is the color of the aura around lights on the Dynamic Lighting Layer.`
+    const getConfigOption_ObjectColor = () => makeConfigOptionColor(
+      state[scriptName].config.objectColor,
+      `!uvtt-config --object-color|?{What color for object lines? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.objectColor}}`,
+      `${_h.bold('Object Color')} is the color that objects are drawn in on the Dynamic Lighting Layer.`
     );
 
-    const getAllConfigOptions = () => getConfigOption_CreateOpenPortals() +
+    const getConfigOption_ObjectTransparent = () => makeConfigOption(
+      state[scriptName].config.objectTransparent,
+      `!uvtt-config --toggle-object-transparent`,
+      `${_h.bold('Object Transparent')} controls if the Objects should be see through, but block movement (UDL Only). Current value: ${_h.bold(state[scriptName].config.objectTransparent ? 'On' : 'Off')}`
+    );
+
+    const getConfigOption_ObjectWidth = () => makeConfigOptionNum(
+      state[scriptName].config.objectWidth,
+      `!uvtt-config --object-width|?{How many pixels wide for object lines?|${state[scriptName].config.objectWidth}}`,
+      `${_h.bold('Object Width')} is the width that objects are drawn in on the Dynamic Lighting Layer in pixels. Current value: ${_h.bold(state[scriptName].config.objectWidth)}`
+    );
+
+
+    const getConfigOption_DLLightMarkerColor = () => makeConfigOptionColor(
+      state[scriptName].config.dlLightMarkerColor,
+      `!uvtt-config --dl-light-marker-color|?{What aura color lights? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.dlLightMarkerColor}}`,
+      `${_h.bold('DL Layer Light Marker Color')} is the color of the aura around lights on the Dynamic Lighting Layer.`
+    );
+
+    const getConfigOption_UseLightColor = () => makeConfigOption(
+      state[scriptName].config.useLightColor,
+      `!uvtt-config --toggle-use-light-color`,
+      `${_h.bold('Use Light Color')} controls if imported light color is applied to lights (UDL Only). Current value: ${_h.bold(state[scriptName].config.useLightColor ? 'On' : 'Off')}`
+    );
+
+    const getAllConfigOptions = () => getConfigOption_OpenPortalsMode() +
+      getConfigOption_WindowColor() +
+      getConfigOption_WindowWidth() +
       getConfigOption_WallColor() +
       getConfigOption_WallWidth() +
       getConfigOption_DoorColor() +
       getConfigOption_DoorWidth() +
-      getConfigOption_LightColor() ;
+      getConfigOption_ObjectColor() +
+      getConfigOption_ObjectWidth() +
+      getConfigOption_ObjectTransparent() +
+      getConfigOption_DLLightMarkerColor() +
+      getConfigOption_UseLightColor() ;
 
 
   const helpParts = {
@@ -246,12 +380,14 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
             `!uvtt`,
             _h.optional(
               '--help',
-              `--clear`
+              `--clear`,
+              `--no-objects`
             )
           ),
           _h.ul(
-            `${_h.bold('--help')} -- Displays this help`,
+            `${_h.bold('--help')} -- Displays this help and configuration options.`,
             `${_h.bold('--clear')} -- Removes all imported content for the selected graphics.`,
+            `${_h.bold('--no-objects')} -- Skips creating lines for Opaque Objects.`
             )
         ),
         _h.section('Import Process',
@@ -326,7 +462,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const validateData = (d)=>d.hasOwnProperty('resolution') && d.hasOwnProperty('format') && d.format>=0.2;
 
-  const importUVTTonGraphic = (token) => {
+  const importUVTTonGraphic = (token, forceSkipObjects=false) => {
     let rawNotes = token.get('gmnotes');
     let notes = unescape(rawNotes).replace(/(?:<[^>]*>|\\t|&nbsp;)/g,'');
     let data;
@@ -364,13 +500,15 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
 
     let page = getObj('page',token.get('pageid'));
-    let stats = {token,lines:0,doors:0,lights:0};
+    let stats = {token,lines:0,doors:0,objects:0,lights:0};
 
     const WallColor = state[scriptName].config.wallColor;
     const WallWidth = state[scriptName].config.wallWidth;
     const DoorColor = state[scriptName].config.doorColor;
     const DoorWidth = state[scriptName].config.doorWidth;
-    const LightColor = state[scriptName].config.lightColor;
+    const ObjectColor = state[scriptName].config.objectColor;
+    const ObjectWidth = state[scriptName].config.objectWidth;
+    const LightColor = state[scriptName].config.dlLightMarkerColor;
 
 
     if(data.hasOwnProperty('line_of_sight')){
@@ -420,6 +558,53 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
         });
     }
 
+    if( ! forceSkipObjects && data.hasOwnProperty('objects_line_of_sight')){
+      let lines = sread(data,['objects_line_of_sight'])||[];
+      lines
+        .map((l)=>{
+          let minX = Number.MAX_SAFE_INTEGER;
+          let minY = Number.MAX_SAFE_INTEGER;
+          let maxX = 0;
+          let maxY = 0;
+          let pts = l
+            .reduce((m,pt)=>{
+              let t = ( state[scriptName].config.objectTransparent || m.length===0) ? 'M' : 'L';
+              let npt = newPt(pt);
+              minX = Math.min(minX,npt.x);
+              minY = Math.min(minY,npt.y);
+              maxX = Math.max(maxX,npt.x);
+              maxY = Math.max(maxY,npt.y);
+              m.push([t,npt.x,npt.y]);
+              return m;
+            },[])
+            .map(pt=>[pt[0],pt[1]-minX,pt[2]-minY]);
+          return {
+            base: {x:minX, y:minY},
+            size: {x:maxX-minX, y:maxY-minY},
+            pts: pts
+          };
+        })
+        .forEach(ld=>{
+          stats.objects++;
+          createObj('path',{
+            fill: "transparent",
+            stroke: ObjectColor,
+            stroke_width: ObjectWidth,
+            rotation: 0,
+            width: ld.size.x,
+            height: ld.size.y,
+            top: ld.base.y+(ld.size.y/2),
+            left: ld.base.x+(ld.size.x/2),
+            scaleX: 1,
+            scaleY: 1,
+            controlledby: token.id,
+            layer: "walls",
+            path: JSON.stringify(ld.pts),
+            pageid: page.id
+          });
+        });
+    }
+
     if(data.hasOwnProperty('portals')) {
       let doors = sread(data,['portals'])||[];
       doors
@@ -440,11 +625,37 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
           };
         })
         .forEach(dd=>{
-          if( dd.closed || state[scriptName].config.createOpenPortals) {
+          if( dd.closed || 'NONE' !== state[scriptName].config.openPortalsMode) {
             stats.doors++;
+
+            let layer = ('GM_LINE' === state[scriptName].config.openPortalsMode ? 'gmlayer' : 'walls');
+            let drawColor = DoorColor;
+            if(['WINDOW','GLASS_WINDOW'].includes(state[scriptName].config.openPortalsMode)){
+              drawColor = state[scriptName].config.windowColor;
+              if('GLASS_WINDOW' === state[scriptName].config.openPortalsMode){
+                let glass = createObj('path',{
+                  fill: "transparent",
+                  stroke: drawColor,
+                  stroke_width: state[scriptName].config.windowWidth,
+                  rotation: 0,
+                  width: dd.size.x,
+                  height: dd.size.y,
+                  top: dd.center.y,
+                  left: dd.center.x,
+                  scaleX: 1,
+                  scaleY: 1,
+                  controlledby: token.id,
+                  layer: 'map',
+                  path: JSON.stringify(dd.pts),
+                  pageid: page.id
+                });
+                toFrontFixed(glass);
+              }
+              dd.pts[1][0]='M';
+            }
             createObj('path',{
               fill: "transparent",
-              stroke: DoorColor,
+              stroke: drawColor,
               stroke_width: DoorWidth,
               rotation: 0,
               width: dd.size.x,
@@ -454,7 +665,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
               scaleX: 1,
               scaleY: 1,
               controlledby: token.id,
-              layer: dd.closed ? "walls" : 'gmlayer',
+              layer: layer,
               path: JSON.stringify(dd.pts),
               pageid: page.id
             });
@@ -471,8 +682,9 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
             let pt = newPt(l.position);
             let r = l.range*pScale;
             let dr = ((r/2)*(Math.pow(l.intensity,2)));
+            let color = state[scriptName].config.useLightColor ? getNonAlphaColorScaled(argb2rgba(l.color)) : 'transparent';
 
-          return {pt,r,dr};
+          return {pt,r,dr,color};
         })
         .forEach(ld => {
           stats.lights++;
@@ -493,6 +705,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
             emits_low_light: true,
             bright_light_distance: ld.r-ld.dr,
             low_light_distance: ld.r,
+            lightColor: ld.color,
 
             width:70,
             height:70,
@@ -534,17 +747,20 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
         .filter(g=>undefined !== g)
 				;
 
+      let skipObjects = args.includes('no-objects');
+
       if(graphics.length) {
         if(args.includes('clear')){
           graphics.forEach(g=>clearImportsFor(g.id));
         } else {
           graphics
-            .map(importUVTTonGraphic)
+            .map(g=>(clearImportsFor(g.id),g))
+            .map(g=>importUVTTonGraphic(g,skipObjects))
             .forEach(r=>{
               if(r.hasOwnProperty('error')){
                 sendChat('',`/w "${who}" <div>Error: ${r.error}</div>`);
               } else {
-                sendChat('',`/w "${who}" <div>Import complete. Lines: ${r.lines}, Doors: ${r.doors}, Lights: ${r.lights}</div>`);
+                sendChat('',`/w "${who}" <div>Import complete. Lines: ${r.lines}, Object Lines: ${r.objects}, Doors: ${r.doors}, Lights: ${r.lights}</div>`);
               }
             });
         }
@@ -596,6 +812,62 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
             );
             break;
 
+          case 'window-color':
+            if(opt[0].match(regex.colorsRGBA)) {
+              state[scriptName].config.windowColor=opt[0];
+            } else {
+              omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
+            }
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                omsg+
+                getConfigOption_WindowColor()+
+              '</div>'
+            );
+            break;
+
+          case 'window-width':
+            if(parseInt(opt[0])) {
+              state[scriptName].config.windowWidth=parseInt(opt[0]);
+            } else {
+              omsg='<div><b>Error:</b> Not a valid width: '+opt[0]+'</div>';
+            }
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                omsg+
+                getConfigOption_WindowWidth()+
+              '</div>'
+            );
+            break;
+
+          case 'object-color':
+            if(opt[0].match(regex.colors)) {
+              state[scriptName].config.objectColor=opt[0];
+            } else {
+              omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
+            }
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                omsg+
+                getConfigOption_ObjectColor()+
+              '</div>'
+            );
+            break;
+
+          case 'object-width':
+            if(parseInt(opt[0])) {
+              state[scriptName].config.objectWidth=parseInt(opt[0]);
+            } else {
+              omsg='<div><b>Error:</b> Not a valid width: '+opt[0]+'</div>';
+            }
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                omsg+
+                getConfigOption_ObjectWidth()+
+              '</div>'
+            );
+            break;
+
           case 'door-color':
             if(opt[0].match(regex.colors)) {
               state[scriptName].config.doorColor=opt[0];
@@ -626,27 +898,69 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
 
           case 'light-color':
+          case 'dl-light-marker-color':
             if(opt[0].match(regex.colors)) {
-              state[scriptName].config.lightColor=opt[0];
+              state[scriptName].config.dlLightMarkerColor=opt[0];
             } else {
               omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
             }
             sendChat('','/w "'+who+'" '+
               '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                 omsg+
-                getConfigOption_LightColor()+
+                getConfigOption_DLLightMarkerColor()+
+              '</div>'
+            );
+            break;
+
+          case 'toggle-object-transparent':
+            state[scriptName].config.objectTransparent=!state[scriptName].config.objectTransparent;
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+              getConfigOption_ObjectTransparent()+
+              '</div>'
+            );
+            break;
+
+          case 'toggle-use-light-color':
+            state[scriptName].config.useLightColor=!state[scriptName].config.useLightColor;
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+              getConfigOption_UseLightColor()+
               '</div>'
             );
             break;
 
           case 'toggle-create-open-portals':
-            state[scriptName].config.createOpenPortals=!state[scriptName].config.createOpenPortals;
+            switch(state[scriptName].config.openPortalsMode) {
+              case 'NONE':
+                state[scriptName].config.openPortalsMode='GM_LINE';
+                break;
+
+              default:
+                state[scriptName].config.openPortalsMode='NONE';
+                break;
+            }
             sendChat('','/w "'+who+'" '+
               '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
-              getConfigOption_CreateOpenPortals()+
+              getConfigOption_OpenPortalsMode()+
               '</div>'
             );
             break;
+
+          case 'open-portals-mode':
+            if(OpenPortalOptions.hasOwnProperty(opt[0])){
+              state[scriptName].config.openPortalsMode=opt[0];
+            } else {
+              omsg='<div><b>Error:</b> Not a valid color: '+opt[0]+'</div>';
+            }
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+              omsg+
+              getConfigOption_OpenPortalsMode()+
+              '</div>'
+            );
+            break;
+
 
           default:
             sendChat('','/w "'+who+'" '+
