@@ -8,9 +8,9 @@ API_Meta.UniversalVTTImporter={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.8';
+  const version = '0.1.9';
   API_Meta.UniversalVTTImporter.version = version;
-  const lastUpdate = 1634577633;
+  const lastUpdate = 1636599628;
   const schemaVersion = 0.2;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -630,7 +630,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
             let layer = ('GM_LINE' === state[scriptName].config.openPortalsMode ? 'gmlayer' : 'walls');
             let drawColor = DoorColor;
-            if(['WINDOW','GLASS_WINDOW'].includes(state[scriptName].config.openPortalsMode)){
+            if(false === dd.closed && ['WINDOW','GLASS_WINDOW'].includes(state[scriptName].config.openPortalsMode)){
               drawColor = state[scriptName].config.windowColor;
               if('GLASS_WINDOW' === state[scriptName].config.openPortalsMode){
                 let glass = createObj('path',{
