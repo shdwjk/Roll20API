@@ -10,8 +10,8 @@
 var TurnMarker = TurnMarker || (function(){
     "use strict";
     
-    var version = '1.3.10',
-        lastUpdate = 1590190178,
+    var version = '1.3.11',
+        lastUpdate = 1637339198,
         schemaVersion = 1.18,
         active = false,
         threadSync = 1,
@@ -20,6 +20,10 @@ var TurnMarker = TurnMarker || (function(){
             'npcs' : 'NPCs',
             'all'  : 'All'
         },
+
+    sendPlayerPing = (left, top, pageid, playerid) => {
+        sendPing(left,top,pageid,null,true,[playerid]);
+    },
 
     getGMPlayers = (pageid) => findObjs({type:'player'})
         .filter((p)=>playerIsGM(p.id))
@@ -145,12 +149,12 @@ var TurnMarker = TurnMarker || (function(){
         switch(command) {
             case "!tm":
             case "!turnmarker": {
-                    if(!playerIsGM(msg.playerid)){
-                        return;
-                    }
                     let tokens=_.rest(tokenized),marker,value;
                     switch (tokens[0]) {
                         case 'reset':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             marker = getMarker();
                             value = parseInt(tokens[1],10)||0;
                             marker.set({
@@ -163,11 +167,37 @@ var TurnMarker = TurnMarker || (function(){
                         case 'ping-target':
                             var obj=getObj('graphic',tokens[1]);
                             if(obj){
+    const playerCanControl = (obj, playerid='any') => {
+        const playerInControlledByList = (list, playerid) => list.includes('all') || list.includes(playerid) || ('any'===playerid && list.length);
+        let players = obj.get('controlledby')
+            .split(/,/)
+            .filter(s=>s.length);
+
+        if(playerInControlledByList(players,playerid)){
+            return true;
+        }
+
+        if('' !== obj.get('represents') ) {
+            players = (getObj('character',obj.get('represents')) || {get: function(){return '';} } )
+                .get('controlledby').split(/,/)
+                .filter(s=>s.length);
+            return  playerInControlledByList(players,playerid);
+        }
+        return false;
+    };
+
+                              if(playerIsGM(msg.playerid)){
                                 sendGMPing(obj.get('left'),obj.get('top'),obj.get('pageid'),null,true);
+                              } else if(playerCanControl(obj)){
+                                sendPlayerPing(obj.get('left'),obj.get('top'),obj.get('pageid'),msg.playerid);
+                              }
                             }
                             break;
 
                         case 'autopull':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             if(_.contains(_.keys(autoPullOptions), tokens[1])){
                                 state.TurnMarker.autoPull=tokens[1];
                                 sendChat('','/w "'+who+'" <b>AutoPull</b> is now <b>'+(autoPullOptions[state.TurnMarker.autoPull])+'</b>.');
@@ -177,26 +207,41 @@ var TurnMarker = TurnMarker || (function(){
                             break;
 
                         case 'toggle-announce':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             state.TurnMarker.announceRounds=!state.TurnMarker.announceRounds;
                             sendChat('','/w "'+who+'" <b>Announce Rounds</b> is now <b>'+(state.TurnMarker.announceRounds ? 'ON':'OFF' )+'</b>.');
                             break;
 
                         case 'toggle-announce-turn':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             state.TurnMarker.announceTurnChange=!state.TurnMarker.announceTurnChange;
                             sendChat('','/w "'+who+'" <b>Announce Turn Changes</b> is now <b>'+(state.TurnMarker.announceTurnChange ? 'ON':'OFF' )+'</b>.');
                             break;
 
                         case 'toggle-announce-player':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             state.TurnMarker.announcePlayerInTurnAnnounce=!state.TurnMarker.announcePlayerInTurnAnnounce;
                             sendChat('','/w "'+who+'" <b>Player Name in Announce</b> is now <b>'+(state.TurnMarker.announcePlayerInTurnAnnounce ? 'ON':'OFF' )+'</b>.');
                             break;
 
                         case 'toggle-skip-hidden':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             state.TurnMarker.autoskipHidden=!state.TurnMarker.autoskipHidden;
                             sendChat('','/w "'+who+'" <b>Auto-skip Hidden</b> is now <b>'+(state.TurnMarker.autoskipHidden ? 'ON':'OFF' )+'</b>.');
                             break;
 
                         case 'toggle-animations':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             state.TurnMarker.playAnimations=!state.TurnMarker.playAnimations;
                             if(state.TurnMarker.playAnimations) {
                                 stepAnimation(threadSync);
@@ -212,22 +257,34 @@ var TurnMarker = TurnMarker || (function(){
                             break;
 
                         case 'toggle-rotate':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             state.TurnMarker.rotation=!state.TurnMarker.rotation;
                             sendChat('','/w "'+who+'" <b>Rotation</b> is now <b>'+(state.TurnMarker.rotation ? 'ON':'OFF' )+'</b>.');
                             break;
 
                         case 'toggle-aura-1':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             state.TurnMarker.aura1.pulse=!state.TurnMarker.aura1.pulse;
                             sendChat('','/w "'+who+'" <b>Aura 1</b> is now <b>'+(state.TurnMarker.aura1.pulse ? 'ON':'OFF' )+'</b>.');
                             break;
 
                         case 'toggle-aura-2':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             state.TurnMarker.aura2.pulse=!state.TurnMarker.aura2.pulse;
                             sendChat('','/w "'+who+'" <b>Aura 2</b> is now <b>'+(state.TurnMarker.aura2.pulse ? 'ON':'OFF' )+'</b>.');
                             break;
 
                         default:
                         case 'help':
+                            if(!playerIsGM(msg.playerid)){
+                                return;
+                            }
                             showHelp(who);
                             break;
 
@@ -237,6 +294,9 @@ var TurnMarker = TurnMarker || (function(){
 
             case "!eot":
                 requestTurnAdvancement(msg.playerid);   
+                break;
+            case "!pot":
+                requestTurnRetreat(msg.playerid);   
                 break;
         }
     },
@@ -255,6 +315,7 @@ var TurnMarker = TurnMarker || (function(){
                 imgsrc: state.TurnMarker.tokenURL,
                 left: 0,
                 top: 0,
+                lastmove:'0,0',
                 height: 70,
                 width: 70,
                 bar2_value: 0,
@@ -308,20 +369,42 @@ var TurnMarker = TurnMarker || (function(){
                 
                 marker = getMarker();
                 marker.set({
-                    "layer": obj.get("layer"),
-                    "top": obj.get("top"),
-                    "left": obj.get("left")
+                    lastmove: obj.get('lastmove'),
+                    layer: obj.get("layer"),
+                    top: obj.get("top"),
+                    left: obj.get("left")
                 });
                 
                setTimeout(_.bind(stepAnimation,this,threadSync), 300);
             }
         }
     },
+    requestTurnRetreat = function(playerid){
+        if(active) {
+            let turnOrder = TurnOrder.Get();
+            let previous = getObj('graphic', (((turnOrder||[]).pop())||{}).id );
+            let character = getObj('character',(previous && previous.get('represents')));
+            if(playerIsGM(playerid) ||
+                ( previous &&
+                       ( _.contains(previous.get('controlledby').split(','),playerid) ||
+                       _.contains(previous.get('controlledby').split(','),'all') )
+                    ) ||
+                ( character &&
+                       ( _.contains(character.get('controlledby').split(','),playerid) ||
+                       _.contains(character.get('controlledby').split(','),'all') )
+                    )
+                )
+            {
+                TurnOrder.Prev();
+                turnOrderChange(true);
+            }
+        }
+    },
     requestTurnAdvancement = function(playerid){
         if(active) {
-            let turnOrder = TurnOrder.Get(),
-                current = getObj('graphic',_.first(turnOrder).id),
-                character = getObj('character',(current && current.get('represents')));
+            let turnOrder = TurnOrder.Get();
+            let current = getObj('graphic', (((turnOrder||[]).shift())||{}).id );
+            let character = getObj('character',(current && current.get('represents')));
             if(playerIsGM(playerid) ||
                 ( current &&
                        ( _.contains(current.get('controlledby').split(','),playerid) ||
@@ -413,10 +496,11 @@ var TurnMarker = TurnMarker || (function(){
               
             if (marker.get("layer") === "gmlayer" && currentToken.get("layer") !== "gmlayer") {
                 marker.set({
-                    "top": currentToken.get("top"),
-                    "left": currentToken.get("left"),
-                    "height": size,
-                    "width": size
+                    lastmove:`${marker.get('left')},${marker.get('top')}`,
+                    top: currentToken.get("top"),
+                    left: currentToken.get("left"),
+                    height: size,
+                    width: size
                 });
                 setTimeout(function() {
                     marker.set({
@@ -425,11 +509,12 @@ var TurnMarker = TurnMarker || (function(){
                 }, 500);
             } else {
                 marker.set({
-                    "layer": currentToken.get("layer"),
-                    "top": currentToken.get("top"),
-                    "left": currentToken.get("left"),
-                    "height": size,
-                    "width": size
+                    lastmove:`${marker.get('left')},${marker.get('top')}`,
+                    layer: currentToken.get("layer"),
+                    top: currentToken.get("top"),
+                    left: currentToken.get("left"),
+                    height: size,
+                    width: size
                 });   
             }
             toFront(currentToken);
@@ -493,7 +578,7 @@ var TurnMarker = TurnMarker || (function(){
             round;
 
         if(turnOrder[0].id === marker.id) {
-            round=parseInt(marker.get('bar2_value'))+1;
+            round=(parseInt(marker.get('bar2_value'))||0)+1;
             marker.set({
                 name: state.TurnMarker.tokenName+' '+round,
                 bar2_value: round
@@ -715,6 +800,12 @@ var TurnOrder = TurnOrder || (function() {
                 Mark.Reset();
             }
         },
+        Prev: function(){
+            this.Set(TurnOrder.Get().rotate(-1));
+            if("undefined" !== typeof Mark && _.has(Mark,'Reset') && _.isFunction(Mark.Reset)) {
+                Mark.Reset();
+            }
+        },
         NextVisible: function(){
             var turns=this.Get();
             var context={skip: 0};
@@ -765,7 +856,7 @@ Array.prototype.rotate = (function() {
         splice = Array.prototype.splice;
 
     return function(count) {
-        var len = this.length >>> 0;
+        var len = this.length >> 0;
             count = count >> 0;
 
         unshift.apply(this, splice.call(this, count % len, len));
