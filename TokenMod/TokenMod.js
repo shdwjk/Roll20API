@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.72';
+    const version = '0.8.73';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1633460834;
+    const lastUpdate = 1639530966;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -3767,10 +3767,29 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
       //$d({msg:msg.content,fMsg,modlist,badCmds});
     };
 
+
+  const processInlinerolls = (msg) => {
+    if(msg.hasOwnProperty('inlinerolls')){
+      return msg.inlinerolls
+        .reduce((m,v,k) => {
+          let ti=v.results.rolls.reduce((m2,v2) => {
+            if(v2.hasOwnProperty('table')){
+              m2.push(v2.results.reduce((m3,v3) => [...m3,(v3.tableItem||{}).name],[]).join(", "));
+            }
+            return m2;
+          },[]).join(', ');
+          return [...m,{k:`$[[${k}]]`, v:(ti.length && ti) || v.results.total || 0}];
+        },[])
+        .reduce((m,o) => m.replace(o.k,o.v), msg.content);
+    } else {
+      return msg.content;
+    }
+  };
+
 // */
      const handleInput = function(msg_orig) {
         try {
-            if (msg_orig.type !== "api") {
+            if (msg_orig.type !== "api" || !/^!token-mod(\b\s|$)/.test(msg_orig.content)) {
                 return;
             }
 
@@ -3792,27 +3811,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 };
             let reports=[];
 
-
-            if(_.has(msg,'inlinerolls')){
-                msg.content = _.chain(msg.inlinerolls)
-                    .reduce(function(m,v,k){
-                        let ti=_.reduce(v.results.rolls,function(m2,v2){
-                            if(_.has(v2,'table')){
-                                m2.push(_.reduce(v2.results,function(m3,v3){
-                                    m3.push(v3.tableItem.name);
-                                    return m3;
-                                },[]).join(', '));
-                            }
-                            return m2;
-                        },[]).join(', ');
-                        m['$[['+k+']]']= (ti.length && ti) || v.results.total || 0;
-                        return m;
-                    },{})
-                    .reduce(function(m,v,k){
-                        return m.replace(k,v);
-                    },msg.content)
-                    .value();
-            }
+			msg.content = processInlinerolls(msg)
 
             args = msg.content
                 .replace(/<br\/>\n/g, ' ')
@@ -3823,154 +3822,147 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             let Debug_UnrecognizedCommands = [];
 
 
-            switch(args.shift()) {
-                case '!token-mod': {
-
-                    while(args.length) {
-                        cmds=args.shift().match(/([^\s]+[|#]'[^']+'|[^\s]+[|#]"[^"]+"|[^\s]+)/g);
-                        let cmd = cmds.shift();
-                        switch(cmd) {
-                            case 'help':
+			while(args.length) {
+				cmds=args.shift().match(/([^\s]+[|#]'[^']+'|[^\s]+[|#]"[^"]+"|[^\s]+)/g);
+				let cmd = cmds.shift();
+				switch(cmd) {
+					case 'help':
 
 // !tokenmod --help [all]
-    // just the top part and ToC
+// just the top part and ToC
 
 // !tokenmod --help
-    // just the top part and ToC
+// just the top part and ToC
 
 // !tokenmod --help[-only] [set|on|off|flip|config]
-    // top part, plus the command parts
-    // -only leaves off top part
+// top part, plus the command parts
+// -only leaves off top part
 
 // !tokenmod --help[-only] <property> [<properties...]
-    // top part, command part, property part
-    // -only leaves off top and command 
+// top part, command part, property part
+// -only leaves off top and command 
 
 // !tokenmod --help <full command>
-    // explains the parts command
+// explains the parts command
 
 
-                                showHelp(playerid);
-                                return;
+						showHelp(playerid);
+						return;
 
-                            case 'api-as':
-                                if('API' === playerid){
-                                    let player = getObj('player',cmds[0]);
-                                    if(player){
-                                        playerid = player.id;
-                                        who = player.get('_displayname');
-                                    }
-                                }
-                                break;
+					case 'api-as':
+						if('API' === playerid){
+							let player = getObj('player',cmds[0]);
+							if(player){
+								playerid = player.id;
+								who = player.get('_displayname');
+							}
+						}
+						break;
 
-                            case 'debug': {
-                                IsDebugRequest = true;
-                              }
-                              break;
+					case 'debug': {
+						IsDebugRequest = true;
+					  }
+					  break;
 
-                            case 'config':
-                                if(playerIsGM(playerid)) {
-                                    handleConfig(cmds,playerid);
-                                }
-                                return;
+					case 'config':
+						if(playerIsGM(playerid)) {
+							handleConfig(cmds,playerid);
+						}
+						return;
 
 
-                            case 'flip':
-                                modlist.flip=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.flip);
-                                break;
+					case 'flip':
+						modlist.flip=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.flip);
+						break;
 
-                            case 'on':
-                                modlist.on=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.on);
-                                break;
+					case 'on':
+						modlist.on=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.on);
+						break;
 
-                            case 'off':
-                                modlist.off=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.off);
-                                break;
+					case 'off':
+						modlist.off=_.union(_.filter(cmds.map(unalias),filters.isBoolean),modlist.off);
+						break;
 
-                            case 'set':
-                                modlist.set=parseSetArguments(cmds,modlist.set);
-                                break;
+					case 'set':
+						modlist.set=parseSetArguments(cmds,modlist.set);
+						break;
 
-                            case 'order':
-                                modlist.order=parseOrderArguments(cmds,modlist.order);
-                                break;
+					case 'order':
+						modlist.order=parseOrderArguments(cmds,modlist.order);
+						break;
 
-                            case 'report':
-                                reports= parseReportArguments(cmds,reports);
-                                break;
+					case 'report':
+						reports= parseReportArguments(cmds,reports);
+						break;
 
-                            case 'move':
-                                modlist.move = parseMoveArguments(cmds,modlist.move);
-                                break;
+					case 'move':
+						modlist.move = parseMoveArguments(cmds,modlist.move);
+						break;
 
-                            case 'ignore-selected':
-                                ignoreSelected=true;
-                                break;
+					case 'ignore-selected':
+						ignoreSelected=true;
+						break;
 
-                            case 'active-pages':
-                                pageRestriction=getActivePages();
-                                break;
+					case 'active-pages':
+						pageRestriction=getActivePages();
+						break;
 
-                            case 'current-page':
-                                pageRestriction=[getPageForPlayer(playerid)];
-                                break;
+					case 'current-page':
+						pageRestriction=[getPageForPlayer(playerid)];
+						break;
 
-                            case 'ids':
-                                ids=_.union(cmds,ids);
-                                break;
+					case 'ids':
+						ids=_.union(cmds,ids);
+						break;
 
-                            default:
-                              Debug_UnrecognizedCommands.push({cmd,args:cmds});
-                              break;
-                        }
-                    }
-                    modlist.off=_.difference(modlist.off,modlist.on);
-                    modlist.flip=_.difference(modlist.flip,modlist.on,modlist.off);
-                    if( !playerIsGM(playerid) && !state.TokenMod.playersCanUse_ids ) {
-                        ids=[];
-                    }
+					default:
+					  Debug_UnrecognizedCommands.push({cmd,args:cmds});
+					  break;
+				}
+			}
+			modlist.off=_.difference(modlist.off,modlist.on);
+			modlist.flip=_.difference(modlist.flip,modlist.on,modlist.off);
+			if( !playerIsGM(playerid) && !state.TokenMod.playersCanUse_ids ) {
+				ids=[];
+			}
 
-                    if(!ignoreSelected) {
-                        ids=_.union(ids,_.pluck(msg.selected,'_id'));
-                    }
+			if(!ignoreSelected) {
+				ids=_.union(ids,_.pluck(msg.selected,'_id'));
+			}
 
-                    let pageFilter = pageRestriction.length
-                        ? (o) => pageRestriction.includes(o.get('pageid'))
-                        : () => true;
+			let pageFilter = pageRestriction.length
+				? (o) => pageRestriction.includes(o.get('pageid'))
+				: () => true;
 
-                    ids = [...new Set([...ids])]
-                        .map(function(t){
-                            return {
-                                id: t,
-                                token: getObj('graphic',t),
-                                character: getObj('character',t)
-                            };
-                        });
+			ids = [...new Set([...ids])]
+				.map(function(t){
+					return {
+						id: t,
+						token: getObj('graphic',t),
+						character: getObj('character',t)
+					};
+				});
 
-                    if(IsDebugRequest){
-                      OutputDebugInfo(msg_orig,ids,modlist,Debug_UnrecognizedCommands);
-                    }
+			if(IsDebugRequest){
+			  OutputDebugInfo(msg_orig,ids,modlist,Debug_UnrecognizedCommands);
+			}
 
-                    if(ids.length){
-                        [...new Set(ids.reduce(function(m,o){
-                            if(o.token){
-                                m.push(o.token);
-                            } else if(o.character){
-                                m=_.union(m,findObjs({type:'graphic',represents:o.character.id}));
-                            }
-                            return m;
-                        },[]))]
-                          .filter(o=>undefined !== o)
-                          .filter(pageFilter)
-                          .forEach((t) => {
-                              let ctx = applyModListToToken(modlist,t);
-                              doReports(ctx,reports,who);
-                          });
-                    }
-                }
-                break;
-
-            }
+			if(ids.length){
+				[...new Set(ids.reduce(function(m,o){
+					if(o.token){
+						m.push(o.token);
+					} else if(o.character){
+						m=_.union(m,findObjs({type:'graphic',represents:o.character.id}));
+					}
+					return m;
+				},[]))]
+				  .filter(o=>undefined !== o)
+				  .filter(pageFilter)
+				  .forEach((t) => {
+					  let ctx = applyModListToToken(modlist,t);
+					  doReports(ctx,reports,who);
+				  });
+			}
         } catch (e) {
             let who=(getObj('player',msg_orig.playerid)||{get:()=>'API'}).get('_displayname');
             sendChat('TokenMod',`/w "${who}" `+
