@@ -1,18 +1,20 @@
 // Github:   https://github.com/shdwjk/Roll20API/blob/master/libTokenMarkers/libTokenMarkers.js
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
-var API_Meta = API_Meta||{};
+var API_Meta = API_Meta||{}; // eslint-disable-line no-var
 API_Meta.libTokenMarkers={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 {try{throw new Error('');}catch(e){API_Meta.libTokenMarkers.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const libTokenMarkers = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.1.1';
+    const version = '0.1.2';
     API_Meta.libTokenMarkers.version = version;
-    const lastUpdate = 1609294229;
+    const lastUpdate = 1641754038;
     const schemaVersion = 0.1;
 
     const isString = (s) => 'string' === typeof s || s instanceof String;
+	const isArray = (a) => Array.isArray(a);
+	const flatten = (a) => isArray(a) ? a.reduce((m,e)=>[...m, ...flatten(e)],[]) : [a];
 
     class TokenMarker {
         constructor( name, tag, url ) {
@@ -32,6 +34,17 @@ const libTokenMarkers = (() => { // eslint-disable-line no-unused-vars
         getHTML(scale = 1.4, style=''){
             return `<div style="width: ${scale}em; vertical-align: middle; height: ${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; padding:0;background-image: url('${this.url}');background-repeat:no-repeat; background-size: auto ${scale}em;${style}"></div>`;
         }
+
+		applyWithNumberTo(number, ...a) {
+			flatten(a).forEach(t=>t.set(`status_${this.tag}`, (undefined!==number ? number : true)));
+		}
+		applyTo(...a) {
+			this.applyWithNumberTo(undefined,a);
+		}
+
+		removeFrom(...a) {
+			flatten(a).forEach(t=>t.set(`status_${this.tag}`,false));
+		}
     }
 
     class NullTokenMarker extends TokenMarker {
@@ -44,6 +57,12 @@ const libTokenMarkers = (() => { // eslint-disable-line no-unused-vars
         getHTML() {
             return "";
         }
+		applyTo() {
+		}
+		applyWithNumberTo() {
+		}
+		removeFrom() {
+		}
     }
 
     class ColorDotTokenMarker extends TokenMarker {
