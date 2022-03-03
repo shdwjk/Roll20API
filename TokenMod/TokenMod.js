@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.73';
+    const version = '0.8.74';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1639530966;
+    const lastUpdate = 1646271161;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -36,6 +36,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             fliph: {type: 'boolean'},
             aura1_square: {type: 'boolean'},
             aura2_square: {type: 'boolean'},
+            lockMovement: {type: 'boolean'},
 
             // UDL settings
             has_bright_light_vision: {type: 'boolean'},
@@ -146,7 +147,10 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             low_distance: "low_light_distance",
             low_light_opacity: "dim_light_opacity",
             currentside: "currentSide",   // fix for case issue
-            lightcolor: "lightColor" // fix for case issue
+            lightcolor: "lightColor", // fix for case issue
+            light_color: "lightColor", // fix for case issue
+            lockmovement: "lockMovement", // fix for case issue
+            lock_movement: "lockMovement" // fix for case issue
         };
 
     const reportTypes = [
@@ -1941,7 +1945,6 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell('fliph'),
                             _h.cell('aura1_square'),
                             _h.cell('aura2_square'),
-                            _h.cell(''),
 
                             _h.cell("has_bright_light_vision"),
                             _h.cell("has_limit_field_of_vision"),
@@ -1954,7 +1957,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell("emits_bright_light"),
                             _h.cell("emits_bright"),
                             _h.cell("emits_low_light"),
-                            _h.cell("emits_low")
+                            _h.cell("emits_low"),
+                            _h.cell('lockMovement')
                         )
                     ),
                     _h.paragraph( `Any of the booleans can be set with the ${_h.italic('--set')} command by passing a true or false as the value`),
