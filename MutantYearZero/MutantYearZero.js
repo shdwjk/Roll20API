@@ -5,8 +5,8 @@
 var MutantYearZero = MutantYearZero || (function() {
     'use strict';
 
-    var version = '0.1.11',
-        lastUpdate = 1549423753,
+    var version = '0.1.12',
+        lastUpdate = 1648239095,
         schemaVersion = 0.4,
         symbols = {
             biohazard: '&#'+'9763;',
@@ -34,7 +34,8 @@ var MutantYearZero = MutantYearZero || (function() {
                     'margin': '0 .1em',
                     'font-weight': 'bold',
                     'padding': '.1em .4em',
-                    'color': 'white'
+                    'color': 'white',
+                    'font-family': '"Helvetica Neue",Helvetica,Arial,sans-serif'
                 },
                 errorMsg: {
                     'font-size': '.8em',
@@ -52,9 +53,9 @@ var MutantYearZero = MutantYearZero || (function() {
                     'display': 'inline-block',
                     'padding': '.1em .6em',
                     'border-radius': '0 0 .75em 0',
-                    'margin': '-.1em .2em 0em -.6em'
+                    'margin': '-.1em .2em 0em -.6em',
+                    'font-family': '"Helvetica Neue",Helvetica,Arial,sans-serif'
                 },
-
                 optionalMsg: {
                     'font-size': '.6em',
                     'color': '#000000',
@@ -63,7 +64,8 @@ var MutantYearZero = MutantYearZero || (function() {
                     'background-color': '#c3701b',
                     'margin': '0 .1em .2em .1em',
                     'padding': '.1em .4em',
-                    'overflow': 'hidden'
+                    'overflow': 'hidden',
+                    'font-family': '"Helvetica Neue",Helvetica,Arial,sans-serif'
                 },
                 optionalMsgLabel: {
                     'font-weight': 'bold',
@@ -72,9 +74,9 @@ var MutantYearZero = MutantYearZero || (function() {
                     'display': 'inline-block',
                     'padding': '.1em .6em .1em .4em',
                     'border-radius': '0 0 .75em 0',
-                    'margin': '-.1em .2em 0em -.4em'
+                    'margin': '-.1em .2em 0em -.4em',
+                    'font-family': '"Helvetica Neue",Helvetica,Arial,sans-serif'
                 },
-
                 myzMsg: {
                     'font-size': '1.25em',
                     'border': '.2em solid #8b3f1f',
@@ -86,13 +88,15 @@ var MutantYearZero = MutantYearZero || (function() {
                     'background-size': '100%',
                     'margin': '0 0',
                     'padding': '.3em',
-                    'overflow': 'hidden'
+                    'overflow': 'hidden',
+                    'font-family': '"Helvetica Neue",Helvetica,Arial,sans-serif'                    
                 },
                 myzMsgLabelContainer: {
                     'max-width': '10em',
                     'float': 'left',
                     'font-size': '1.5em',
-                    'margin-right': '.2em'
+                    'margin-right': '.2em',
+                    'font-family': '"Helvetica Neue",Helvetica,Arial,sans-serif'
                 },
                 myzMsgLabel: {
                     'border': '.1em solid #a2521f',
@@ -100,7 +104,9 @@ var MutantYearZero = MutantYearZero || (function() {
                     'font-weight': 'normal',
                     'padding': '.1em',
                     'margin-bottom': '.1em',
-                    'text-align': 'right'
+                    'text-align': 'right',
+                    'color': 'rgb(29, 29, 29)',
+                    'font-family': '"Helvetica Neue",Helvetica,Arial,sans-serif'
                 },
                 myzDie: {
                     'display': 'inline-block',
@@ -112,7 +118,8 @@ var MutantYearZero = MutantYearZero || (function() {
                     'height': '1.1em',
                     'float': 'left',
                     'margin-right': '.1em',
-                    'margin-bottom': '.1em'
+                    'margin-bottom': '.1em',
+                    'font-family': '"Helvetica Neue",Helvetica,Arial,sans-serif'
                 }
             }
         },
@@ -321,9 +328,10 @@ var MutantYearZero = MutantYearZero || (function() {
         return '<div style="'+
                 'border: 1px solid #ccc;'+
                 'border-radius: .2em;'+
-                'background-color: white;'+
+                'background-color: ;'+
                 'margin: 0 1em;'+
                 'padding: .1em .3em;'+
+                'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;'+
             '">'+
                 '<div style="float:right;">'+
                     makeButton(command,onOff,color)+
@@ -345,9 +353,10 @@ var MutantYearZero = MutantYearZero || (function() {
         return '<div style="'+
                 'border: 1px solid #ccc;'+
                 'border-radius: .2em;'+
-                'background-color: white;'+
+                'background-color: transparent;'+
                 'margin: 0 1em;'+
                 'padding: .1em .3em;'+
+                'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;'+
             '">'+
                 text+
                 '<div style="float:right;text-align:right;">'+
@@ -382,7 +391,7 @@ var MutantYearZero = MutantYearZero || (function() {
         let who=(getObj('player',playerid)||{get:()=>'API'}).get('_displayname');
 
         sendChat('','/w "'+who+'" '+
-'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+'<div style="border: 1px solid black; background-color: transparent; padding: 3px 3px; font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;">'+
 	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
 		'MutantYearZero v'+version+
 	'</div>'+
@@ -838,7 +847,7 @@ var MutantYearZero = MutantYearZero || (function() {
                 }
                 if(!args.length) {
                     sendChat('','/w "'+who+'" '+
-'<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+'<div style="border: 1px solid black; background-color: transparent; padding: 3px 3px;">'+
 	'<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">'+
 		'MutantYearZero v'+version+
 	'</div>'+
@@ -855,7 +864,7 @@ var MutantYearZero = MutantYearZero || (function() {
                         case 'toggle-gm-can-push':
                             state.MutantYearZero.config.gmCanPush=!state.MutantYearZero.config.gmCanPush;
                             sendChat('','/w "'+who+'" '+
-                                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                '<div style="border: 1px solid black; background-color: transparent; padding: 3px 3px;">'+
                                     getConfigOption_GMCanPush()+
                                 '</div>'
                             );
@@ -865,7 +874,7 @@ var MutantYearZero = MutantYearZero || (function() {
                             if(_.has(reportingModes,opt[0])){
                                 state.MutantYearZero.config.reportMode=opt[0];
                                 sendChat('','/w "'+who+'" '+
-                                    '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                    '<div style="border: 1px solid black; background-color: transparent; padding: 3px 3px;">'+
                                         getConfigOption_ErrorReporting()+
                                     '</div>'
                                 );
