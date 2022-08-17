@@ -2,23 +2,23 @@
 // By:       The Aaron, Arcane Scriptomancer
 // Contact:  https://app.roll20.net/users/104025/the-aaron
 // Forum:    https://app.roll20.net/forum/permalink/9521203/
-var API_Meta = API_Meta||{};
+var API_Meta = API_Meta||{}; //eslint-disable-line no-var
 API_Meta.UDLWindows={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 {try{throw new Error('');}catch(e){API_Meta.UDLWindows.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
 
 const UDLWindows = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UDLWindows';
-  const version = '0.1.2';
+  const version = '0.1.3';
   API_Meta.UDLWindows.version = version;
-  const lastUpdate = 1616872594;
+  const lastUpdate = 1660696343;
   const schemaVersion = 0.1;
 
   const assureHelpHandout = (create = false) => {
     if(state.TheAaron && state.TheAaron.config && (false === state.TheAaron.config.makeHelpHandouts) ){
       return;
     }
-    const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/127392204/tAiDP73rpSKQobEYm5QZUw/thumb.png?15878425385";
+    const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/295769190/Abc99DVcre9JA2tKrVDCvA/thumb.png?1658515304";
 
     // find handout
     let props = {type:'handout', name:`Help: ${scriptName}`};
@@ -59,6 +59,7 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
     }
     assureHelpHandout();
     migrateOldUDLWindows();
+    migrateOldUDLWindows2();
   };
 
   const ch = (c) => {
@@ -139,7 +140,7 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
           ),
           _h.ul(
             `${_h.bold('--help')} -- Displays this help`,
-            `${_h.bold('--glass')} -- Draw a transparent blue window line on the map layer`,
+            `${_h.bold('--glass')} -- Draw a transparent blue window line on the map layer`
             )
         ),
         _h.section('Usage',
@@ -212,20 +213,52 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
 
     let count = oldWindows.length;
 
-	if(count) {
-		const burndown = ()=>{
-		  let p = oldWindows.shift();
-		  if(p){
-			  convertToWindowPath(p);
-			  setTimeout(burndown,0);
-		  } else {
-			sendChat('UDLWindows',`/w gm <div><b>Converted <code>${count}</code> legacy windows to new representation.`);
-		  }
+    if(count) {
+      const burndown = ()=>{
+        let p = oldWindows.shift();
+        if(p){
+          convertToWindowPath(p);
+          setTimeout(burndown,0);
+        } else {
+          sendChat('UDLWindows',`/w gm <div><b>Converted <code>${count}</code> legacy windows to new representation.`);
+        }
 
-		};
-		burndown();
-	}
+      };
+      burndown();
+    }
   };
+
+  const isLegacyWindowPath2 = (p)=>{
+    if('path' === p.get('type')){
+      return /^MM/.test(JSON.parse(p.get('path')||'[]').map(s=>s[0]).join(''));
+    }
+    return false;
+  };
+
+  const migrateOldUDLWindows2 = () => {
+    let oldWindows = findObjs({
+      type: 'path',
+      layer: 'walls'
+    })
+    .filter(isLegacyWindowPath2);
+
+    let count = oldWindows.length;
+
+    if(count) {
+      const burndown = ()=>{
+        let p = oldWindows.shift();
+        if(p){
+          convertToWindowPath(p,{fixOldPathFormat:true});
+          setTimeout(burndown,0);
+        } else {
+          sendChat('UDLWindows',`/w gm <div><b>Converted <code>${count}</code> legacy windows to new representation.`);
+        }
+
+      };
+      burndown();
+    }
+  };
+
 
   const isCirclePath = (p) => {
     if('path' === p.get('type')){
@@ -259,8 +292,6 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
     return acc.map((v,i)=>([(i?'L':'M'),w2+v[0],h2+v[1]]));
   };
 
-  const toTransparentPath = (data) => data.map(p=>['M',p[1],p[2]]);
-
   const simpleObject = (o)=>JSON.parse(JSON.stringify(o));
 
   const convertToWindowPath = (p, options)=>{
@@ -271,13 +302,17 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
     } else {
       data = JSON.parse(p.get('path'));
     }
-
-    let transPath = toTransparentPath(data);
+    if(options.fixOldPathFormat){
+      for(let i = 1; i < data.length ; ++i){
+        data[i][0]='L';
+      }
+    }
 
     let objData ={
       ...simpleObject(p),
       controlledby: '',
-      path: JSON.stringify(transPath)
+      path: JSON.stringify(data),
+      barrierType: "transparent"
     };
     objData.page = objData._page;
     delete objData._path;
@@ -294,6 +329,7 @@ const UDLWindows = (() => { // eslint-disable-line no-unused-vars
       let glassData = {
         ...objData,
         path: JSON.stringify(data),
+        barrierType: "wall",
         layer: 'map',
         stroke_width: options.glass.width||3,
         stroke: options.glass.color||'#cfe2f399',
