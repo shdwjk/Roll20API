@@ -8,9 +8,9 @@ API_Meta.UniversalVTTImporter={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.9';
+  const version = '0.1.10';
   API_Meta.UniversalVTTImporter.version = version;
-  const lastUpdate = 1636599628;
+  const lastUpdate = 1660698143;
   const schemaVersion = 0.2;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -62,7 +62,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     if(state.TheAaron && state.TheAaron.config && (false === state.TheAaron.config.makeHelpHandouts) ){
       return;
     }
-    const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/127392204/tAiDP73rpSKQobEYm5QZUw/thumb.png?15878425385";
+    const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/295769190/Abc99DVcre9JA2tKrVDCvA/thumb.png?1658515304";
 
     // find handout
     let props = {type:'handout', name:`Help: ${scriptName}`};
@@ -568,7 +568,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
           let maxY = 0;
           let pts = l
             .reduce((m,pt)=>{
-              let t = ( state[scriptName].config.objectTransparent || m.length===0) ? 'M' : 'L';
+              let t = m.length ? 'L' : 'M';
               let npt = newPt(pt);
               minX = Math.min(minX,npt.x);
               minY = Math.min(minY,npt.y);
@@ -599,6 +599,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
             scaleY: 1,
             controlledby: token.id,
             layer: "walls",
+            barrierType: (state[scriptName].config.objectTransparent ? 'transparent' : 'wall'),
             path: JSON.stringify(ld.pts),
             pageid: page.id
           });
@@ -630,6 +631,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
             let layer = ('GM_LINE' === state[scriptName].config.openPortalsMode ? 'gmlayer' : 'walls');
             let drawColor = DoorColor;
+            let barrierType = 'wall';
             if(false === dd.closed && ['WINDOW','GLASS_WINDOW'].includes(state[scriptName].config.openPortalsMode)){
               drawColor = state[scriptName].config.windowColor;
               if('GLASS_WINDOW' === state[scriptName].config.openPortalsMode){
@@ -651,7 +653,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
                 });
                 toFrontFixed(glass);
               }
-              dd.pts[1][0]='M';
+              barrierType = 'transparent';
             }
             createObj('path',{
               fill: "transparent",
@@ -666,6 +668,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
               scaleY: 1,
               controlledby: token.id,
               layer: layer,
+              barrierType: barrierType,
               path: JSON.stringify(dd.pts),
               pageid: page.id
             });
