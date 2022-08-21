@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.74';
+    const version = '0.8.75';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1646271161;
+    const lastUpdate = 1661105442;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -1597,7 +1597,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         if(state.TheAaron && state.TheAaron.config && (false === state.TheAaron.config.makeHelpHandouts) ){
           return;
         }
-        const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/127392204/tAiDP73rpSKQobEYm5QZUw/thumb.png?15878425385";
+      const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/295769190/Abc99DVcre9JA2tKrVDCvA/thumb.png?1658515304";
 
         // find handout
         let props = {type:'handout', name:`Help: ${scriptName}`};
@@ -3330,6 +3330,27 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             },base)
             ;
 
+    const doSetWithWorkerOnLinkedBars = (token, mods) => {
+      [1,2,3].forEach(n=>{
+        let a = getObj('attribute',token.get(`bar${n}_link`));
+        if(a) {
+          let ops = {};
+          if(mods.hasOwnProperty(`bar${n}_value`)){
+            ops[`current`]=mods[`bar${n}_value`];
+            delete mods[`bar${n}_value`];
+          }
+          if(mods.hasOwnProperty(`bar${n}_max`)){
+            ops[`max`]=mods[`bar${n}_max`];
+            delete mods[`bar${n}_max`];
+          }
+          if(Object.keys(ops).length){
+            a.setWithWorker(ops);
+          }
+        }
+      });
+
+      return mods;
+    };
 
     const applyModListToToken = function(modlist, token) {
         let ctx={
@@ -3569,6 +3590,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
           mods = Object.assign(mods, f.getMods(token,mods));
         });
 
+        mods = doSetWithWorkerOnLinkedBars(token,mods);
+
         token.set(mods);
         notifyObservers('tokenChange',token,ctx.prev);
         return ctx;
@@ -3753,7 +3776,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     
 
-    const OutputDebugInfo = (msg,ids,modlist,badCmds) => {
+const OutputDebugInfo = (msg,ids /*, modlist, badCmds */) => {
       let selMap = (msg.selected||[]).map(o=>o._id);
       let who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
       let fMsg = HE(msg.content.replace(/<br\/>/g,'')).replace(/ /g,'&nbsp;').replace(/\$/g,'&#36;');
@@ -3815,7 +3838,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 };
             let reports=[];
 
-			msg.content = processInlinerolls(msg)
+			msg.content = processInlinerolls(msg);
 
             args = msg.content
                 .replace(/<br\/>\n/g, ' ')
@@ -3865,8 +3888,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
 					case 'debug': {
 						IsDebugRequest = true;
-					  }
-					  break;
+          }
+          break;
 
 					case 'config':
 						if(playerIsGM(playerid)) {
@@ -3920,8 +3943,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 						break;
 
 					default:
-					  Debug_UnrecognizedCommands.push({cmd,args:cmds});
-					  break;
+            Debug_UnrecognizedCommands.push({cmd,args:cmds});
+            break;
 				}
 			}
 			modlist.off=_.difference(modlist.off,modlist.on);
@@ -3948,7 +3971,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 				});
 
 			if(IsDebugRequest){
-			  OutputDebugInfo(msg_orig,ids,modlist,Debug_UnrecognizedCommands);
+        OutputDebugInfo(msg_orig,ids,modlist,Debug_UnrecognizedCommands);
 			}
 
 			if(ids.length){
@@ -3960,12 +3983,12 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 					}
 					return m;
 				},[]))]
-				  .filter(o=>undefined !== o)
-				  .filter(pageFilter)
-				  .forEach((t) => {
-					  let ctx = applyModListToToken(modlist,t);
-					  doReports(ctx,reports,who);
-				  });
+          .filter(o=>undefined !== o)
+          .filter(pageFilter)
+          .forEach((t) => {
+            let ctx = applyModListToToken(modlist,t);
+            doReports(ctx,reports,who);
+          });
 			}
         } catch (e) {
             let who=(getObj('player',msg_orig.playerid)||{get:()=>'API'}).get('_displayname');
