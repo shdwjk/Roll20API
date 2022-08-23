@@ -10,7 +10,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
   const scriptName = 'UniversalVTTImporter';
   const version = '0.1.10';
   API_Meta.UniversalVTTImporter.version = version;
-  const lastUpdate = 1660698143;
+  const lastUpdate = 1661225946;
   const schemaVersion = 0.2;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -587,7 +587,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
         .forEach(ld=>{
           stats.objects++;
           createObj('path',{
-            fill: "transparent",
+            fill: `${ObjectColor}66`,
             stroke: ObjectColor,
             stroke_width: ObjectWidth,
             rotation: 0,
