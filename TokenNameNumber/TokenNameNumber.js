@@ -9,10 +9,10 @@ API_Meta.TokenNameNumber={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = "TokenNameNumber";
-  const version = '0.5.15';
+  const version = '0.5.16';
   API_Meta.TokenNameNumber.version = version;
-  const lastUpdate = 1631838318;
-  const schemaVersion = 0.7;
+  const lastUpdate = 1666911199;
+  const schemaVersion = 0.8;
 
   let tokenIds = [];
 
@@ -37,6 +37,9 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
         case 0.6:
           delete state[scriptName].globalconfigCache;
 
+        case 0.7:
+          state[scriptName].config.useTooltip = false;
+
           /* falls through */
         case 'UpdateSchemaVersion':
           state[scriptName].version = schemaVersion;
@@ -49,7 +52,8 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
               randomSpace: 0,
               zeroBiased: true,
               useDots: false,
-              dots: ['red','brown','yellow','green','blue','purple']
+              dots: ['red','brown','yellow','green','blue','purple'],
+              useTooltip: false
             },
             registry: {
             }
@@ -178,6 +182,19 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
       '</div>';
   };
 
+  const getConfigOption_UseTooltip = () => {
+    let text = (state[scriptName].config.useTooltip ?
+      '<span style="color: green; font-weight:bold;">On</span>' :
+    '<span style="color: red; font-weight:bold;">Off</span>');
+
+    return '<div>'+
+      'Use Tooltip is currently <b>'+
+      text+
+      '</b>.'+
+      '<a href="!tnn-config --toggle-use-tooltip">Toggle</a>'+
+      '</div>';
+  };
+
   const getConfigOption_ZeroBiased = () => {
     let text = (state[scriptName].config.zeroBiased ?
       '<span style="color: green; font-weight:bold;">On</span>' :
@@ -220,6 +237,7 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
   const getAllConfigOptions = () => `<ul>${[
     getConfigOption_RandomSpace(),
     getConfigOption_UseDots(),
+    getConfigOption_UseTooltip(),
     getConfigOption_ZeroBiased(),
     getConfigOption_Dots()
     ].map(c => `<li style="border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">${c}</li>`).join('')}</ul>`;
@@ -298,6 +316,15 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
                 sendChat('',`/w "${who}" `+
                   '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                   getConfigOption_UseDots()+
+                  '</div>'
+                );
+                break;
+
+              case 'toggle-use-tooltip':
+                state[scriptName].config.useTooltip=!state[scriptName].config.useTooltip;
+                sendChat('',`/w "${who}" `+
+                  '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                  getConfigOption_UseTooltip()+
                   '</div>'
                 );
                 break;
@@ -421,7 +448,15 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
       matchers.find(m=>match=tokenName.match(m));
 
       if(match){
-        obj.set('name', `${match[1]}%%NUMBERED%%${match[3]}`);
+        let props = {
+          name: `${match[1]}%%NUMBERED%%${match[3]}`
+        };
+
+        if( state[scriptName].config.useTooltip ) {
+          props.tooltip = '';
+          props.show_tooltip = false;
+        }
+        obj.set(props);
       }
     };
 
@@ -484,9 +519,15 @@ const TokenNameNumber = (() => { // eslint-disable-line no-unused-vars
             }
 
             let parts=renamer.exec(tokenName);
-            obj.set({
+            let props = {
               name: parts[1]+(++num)+parts[3]
-            });
+            };
+            if( state[scriptName].config.useTooltip ) {
+              props.tooltip = props.name;
+              props.show_tooltip = true;
+            }
+
+            obj.set(props);
           }
         }
       }

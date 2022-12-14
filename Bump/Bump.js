@@ -10,9 +10,9 @@ API_Meta.Bump={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const Bump = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = "Bump";
-  const version = '0.2.26';
+  const version = '0.2.27';
   API_Meta.Bump.version = version;
-  const lastUpdate = 1643588841;
+  const lastUpdate = 1671039951;
   const schemaVersion = 0.6;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
   const checkerURL = 'https://s3.amazonaws.com/files.d20.io/images/16204335/MGS1pylFSsnd5Xb9jAzMqg/med.png?1455260461';
@@ -47,8 +47,9 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
           "directional_bright_light_center",
 
           // Dim Light
-          "emits_low_light", "low_light_distance", "has_directional_low_light",
-          "directional_low_light_total", "directional_low_light_center",
+          "emits_low_light", "low_light_distance",
+          "has_directional_dim_light",
+          "directional_dim_light_total", "directional_dim_light_center",
           "dim_light_opacity",
 
           // Night Vision
@@ -199,9 +200,9 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
 
                   emits_low_light: false,
                   low_light_distance: 0,
-                  has_directional_low_light: false,
-                  directional_low_light_total: 360,
-                  directional_low_light_center: 0,
+                  has_directional_dim_light: false,
+                  directional_dim_light_total: 360,
+                  directional_dim_light_center: 0,
 
                   dim_light_opacity: 1,
 
@@ -688,7 +689,7 @@ const Bump = (() => { // eslint-disable-line no-unused-vars
     };
 
     const assureHelpHandout = (create = false) => {
-        const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/127392204/tAiDP73rpSKQobEYm5QZUw/thumb.png?15878425385";
+      const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/295769190/Abc99DVcre9JA2tKrVDCvA/thumb.png?1658515304";
 
         // find handout
         let props = {type:'handout', name:`Help: ${scriptName}`};
