@@ -8,10 +8,10 @@ API_Meta.UniversalVTTImporter={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.10';
+  const version = '0.1.11';
   API_Meta.UniversalVTTImporter.version = version;
-  const lastUpdate = 1661225946;
-  const schemaVersion = 0.2;
+  const lastUpdate = 1673221000;
+  const schemaVersion = 0.3;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
   const OpenPortalOptions = {
@@ -99,6 +99,8 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
           /* break; // intentional dropthrough */ /* falls through */
 
         case 0.2:
+          state[scriptName].config.useWindowObjects=true;
+          state[scriptName].config.useDoorObjects=true;
           /* break; // intentional dropthrough */ /* falls through */
 
         case 'UpdateSchemaVersion':
@@ -109,10 +111,12 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
           state[scriptName] = {
             version: schemaVersion,
             config: {
+              useWindowObjects: true,
               windowColor: '#cfe2f399',
               windowWidth: 3,
               wallColor: '#0000ff',
               wallWidth: 15,
+              useDoorObjects: true,
               doorColor: '#ff9900',
               doorWidth: 5,
               objectColor: '#00ff00',
@@ -290,6 +294,14 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       `${_h.bold('Open Portals Mode')} controls how open portals are drawn.  These are usually windows, so with UDL, you can draw them to block movement, not sight.  Or you can draw them as a line on the GM layer which you can move the the DL layer to "close" them.  Or just leave them off entirely. Current setting: ${_h.bold(OpenPortalOptions[state[scriptName].config.openPortalsMode])}`
     );
 
+
+    // Windows
+    const getConfigOption_UseWindowObjects = () => makeConfigOption(
+      state[scriptName].config.useWindowObjects,
+      `!uvtt-config --toggle-use-window-objects`,
+      `${_h.bold('Use Window Objects')} controls whether the new Window Objects will be used, rather than lines. (UDL Only). Current value: ${_h.bold(state[scriptName].config.useWindowObjects ? 'On' : 'Off')}`
+    );
+
     const getConfigOption_WindowColor = () => makeConfigOptionColor(
       state[scriptName].config.windowColor,
       `!uvtt-config --window-color|?{What color for window lines? (transparent for none, #RRGGBBAA for a color)|${state[scriptName].config.windowColor}}`,
@@ -301,6 +313,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       `${_h.bold('Window Width')} is the width that windows are drawn in on the Dynamic Lighting Layer in pixels. Current value: ${_h.bold(state[scriptName].config.windowWidth)}`
     );
 
+    // Walls
     const getConfigOption_WallColor = () => makeConfigOptionColor(
       state[scriptName].config.wallColor,
       `!uvtt-config --wall-color|?{What color for wall lines? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.wallColor}}`,
@@ -310,6 +323,14 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       state[scriptName].config.wallWidth,
       `!uvtt-config --wall-width|?{How many pixels wide for wall lines?|${state[scriptName].config.wallWidth}}`,
       `${_h.bold('Wall Width')} is the width that walls are drawn in on the Dynamic Lighting Layer in pixels. Current value: ${_h.bold(state[scriptName].config.wallWidth)}`
+    );
+
+
+    // Doors
+    const getConfigOption_UseDoorObjects = () => makeConfigOption(
+      state[scriptName].config.useDoorObjects,
+      `!uvtt-config --toggle-use-door-objects`,
+      `${_h.bold('Use Door Objects')} controls whether the new Door Objects will be used, rather than lines. (UDL Only). Current value: ${_h.bold(state[scriptName].config.useDoorObjects ? 'On' : 'Off')}`
     );
 
     const getConfigOption_DoorColor = () => makeConfigOptionColor(
@@ -324,6 +345,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       `${_h.bold('Door Width')} is the width that doors are drawn in on the Dynamic Lighting Layer in pixels. Current value: ${_h.bold(state[scriptName].config.doorWidth)}`
     );
 
+    // Objects
     const getConfigOption_ObjectColor = () => makeConfigOptionColor(
       state[scriptName].config.objectColor,
       `!uvtt-config --object-color|?{What color for object lines? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.objectColor}}`,
@@ -343,6 +365,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     );
 
 
+    // Lights
     const getConfigOption_DLLightMarkerColor = () => makeConfigOptionColor(
       state[scriptName].config.dlLightMarkerColor,
       `!uvtt-config --dl-light-marker-color|?{What aura color lights? (transparent for none, #RRGGBB for a color)|${state[scriptName].config.dlLightMarkerColor}}`,
@@ -356,10 +379,12 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     );
 
     const getAllConfigOptions = () => getConfigOption_OpenPortalsMode() +
+      getConfigOption_UseWindowObjects() +
       getConfigOption_WindowColor() +
       getConfigOption_WindowWidth() +
       getConfigOption_WallColor() +
       getConfigOption_WallWidth() +
+      getConfigOption_UseDoorObjects() +
       getConfigOption_DoorColor() +
       getConfigOption_DoorWidth() +
       getConfigOption_ObjectColor() +
@@ -462,6 +487,272 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const validateData = (d)=>d.hasOwnProperty('resolution') && d.hasOwnProperty('format') && d.format>=0.2;
 
+  const GetLineCreator = (IDC, newPt,PageID,TokenID) => {
+    const WallColor = state[scriptName].config.wallColor;
+    const WallWidth = state[scriptName].config.wallWidth;
+
+    return (l) => {
+      let minX = Number.MAX_SAFE_INTEGER;
+      let minY = Number.MAX_SAFE_INTEGER;
+      let maxX = 0;
+      let maxY = 0;
+      let pts = l
+        .reduce((m,pt)=>{
+          let t = m.length ? 'L' : 'M';
+          let npt = newPt(pt);
+          minX = Math.min(minX,npt.x);
+          minY = Math.min(minY,npt.y);
+          maxX = Math.max(maxX,npt.x);
+          maxY = Math.max(maxY,npt.y);
+          m.push([t,npt.x,npt.y]);
+          return m;
+        },[])
+        .map(pt=>[pt[0],pt[1]-minX,pt[2]-minY]);
+      const ld = {
+        base: {x:minX, y:minY},
+        size: {x:maxX-minX, y:maxY-minY},
+        pts: pts
+      };
+      let p = createObj('path',{
+        fill: "transparent",
+        stroke: WallColor,
+        stroke_width: WallWidth,
+        rotation: 0,
+        width: ld.size.x,
+        height: ld.size.y,
+        top: ld.base.y+(ld.size.y/2),
+        left: ld.base.x+(ld.size.x/2),
+        scaleX: 1,
+        scaleY: 1,
+        controlledby: TokenID,
+        layer: "walls",
+        path: JSON.stringify(ld.pts),
+        pageid: PageID
+      });
+      IDC.recordObj(p);
+      return 1;
+    };
+  };
+
+  const GetObjectCreator = (IDC, newPt,PageID,TokenID) => {
+    const ObjectColor = state[scriptName].config.objectColor;
+    const ObjectWidth = state[scriptName].config.objectWidth;
+    const ObjectBarrier = (state[scriptName].config.objectTransparent ? 'transparent' : 'wall');
+
+    return (l) => {
+      let minX = Number.MAX_SAFE_INTEGER;
+      let minY = Number.MAX_SAFE_INTEGER;
+      let maxX = 0;
+      let maxY = 0;
+      let pts = l
+        .reduce((m,pt)=>{
+          let t = m.length ? 'L' : 'M';
+          let npt = newPt(pt);
+          minX = Math.min(minX,npt.x);
+          minY = Math.min(minY,npt.y);
+          maxX = Math.max(maxX,npt.x);
+          maxY = Math.max(maxY,npt.y);
+          m.push([t,npt.x,npt.y]);
+          return m;
+        },[])
+        .map(pt=>[pt[0],pt[1]-minX,pt[2]-minY]);
+
+      const ld = {
+        base: {x:minX, y:minY},
+        size: {x:maxX-minX, y:maxY-minY},
+        pts: pts
+      };
+
+      let p = createObj('path',{
+        fill: `${ObjectColor}66`,
+        stroke: ObjectColor,
+        stroke_width: ObjectWidth,
+        rotation: 0,
+        width: ld.size.x,
+        height: ld.size.y,
+        top: ld.base.y+(ld.size.y/2),
+        left: ld.base.x+(ld.size.x/2),
+        scaleX: 1,
+        scaleY: 1,
+        controlledby: TokenID,
+        layer: "walls",
+        barrierType: ObjectBarrier,
+        path: JSON.stringify(ld.pts),
+        pageid: PageID
+      });
+      IDC.recordObj(p);
+      return 1;
+    };
+  };
+
+  const GetPortalCreator = (IDC, newPt,PageID,TokenID) => {
+    const DoorColor = state[scriptName].config.doorColor;
+    const DoorWidth = state[scriptName].config.doorWidth;
+    const WindowWidth = state[scriptName].config.doorWidth;
+    const WindowColor = state[scriptName].config.windowColor;
+    const DoorOpenMode = state[scriptName].config.openPortalsMode;
+    const AsDoorObject = state[scriptName].config.useDoorObjects;
+    const AsWindowObject = state[scriptName].config.useWindowObjects;
+
+    return (d) => {
+      let center = newPt(d.position||{x:0,y:0});
+      let pt0 = newPt(d.bounds[0]);
+      let pt1 = newPt(d.bounds[1]);
+      let size = { x: Math.abs(pt0.x-pt1.x), y: Math.abs(pt0.y-pt1.y) };
+      let line = [
+        ['M',pt0.x-(center.x-(size.x/2)), pt0.y-(center.y-(size.y/2))],
+        ['L',pt1.x-(center.x-(size.x/2)), pt1.y-(center.y-(size.y/2))]
+      ];
+      const dd = {
+        center,
+        size,
+        pts: line,
+        closed: d.closed
+      };
+
+      const basePath = {
+        fill: "transparent",
+        rotation: 0,
+        width: dd.size.x,
+        height: dd.size.y,
+        top: dd.center.y,
+        left: dd.center.x,
+        scaleX: 1,
+        scaleY: 1,
+        controlledby: TokenID,
+        path: JSON.stringify(dd.pts),
+        pageid: PageID
+      };
+
+      const baseObject = {
+        x: center.x,
+        y: -center.y,
+        isOpen: false,
+        isLocked: false,
+        isSecret: false,
+        controlledby: TokenID,
+        path: {
+          handle0: {
+            x: -(size.x/2),
+            y: -(size.y/2)
+          },
+          handle1: {
+            x: (size.x/2),
+            y: (size.y/2)
+          }
+        },
+        _pageid: PageID
+      };
+
+      // Closed doors, or doors on GM Layer are doors.  Everything else is a window.
+      let isDoor = dd.closed || 'GM_LINE' === DoorOpenMode;
+
+      if(isDoor){
+        // either draw a line or make a door object.
+        if(AsDoorObject) {
+          let d = createObj('door',{...baseObject,color:DoorColor});
+          IDC.recordObj(d);
+        } else {
+          let layer = ('GM_LINE' === DoorOpenMode ? 'gmlayer' : 'walls');
+          let p = createObj('path',{
+            ...basePath,
+            stroke: DoorColor,
+            stroke_width: DoorWidth,
+            layer: layer
+          });
+          IDC.recordObj(p);
+        }
+        return 1;
+
+      } else if('NONE' !== DoorOpenMode) {
+        if('GLASS_WINDOW' === DoorOpenMode) {
+          let glass = createObj('path',{
+            ...basePath,
+            stroke: WindowColor,
+            stroke_width: WindowWidth,
+            layer: 'map'
+          });
+          toFrontFixed(glass);
+          IDC.recordObj(glass);
+        }
+        // make a line or a window object
+        if(AsWindowObject){
+          let w = createObj('window',{...baseObject,color:WindowColor.substr(0,7)});
+          IDC.recordObj(w);
+        } else {
+          let p = createObj('path',{
+            ...basePath,
+            stroke: WindowColor,
+            stroke_width: DoorWidth,
+            layer: 'walls',
+            barrierType: 'transparent'
+          });
+          IDC.recordObj(p);
+        }
+        return 1;
+      }
+      return 0;
+    };
+  };
+
+  const GetLightCreator = (IDC, newPt,PageID,TokenID,PageScale) => {
+    const LightColor = state[scriptName].config.dlLightMarkerColor;
+
+    return (l) => {
+      let pt = newPt(l.position);
+      let r = l.range*PageScale;
+      let dr = ((r/2)*(Math.pow(l.intensity,2)));
+      let color = state[scriptName].config.useLightColor ? getNonAlphaColorScaled(argb2rgba(l.color)) : 'transparent';
+      const ld = {pt,r,dr,color};
+      let g = createObj('graphic',{
+        imgsrc: clearURL,
+        subtype: 'token',
+        name: '',
+        aura1_radius: -0.5,
+        aura1_color: LightColor,
+
+        // LDL
+        light_otherplayers: true,
+        light_dimradius: ld.dr,
+        light_radius: ld.r,
+
+        // UDL
+        emits_bright_light: true,
+        emits_low_light: true,
+        bright_light_distance: ld.r-ld.dr,
+        low_light_distance: ld.r,
+        lightColor: ld.color,
+
+        width:70,
+        height:70,
+        top: ld.pt.y,
+        left: ld.pt.x,
+        controlledby: TokenID,
+        layer: "walls",
+        pageid: PageID
+      });
+      IDC.recordObj(g);
+      return 1;
+    };
+  };
+
+  class IDCollector {
+    #objRefs=[];
+
+    constructor(objRefs=[]) {
+      this.#objRefs=[...objRefs];
+    }
+
+    recordObj(obj) {
+      this.#objRefs.push([obj.get('type'),obj.id]);
+    }
+
+    toJSON() {
+      return [...this.#objRefs];
+    }
+
+  }
+
   const importUVTTonGraphic = (token, forceSkipObjects=false) => {
     let rawNotes = token.get('gmnotes');
     let notes = unescape(rawNotes).replace(/(?:<[^>]*>|\\t|&nbsp;)/g,'');
@@ -473,7 +764,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     }
 
     if(!validateData(data)){
-      return false;
+      return {error: "Universal VTT Data is invalid.", token};
     }
 
     // cleanup image for efficiency
@@ -502,226 +793,46 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     let page = getObj('page',token.get('pageid'));
     let stats = {token,lines:0,doors:0,objects:0,lights:0};
 
-    const WallColor = state[scriptName].config.wallColor;
-    const WallWidth = state[scriptName].config.wallWidth;
-    const DoorColor = state[scriptName].config.doorColor;
-    const DoorWidth = state[scriptName].config.doorWidth;
-    const ObjectColor = state[scriptName].config.objectColor;
-    const ObjectWidth = state[scriptName].config.objectWidth;
-    const LightColor = state[scriptName].config.dlLightMarkerColor;
+    const PageID = page.id;
+    const PageScale = parseFloat(page.get('scale_number'));
+    const TokenID = token.id;
 
+    const idc = new IDCollector();
 
+    // Walls
+    const LineCreator = GetLineCreator(idc, newPt,PageID,TokenID);
     if(data.hasOwnProperty('line_of_sight')){
       let lines = sread(data,['line_of_sight'])||[];
-      lines
-        .map((l)=>{
-          let minX = Number.MAX_SAFE_INTEGER;
-          let minY = Number.MAX_SAFE_INTEGER;
-          let maxX = 0;
-          let maxY = 0;
-          let pts = l
-            .reduce((m,pt)=>{
-              let t = m.length ? 'L' : 'M';
-              let npt = newPt(pt);
-              minX = Math.min(minX,npt.x);
-              minY = Math.min(minY,npt.y);
-              maxX = Math.max(maxX,npt.x);
-              maxY = Math.max(maxY,npt.y);
-              m.push([t,npt.x,npt.y]);
-              return m;
-            },[])
-            .map(pt=>[pt[0],pt[1]-minX,pt[2]-minY]);
-          return {
-            base: {x:minX, y:minY},
-            size: {x:maxX-minX, y:maxY-minY},
-            pts: pts
-          };
-        })
-        .forEach(ld=>{
-          stats.lines++;
-          createObj('path',{
-            fill: "transparent",
-            stroke: WallColor,
-            stroke_width: WallWidth,
-            rotation: 0,
-            width: ld.size.x,
-            height: ld.size.y,
-            top: ld.base.y+(ld.size.y/2),
-            left: ld.base.x+(ld.size.x/2),
-            scaleX: 1,
-            scaleY: 1,
-            controlledby: token.id,
-            layer: "walls",
-            path: JSON.stringify(ld.pts),
-            pageid: page.id
-          });
-        });
+      stats.lines+=lines.reduce((m,l)=>m+LineCreator(l),0);
     }
 
+
+    // Objects
+    const ObjectCreator = GetObjectCreator(idc, newPt,PageID,TokenID);
     if( ! forceSkipObjects && data.hasOwnProperty('objects_line_of_sight')){
       let lines = sread(data,['objects_line_of_sight'])||[];
-      lines
-        .map((l)=>{
-          let minX = Number.MAX_SAFE_INTEGER;
-          let minY = Number.MAX_SAFE_INTEGER;
-          let maxX = 0;
-          let maxY = 0;
-          let pts = l
-            .reduce((m,pt)=>{
-              let t = m.length ? 'L' : 'M';
-              let npt = newPt(pt);
-              minX = Math.min(minX,npt.x);
-              minY = Math.min(minY,npt.y);
-              maxX = Math.max(maxX,npt.x);
-              maxY = Math.max(maxY,npt.y);
-              m.push([t,npt.x,npt.y]);
-              return m;
-            },[])
-            .map(pt=>[pt[0],pt[1]-minX,pt[2]-minY]);
-          return {
-            base: {x:minX, y:minY},
-            size: {x:maxX-minX, y:maxY-minY},
-            pts: pts
-          };
-        })
-        .forEach(ld=>{
-          stats.objects++;
-          createObj('path',{
-            fill: `${ObjectColor}66`,
-            stroke: ObjectColor,
-            stroke_width: ObjectWidth,
-            rotation: 0,
-            width: ld.size.x,
-            height: ld.size.y,
-            top: ld.base.y+(ld.size.y/2),
-            left: ld.base.x+(ld.size.x/2),
-            scaleX: 1,
-            scaleY: 1,
-            controlledby: token.id,
-            layer: "walls",
-            barrierType: (state[scriptName].config.objectTransparent ? 'transparent' : 'wall'),
-            path: JSON.stringify(ld.pts),
-            pageid: page.id
-          });
-        });
+      stats.objects+=lines.reduce((m,l)=>m+ObjectCreator(l),0);
     }
 
+
+    // Doors and Windows
+    const PortalCreator = GetPortalCreator(idc, newPt,PageID,TokenID);
     if(data.hasOwnProperty('portals')) {
       let doors = sread(data,['portals'])||[];
-      doors
-        .map((d)=>{
-          let center = newPt(d.position||{x:0,y:0});
-          let pt0 = newPt(d.bounds[0]);
-          let pt1 = newPt(d.bounds[1]);
-          let size = { x: Math.abs(pt0.x-pt1.x), y: Math.abs(pt0.y-pt1.y) };
-          let line = [
-            ['M',pt0.x-(center.x-(size.x/2)), pt0.y-(center.y-(size.y/2))],
-            ['L',pt1.x-(center.x-(size.x/2)), pt1.y-(center.y-(size.y/2))]
-          ];
-          return {
-            center,
-            size,
-            pts: line,
-            closed: d.closed
-          };
-        })
-        .forEach(dd=>{
-          if( dd.closed || 'NONE' !== state[scriptName].config.openPortalsMode) {
-            stats.doors++;
-
-            let layer = ('GM_LINE' === state[scriptName].config.openPortalsMode ? 'gmlayer' : 'walls');
-            let drawColor = DoorColor;
-            let barrierType = 'wall';
-            if(false === dd.closed && ['WINDOW','GLASS_WINDOW'].includes(state[scriptName].config.openPortalsMode)){
-              drawColor = state[scriptName].config.windowColor;
-              if('GLASS_WINDOW' === state[scriptName].config.openPortalsMode){
-                let glass = createObj('path',{
-                  fill: "transparent",
-                  stroke: drawColor,
-                  stroke_width: state[scriptName].config.windowWidth,
-                  rotation: 0,
-                  width: dd.size.x,
-                  height: dd.size.y,
-                  top: dd.center.y,
-                  left: dd.center.x,
-                  scaleX: 1,
-                  scaleY: 1,
-                  controlledby: token.id,
-                  layer: 'map',
-                  path: JSON.stringify(dd.pts),
-                  pageid: page.id
-                });
-                toFrontFixed(glass);
-              }
-              barrierType = 'transparent';
-            }
-            createObj('path',{
-              fill: "transparent",
-              stroke: drawColor,
-              stroke_width: DoorWidth,
-              rotation: 0,
-              width: dd.size.x,
-              height: dd.size.y,
-              top: dd.center.y,
-              left: dd.center.x,
-              scaleX: 1,
-              scaleY: 1,
-              controlledby: token.id,
-              layer: layer,
-              barrierType: barrierType,
-              path: JSON.stringify(dd.pts),
-              pageid: page.id
-            });
-          }
-        });
+      stats.doors+=doors.reduce((m,l)=>m+PortalCreator(l),0);
     }
 
+
+    // Lights
+    const LightCreator = GetLightCreator(idc, newPt,PageID,TokenID,PageScale);
     if(data.hasOwnProperty('lights')) {
-      let pScale = parseFloat(page.get('scale_number'));
       let lights = sread(data,['lights']);
-      lights
-        .map(l=>{
+      stats.lights+=lights.reduce((m,l)=>m+LightCreator(l),0);
           
-            let pt = newPt(l.position);
-            let r = l.range*pScale;
-            let dr = ((r/2)*(Math.pow(l.intensity,2)));
-            let color = state[scriptName].config.useLightColor ? getNonAlphaColorScaled(argb2rgba(l.color)) : 'transparent';
-
-          return {pt,r,dr,color};
-        })
-        .forEach(ld => {
-          stats.lights++;
-          createObj('graphic',{
-            imgsrc: clearURL,
-            subtype: 'token',
-            name: '',
-            aura1_radius: -0.5,
-            aura1_color: LightColor,
-
-            // LDL
-            light_otherplayers: true,
-            light_dimradius: ld.dr,
-            light_radius: ld.r,
-
-            // UDL
-            emits_bright_light: true,
-            emits_low_light: true,
-            bright_light_distance: ld.r-ld.dr,
-            low_light_distance: ld.r,
-            lightColor: ld.color,
-
-            width:70,
-            height:70,
-            top: ld.pt.y,
-            left: ld.pt.x,
-            controlledby: token.id,
-            layer: "walls",
-            pageid: page.id
-          });
-          
-        });
     }
+    token.set('tooltip',JSON.stringify(idc));
 
+    // Possibly not needed anymore?
     if(true === page.get('dynamic_lighting_enabled')){
       page.set('force_lighting_refresh',true);
     }
@@ -730,34 +841,87 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   };
 
-  const clearImportsFor = (id) => {
-    findObjs({controlledby: id}).forEach(o=>o.remove());
+  const clearImportsFor = (g) => {
+    try {
+      (JSON.parse(g.get('tooltip'))||[])
+        .map(o=>getObj(...o))
+        .filter(o=>undefined !== o)
+        .forEach(o=>o.remove())
+        ;
+    } catch(e){
+      // fail means tooltip isn't set or is corrupt
+    }
+    // legacy remove lines
+    findObjs({controlledby: g.id}).forEach(o=>o.remove())
   };
+
+  class DoubleDashArgs {
+    #cmd;
+    #args;
+
+    constructor(line){
+      let p=line.split(/\s+--/);
+      this.#cmd = p.shift();
+      this.#args = [...p.map(a=>a.split(/\s+/))];
+    }
+
+    get cmd() {
+      return this.#cmd;
+    };
+    get args() {
+      return this.#args.map(a=>a[0]);
+    }
+
+    has(arg) {
+      return !!this.#args.find(a=>arg===a[0]);
+    }
+
+    params(arg) {
+      return [...(this.#args.find(a=>arg===a[0])||[])];
+    }
+
+    toObject() {
+      return {cmd:this.#cmd,args:this.#args};
+    }
+  }
 
   // !uvtt 
   // !uvtt --help
   // !uvtt --clear
+  // !uvtt --no-objects
+  // !uvtt --ids foo bar baz
   const handleInput = (msg) => {
     if ( "api" === msg.type && /^!uvtt(\b\s|$)/i.test(msg.content) && playerIsGM(msg.playerid)) {
       let who = (getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
-      let args = msg.content.split(/\s+--/);
-      if(args.includes('help')){
+      let DDArgs= new DoubleDashArgs(msg.content);
+
+      if(DDArgs.has('help')){
         showHelp(msg.playerid);
         return;
       }
+
       let graphics = (msg.selected || [])
         .map(o=>getObj('graphic',o._id))
         .filter(g=>undefined !== g)
 				;
 
-      let skipObjects = args.includes('no-objects');
+      if(DDArgs.has('ids')){
+        graphics = [
+          ...graphics,
+          ...DDArgs.params('ids')
+            .map(id=>getObj('graphic',id))
+            .filter(g=>undefined !== g)
+          ];
+      }
+
+      let skipObjects = DDArgs.has('no-objects');
 
       if(graphics.length) {
-        if(args.includes('clear')){
-          graphics.forEach(g=>clearImportsFor(g.id));
+        if(DDArgs.has('clear')){
+          graphics.forEach(clearImportsFor);
         } else {
           graphics
-            .map(g=>(clearImportsFor(g.id),g))
+            .map(g=>(clearImportsFor(g),g))
             .map(g=>importUVTTonGraphic(g,skipObjects))
             .forEach(r=>{
               if(r.hasOwnProperty('error')){
@@ -772,18 +936,18 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       }
 
     } else if ( "api" === msg.type && /^!uvtt-config(\b\s|$)/i.test(msg.content) && playerIsGM(msg.playerid)) {
-      let args = msg.content.split(/\s+--/).slice(1);
+      let DDArgs= new DoubleDashArgs(msg.content);
       let who = (getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
-      if(args.includes('--help')) {
+      if(DDArgs.has('help')) {
         showHelp(msg.playerid);
         return;
       }
-      if(!args.length) {
+      if(!DDArgs.args.length) {
         showConfigHelp(msg.playerid);
         return;
       }
 
-      args.forEach((a) => {
+      DDArgs.args.forEach((a) => {
         let opt=a.split(/\|/);
         let omsg='';
         switch(opt.shift()) {
@@ -814,6 +978,16 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
               '</div>'
             );
             break;
+
+          case 'toggle-use-window-objects':
+            state[scriptName].config.useWindowObjects=!state[scriptName].config.useWindowObjects;
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+              getConfigOption_UseWindowObjects()+
+              '</div>'
+            );
+            break;
+
 
           case 'window-color':
             if(opt[0].match(regex.colorsRGBA)) {
@@ -867,6 +1041,15 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
               '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                 omsg+
                 getConfigOption_ObjectWidth()+
+              '</div>'
+            );
+            break;
+
+          case 'toggle-use-door-objects':
+            state[scriptName].config.useDoorObjects=!state[scriptName].config.useDoorObjects;
+            sendChat('','/w "'+who+'" '+
+              '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+              getConfigOption_UseDoorObjects()+
               '</div>'
             );
             break;
