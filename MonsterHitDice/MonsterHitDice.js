@@ -8,9 +8,9 @@ API_Meta.MonsterHitDice={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 var globalconfig = globalconfig || undefined;  //eslint-disable-line no-var
 const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.3.10';
+    const version = '0.3.11';
     API_Meta.MonsterHitDice.version = version;
-    const lastUpdate = 1680633390;
+    const lastUpdate = 1680641047;
     const schemaVersion = 0.3;
 
     let tokenIds = [];
@@ -48,6 +48,16 @@ const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
                     s.config.conBonusAttribute = '';
                     s.config.conBonusIsStat = false;
                     break;
+
+                case "Advanced 1st Edition":
+                    s.config.hitDiceAttribute = 'hitdice';
+                    s.config.findSRDFormula = false;
+                    s.config.HDis1eD8s = true;
+                    s.config.useConBonus = false;
+                    s.config.conBonusAttribute = '';
+                    s.config.conBonusIsStat = false;
+                    break;
+
 
                 case "Custom - (Use settings below)":
                     s.config.hitDiceAttribute = g['HitDice Attribute'];
@@ -124,6 +134,14 @@ const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
         return txt.match(/\d+d\d+(\+\d+)?/)[0]||0;
     };
 
+    const buildHD1eExpression = (exp) => {
+      let m = `${exp}`.match(/(\d+)([+-]\d+)?/);
+      if(m){
+        return `${m[1]}d8${ m[2] ? m[2] : ''}`;
+      }
+      return 0;
+    };
+
     const rollHitDice = (obj) => {
         let sets = {};
         const bar = 'bar'+state.MonsterHitDice.config.bar;
@@ -159,7 +177,7 @@ const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
                           ;
 
                         hdExpression = state.MonsterHitDice.config.HDis1eD8s
-                          ? `${hdExpression}d8`
+                          ? buildHD1eExpression(hdExpression)
                           : hdExpression
                           ;
                         if( state.MonsterHitDice.config.useConBonus && conAttrib ) {
