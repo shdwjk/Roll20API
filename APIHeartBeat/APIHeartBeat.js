@@ -9,10 +9,10 @@ API_Meta.APIHeartBeat={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
 
     const scriptName = "APIHeartBeat";
-    const version = '0.5.1';
+    const version = '0.5.2';
     API_Meta.APIHeartBeat.version = version;
-    const lastUpdate = 1634706237;
-    const schemaVersion = 0.4;
+    const lastUpdate = 1688833845;
+    const schemaVersion = 0.5;
     const beatPeriod = 200;
     const devScaleFactor = 5;
     let currentBeatPeriod=0;
@@ -22,7 +22,7 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
     const S = () => state[scriptName];
 
     const assureHelpHandout = (create = false) => {
-        const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/127392204/tAiDP73rpSKQobEYm5QZUw/thumb.png?15878425385";
+      const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/295769190/Abc99DVcre9JA2tKrVDCvA/thumb.png?1658515304";
 
         // find handout
         let props = {type:'handout', name:`Help: ${scriptName}`};
@@ -77,6 +77,11 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
             S().config.hourOffset = -5;
             /* break; // intentional dropthrough */ /* falls through */
 
+          case 0.4:
+            S().config.startupAnnounce = true;
+
+            /* break; // intentional dropthrough */ /* falls through */
+
           case 'UpdateSchemaVersion':
             S().version = schemaVersion;
             break;
@@ -92,7 +97,8 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
                 latency: true,
                 maxSegments: 30,
                 showTime: false,
-                hourOffset: -5
+                hourOffset: -5,
+                startupAnnounce: true
               }
             };
         }
@@ -101,7 +107,9 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
       assureHelpHandout();
       newTimeSegment();
       startStopBeat();
-      sendCheck('gm');
+      if(S().config.startupAnnounce) {
+        sendCheck('gm');
+      }
     };
 
 
@@ -323,7 +331,6 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
         [`↙️`]: `⬅️`, 
         [`⬅️`]: `↖️`
     };
-    const arrowRegex = new RegExp(`(${Object.keys(arrowCycle).join('|')})`);
 
     const clockCycle = {
       [`🕛`]: `🕐`,
@@ -339,7 +346,6 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
       [`🕙`]: `🕚` ,
       [`🕚`]: `🕛` 
     };
-    const clockRegex = new RegExp(`(${Object.keys(clockCycle).join('|')})`);
 
     const swordCycle = {
         [`⚔️`]: `🛡️`, 
@@ -349,6 +355,17 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
         [`🗡️`]: `🏰`, 
         [`🏰`]: `⚔️`
     };
+
+
+//    const priorIndex = (m,i) => (i ? (i-1) : (m.length-1));
+//    const buildCycle = (members) => members.reduce((m,e,i,a)=> ({...m,[a[priorIndex(a,i)]]:e}),{});
+//
+//    const arrowCycle = buildCycle( [`\u2b06`,`\u2197`,`\u27a1`,`\u2198`,`\u2b07`,`\u2199`,`\u2b05`,`\u2196`] );
+//    const clockCycle = buildCycle( ['\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83d'] );
+//    const swordCycle = (['\ud7f6\ud83d', '\ud7c9\udacf', '\ud7f6\ud83d', '\ud7f6\ud83d', '\ud7f6\ud83c', '\ud7c9\uda94']);
+
+    const arrowRegex = new RegExp(`(${Object.keys(arrowCycle).join('|')})`);
+    const clockRegex = new RegExp(`(${Object.keys(clockCycle).join('|')})`);
     const swordRegex = new RegExp(`(${Object.keys(swordCycle).join('|')})`);
 
     const monoDigit0 = 0xff10;
@@ -379,14 +396,14 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
         switch(S().config.spinner){
           case 'CLOCK': {
               let lastClock = (label.match(clockRegex)||[])[1];
-              let nextClock = Object.keys(clockCycle).includes(lastClock) ? clockCycle[lastClock] : `🕛`;
+              let nextClock = Object.keys(clockCycle).includes(lastClock) ? clockCycle[lastClock] : Object.keys(clockCycle)[0];
               macName+=nextClock;
             }
             break;
 
           case 'SWORD': {
               let lastSword = (label.match(swordRegex)||[])[1];
-              let nextSword = Object.keys(swordCycle).includes(lastSword) ? swordCycle[lastSword] : `⚔️`;
+              let nextSword = Object.keys(swordCycle).includes(lastSword) ? swordCycle[lastSword] : Object.keys(swordCycle)[0];
               macName+=nextSword;
             }
             break;
@@ -394,7 +411,7 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
           case 'ARROW':
           default: {
               let lastArrow = (label.match(arrowRegex)||[])[1];
-              let nextArrow = Object.keys(arrowCycle).includes(lastArrow) ? arrowCycle[lastArrow] : `↖️`;
+              let nextArrow = Object.keys(arrowCycle).includes(lastArrow) ? arrowCycle[lastArrow] : arrowCycle[0];
               macName+=nextArrow;
             }
             break;
@@ -478,6 +495,13 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
       `${_h.bold('Show Latency')} controls if the current API latency measurement is shown next to the spinner. Current value: ${_h.bold(S().config.latency ? 'On' : 'Off')}`
     );
 
+    const getConfigOption_StartupAnnounce = () => makeConfigOption(
+      S().config.startupAnnounce,
+      `!api-heartbeat-config --toggle-startup-announce`,
+      `${_h.bold('Startup Announce')} controls whether ${scriptName} announces that the API is up. Current value: ${_h.bold(S().config.startupAnnounce ? 'On' : 'Off')}`
+    );
+
+
     const getConfigOption_ShowTime = () => makeConfigOption(
       S().config.showTime,
       `!api-heartbeat-config --toggle-show-time`,
@@ -508,7 +532,9 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
       getConfigOption_ShowTime() +
       getConfigOption_HourOffset() +
       getConfigOption_MaxSegments() +
-      getConfigOption_DevMode() ;
+      getConfigOption_DevMode() +
+      getConfigOption_StartupAnnounce()
+      ;
 
   const defaults = {
       css: {
@@ -739,6 +765,15 @@ const APIHeartBeat = (()=> { // eslint-disable-line no-unused-vars
               sendChat('','/w "'+who+'" '+
                 '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
                 getConfigOption_ShowLatency()+
+                '</div>'
+              );
+              break;
+
+            case 'toggle-startup-announce':
+              S().config.startupAnnounce=!S().config.startupAnnounce;
+              sendChat('','/w "'+who+'" '+
+                '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                getConfigOption_StartupAnnounce()+
                 '</div>'
               );
               break;

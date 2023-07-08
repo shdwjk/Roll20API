@@ -1,6 +1,6 @@
 {
   "name": "APIHeartBeat",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "APIHeartBeat provides visual feedback that the API is running.\r\rFor instructions see the *Help: APIHeartBeat* Handout in game, or run `!api-heartbeat --help`, or visit [APIHeartBeat Forum Thread](https://app.roll20.net/forum/permalink/10447182/).",
   "authors": "The Aaron",
   "roll20userid": "104025",
@@ -9,5 +9,11 @@
   "modifies": {},
   "conflicts": [],
   "script": "APIHeartBeat.js",
-  "useroptions": []
+  "useroptions": [],
+  "previousversions": [
+    "0.4.1",
+    "0.4.2",
+    "0.5.0",
+    "0.5.1"
+  ]
 }
