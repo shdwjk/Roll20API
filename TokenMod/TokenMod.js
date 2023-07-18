@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.76';
+    const version = '0.8.77';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1671039916;
+    const lastUpdate = 1689718962;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -206,7 +206,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         off: ()=>()=>'None',
         ['none']: ()=>()=>'None',
         ['dimming']: (amount='5ft')=>(token,mods)=>{
-          const regexp = /^([=+\-/*])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq|%)?$/i;
+          const regexp = /^([=+\-/*])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq|%)?$/i; // */
           let match = `${amount}`.match(regexp);
           let factor;
           let pnv;
@@ -279,20 +279,20 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         ['nocturnal']: ()=>()=>'Nocturnal'
       },
       bar_location: {
-        __default__: ()=>null,
-        off: ()=>null,
-        none: ()=>null,
-        ['above']: ()=>null,
-        ['overlap_top']: ()=>'overlap_top',
-        ['overlap_bottom']: ()=>'overlap_bottom',
-        ['below']: ()=>'below'
+        __default__        : ()=>null,
+        off                : ()=>null,
+        none               : ()=>null,
+        ['above']          : ()=>null,
+        ['overlap_top']    : ()=>'overlap_top',
+        ['overlap_bottom'] : ()=>'overlap_bottom',
+        ['below']          : ()=>'below'
       },
       compact_bar: {
-        __default__: ()=>null,
-        off: ()=>null,
-        none: ()=>null,
-        ['compact']: ()=>'compact',
-        ['on']: ()=>'compact'
+        __default__ : ()=>null,
+        off         : ()=>null,
+        none        : ()=>null,
+        ['compact'] : ()=>'compact',
+        ['on']      : ()=>'compact'
       }
     };
 
@@ -328,7 +328,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
         class numberOp {
             static parse(field, str, permitBlank=true) {
-                const regexp = /^([=+\-/*!])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?(!)?$/i;
+                const regexp = /^([=+\-/*!])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?(!)?$/i; // */
 
                 if(!str.length && permitBlank){
                     return new numberOp(field, '','','' );
@@ -1318,6 +1318,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             operation: op || '+'
                         });
                 }
+                if('=' === op && stat.length===0){
+                  return {getMods:(/*c*/)=>({statusmarkers:''})};
+                }
 
                 return {getMods:(c)=>({statusmarkers:c})};
             }
@@ -1596,27 +1599,27 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         }
     };
 
-    const assureHelpHandout = (create = false) => {
-        if(state.TheAaron && state.TheAaron.config && (false === state.TheAaron.config.makeHelpHandouts) ){
-          return;
-        }
-      const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/295769190/Abc99DVcre9JA2tKrVDCvA/thumb.png?1658515304";
+  const assureHelpHandout = (create = false) => {
+    if(state.TheAaron && state.TheAaron.config && (false === state.TheAaron.config.makeHelpHandouts) ){
+      return;
+    }
+    const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/295769190/Abc99DVcre9JA2tKrVDCvA/thumb.png?1658515304";
 
-        // find handout
-        let props = {type:'handout', name:`Help: ${scriptName}`};
-        let hh = findObjs(props)[0];
-        if(!hh) {
-            hh = createObj('handout',Object.assign(props, {inplayerjournals: "all", avatar: helpIcon}));
-            create = true;
-        }
-        if(create || version !== state[scriptName].lastHelpVersion){
-            hh.set({
-                notes: helpParts.helpDoc({who:'handout',playerid:'handout'})
-            });
-            state[scriptName].lastHelpVersion = version;
-            log('  > Updating Help Handout to v'+version+' <');
-        }
-    };
+    // find handout
+    let props = {type:'handout', name:`Help: ${scriptName}`};
+    let hh = findObjs(props)[0];
+    if(!hh) {
+      hh = createObj('handout',Object.assign(props, {inplayerjournals: "all", avatar: helpIcon}));
+      create = true;
+    }
+    if(create || version !== state[scriptName].lastHelpVersion){
+      hh.set({
+        notes: helpParts.helpDoc({who:'handout',playerid:'handout'})
+      });
+      state[scriptName].lastHelpVersion = version;
+      log('  > Updating Help Handout to v'+version+' <');
+    }
+  };
 
     const checkInstall = function() {
         log('-=> TokenMod v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
@@ -1785,6 +1788,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             let text = `${o.getName()}${o.getName()!==o.getTag()?` [${_h.code(o.getTag())}]`:''}`;
             return `<div style="width: auto; padding: .2em; margin: .1em .25em; border: 1px solid #ccc; border-radius: .25em; background-color: #eee; line-height:1.5em; height: auto;float:left;">${o.getHTML()}${text}</div>`;
         },
+        helpHandoutLink: ()=>{
+          let props = {type:'handout', name:`Help: ${scriptName}`};
+          let hh = findObjs(props)[0];
+          return `<a style="color: #07c; text-decoration: underline;" href="http://journal.roll20.net/handout/${hh.id}">Help: ${scriptName}</a>`;
+        },
         inset: (...o) => `<div style="padding-left: 10px;padding-right:20px">${o.join(' ')}</div>`,
         join: (...o) => o.join(' '),
         pre: (...o) =>`<div style="border:1px solid #e1e1e8;border-radius:4px;padding:8.5px;margin-bottom:9px;font-size:12px;white-space:normal;word-break:normal;word-wrap:normal;background-color:#f7f7f9;font-family:monospace;overflow:auto;">${o.join(' ')}</div>`,
@@ -1812,6 +1820,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             `!token-mod `,
                             _h.required(
                                 `--help`,
+                                `--rebuild-help`,
+                                `--help-statusmarkers`,
                                 `--ignore-selected`,
                                 `--current-page`,
                                 `--active-pages`,
@@ -1856,6 +1866,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         ),
                         _h.ul(
                             `${_h.bold('--help')} -- Displays this help`,
+                            `${_h.bold('--rebuild-help')} -- Recreated the help handout in the journal.  Useful for showing updated custom status markers.`,
+                            `${_h.bold('--help-statusmarkers')} -- Output just the list of known status markers into the chat.`,
                             `${_h.bold('--ignore-selected')} -- Prevents modifications to the selected tokens (only modifies tokens passed with --ids).`,
                             `${_h.bold('--current-page')} -- Only modifies tokens on the calling player${ch("'")}s current page.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
                             `${_h.bold('--active-pages')} -- Only modifies tokens on pages where there is a player or the GM.  This is particularly useful when passing character_ids to ${_h.italic('--ids')}.`,
@@ -2395,7 +2407,15 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     )
                 )
             ),
-        setStatus: ( /* context */) => _h.join(
+        availableStatusMarkers: (/* context */) => _h.join(
+                    _h.minorhead('Available Status Markers:'),
+                    _h.inset(
+                        _h.grid(
+                            ...StatusMarkers.getOrderedList().map(tm=>_h.statusCell(tm))
+                        )
+                    )
+            ),
+        setStatus: ( context ) => _h.join(
                 _h.subhead('Status'),
                 _h.inset(
                     _h.paragraph(`There is only one Status property.  Status has a somewhat complicated syntax to support the greatest possible flexibility.`),
@@ -2462,7 +2482,12 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.pre('!token-mod --set statusmarkers|=dead')
                     ),
 
-                    _h.paragraph(`If you want to remove all status markers, just specify the same marker twice with an ${_h.code('=')} and then a ${_h.code('-')}.  This will clear all the status markers:`),
+                    _h.paragraph(`If you want to remove all status markers, just set an empty status marker with ${_h.code('=')}. This will clear all the status markers:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|=')
+                    ),
+
+                    _h.paragraph(`You can also do this by setting a single status marker, then removing it:`),
                     _h.inset(
                         _h.pre('!token-mod --set statusmarkers|=blue|-blue')
                     ),
@@ -2487,13 +2512,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.inset(
                         _h.pre('!token-mod --set statusmarkers|blue:3|-dead|red:3')
                     ),
-
-                    _h.minorhead('Available Status Markers:'),
-                    _h.inset(
-                        _h.grid(
-                            ...StatusMarkers.getOrderedList().map(tm=>_h.statusCell(tm))
-                        )
-                    ),
+                    helpParts.availableStatusMarkers(context),
                     _h.paragraph(`Status Markers with a space in the name must be specified using the tag name, which appears in ${_h.code('[')}${_h.code(']')} above.`),
                     _h.inset(
                         _h.pre('!token-mod --set statusmarkers|Mountain_Pass::1234568')
@@ -3007,6 +3026,18 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         helpChat: (context) => _h.outer(
                 _h.title('TokenMod',version),
                 helpParts.helpBody(context)
+            ),
+
+        helpStatusMarkers: (context) => _h.outer(
+                _h.title('TokenMod',version),
+                helpParts.availableStatusMarkers(context)
+            ),
+
+        rebuiltHelp: (/*context*/) => _h.outer(
+                _h.title('TokenMod',version),
+                _h.header(
+                    _h.paragraph( `${_h.helpHandoutLink()} regenerated.`)
+                )
             )
     };
 
@@ -3035,7 +3066,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 }
             }
 
-            if(update.match(/^[+\-/*]/)){
+            if(update.match(/^[+\-/*]/)){ // */
                 op=update[0];
                 update=_.rest(update).join('');
             }
@@ -3858,6 +3889,27 @@ const OutputDebugInfo = (msg,ids /*, modlist, badCmds */) => {
 				cmds=args.shift().match(/([^\s]+[|#]'[^']+'|[^\s]+[|#]"[^"]+"|[^\s]+)/g);
 				let cmd = cmds.shift();
 				switch(cmd) {
+					case 'help-statusmarkers': {
+              let context = {
+                who,
+                playerid:msg.playerid
+              };
+              sendChat('', '/w "'+who+'" '+ helpParts.helpStatusMarkers(context));
+            }
+            return;
+
+					case 'rebuild-help': {
+              assureHelpHandout(true);
+              let context = {
+                who,
+                playerid:msg.playerid
+              };
+
+              sendChat('', `/w "${who}" ${helpParts.rebuiltHelp(context)}`);
+
+            }
+            return;
+
 					case 'help':
 
 // !tokenmod --help [all]
