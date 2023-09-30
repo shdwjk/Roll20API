@@ -8,9 +8,9 @@ API_Meta.UniversalVTTImporter={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = 'UniversalVTTImporter';
-  const version = '0.1.11';
+  const version = '0.1.12';
   API_Meta.UniversalVTTImporter.version = version;
-  const lastUpdate = 1673221000;
+  const lastUpdate = 1696093453;
   const schemaVersion = 0.3;
   const clearURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659';
 
@@ -239,7 +239,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       bare: (o)=>`${ch('@')}${ch('{')}${o}${ch('}')}`,
       selected: (o)=>`${ch('@')}${ch('{')}selected${ch('|')}${o}${ch('}')}`,
       target: (o)=>`${ch('@')}${ch('{')}target${ch('|')}${o}${ch('}')}`,
-      char: (o,c)=>`${ch('@')}${ch('{')}${c||'CHARACTER UniversalVTTImporter'}${ch('|')}${o}${ch('}')}`
+      char: (o,c)=>`${ch('@')}${ch('{')}${c||'Character Name'}${ch('|')}${o}${ch('}')}`
     },
     bold: (...o) => `<b>${o.join(' ')}</b>`,
     italic: (...o) => `<i>${o.join(' ')}</i>`,
@@ -289,7 +289,6 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
     const getConfigOption_OpenPortalsMode = () => makeConfigOptionNum(
       state[scriptName].config.openPortalsMode,
-     // `!uvtt-config --toggle-create-open-portals`,
       `!uvtt-config --open-portals-mode|?{Open Portal Draw Style|${getOptionsWithDefault(OpenPortalOptions,state[scriptName].config.openPortalsMode)}}`,
       `${_h.bold('Open Portals Mode')} controls how open portals are drawn.  These are usually windows, so with UDL, you can draw them to block movement, not sight.  Or you can draw them as a line on the GM layer which you can move the the DL layer to "close" them.  Or just leave them off entirely. Current setting: ${_h.bold(OpenPortalOptions[state[scriptName].config.openPortalsMode])}`
     );
@@ -585,7 +584,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     };
   };
 
-  const GetPortalCreator = (IDC, newPt,PageID,TokenID) => {
+  const GetPortalCreator = (IDC, newPt,PageID,TokenID,ptSub) => {
     const DoorColor = state[scriptName].config.doorColor;
     const DoorWidth = state[scriptName].config.doorWidth;
     const WindowWidth = state[scriptName].config.doorWidth;
@@ -598,6 +597,8 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       let center = newPt(d.position||{x:0,y:0});
       let pt0 = newPt(d.bounds[0]);
       let pt1 = newPt(d.bounds[1]);
+      let hPt0 = ptSub(pt0,center);
+      let hPt1 = ptSub(pt1,center);
       let size = { x: Math.abs(pt0.x-pt1.x), y: Math.abs(pt0.y-pt1.y) };
       let line = [
         ['M',pt0.x-(center.x-(size.x/2)), pt0.y-(center.y-(size.y/2))],
@@ -633,12 +634,12 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
         controlledby: TokenID,
         path: {
           handle0: {
-            x: -(size.x/2),
-            y: -(size.y/2)
+            x: hPt0.x,
+            y: -hPt0.y
           },
           handle1: {
-            x: (size.x/2),
-            y: (size.y/2)
+            x: hPt1.x,
+            y: -hPt1.y
           }
         },
         _pageid: PageID
@@ -788,6 +789,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
     const newX = (x) => tokenOriginX + ((x-dataOriginX)*scaleFactorX);
     const newY = (y) => tokenOriginY + ((y-dataOriginY)*scaleFactorY);
     const newPt = (pt) => ({x:newX(pt.x),y:newY(pt.y)});
+    const ptSub = (pt0,pt1) => ({x:pt0.x-pt1.x,y:pt0.y-pt1.y});
 
 
     let page = getObj('page',token.get('pageid'));
@@ -816,7 +818,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
 
     // Doors and Windows
-    const PortalCreator = GetPortalCreator(idc, newPt,PageID,TokenID);
+    const PortalCreator = GetPortalCreator(idc,newPt,PageID,TokenID, ptSub);
     if(data.hasOwnProperty('portals')) {
       let doors = sread(data,['portals'])||[];
       stats.doors+=doors.reduce((m,l)=>m+PortalCreator(l),0);
@@ -852,7 +854,7 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
       // fail means tooltip isn't set or is corrupt
     }
     // legacy remove lines
-    findObjs({controlledby: g.id}).forEach(o=>o.remove())
+    findObjs({controlledby: g.id}).forEach(o=>o.remove());
   };
 
   class DoubleDashArgs {
@@ -867,7 +869,8 @@ const UniversalVTTImporter = (() => { // eslint-disable-line no-unused-vars
 
     get cmd() {
       return this.#cmd;
-    };
+    }
+
     get args() {
       return this.#args.map(a=>a[0]);
     }
