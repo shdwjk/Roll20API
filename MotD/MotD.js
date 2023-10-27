@@ -4,17 +4,17 @@
 
 const MotD = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.2.12';
-    const lastUpdate = 1561517731;
+    const version = '0.2.13';
+    const lastUpdate = 1698411776;
     const schemaVersion = 0.2;
     const loginSendDelay = 10000; // 10 seconds
     const playerOnlineCooldown =  21600000; // 6 hours (6hrs * 60minutes * 60seconds * 1000miliseconds)
     const motdNoteName = 'MotD Note';
 
     const styles = {
-        container: 'display: block; border: 1px solid #999; border-radius: .3em; padding: 1em; background-color: white; box-shadow: 0 0 25px 2px #999; margin: 1em 0 1em 0;',
-        gmnote: 'display: block; border-top: 2px dashed #d2dc65; margin: 2em -1em -1em -1em; border-radius: 0 0 .3em .3em; padding: .3em; background-color: #F2F5D3;',
-        gmtitle: 'font-size: 2em; font-weight:bold; margin:.5em 1em 1em 1em; text-align: center;line-height:1em;',
+      container: 'display: block; border: 1px solid #999; border-radius: .3em; padding: 1em; background-color: white; box-shadow: 0 0 25px 2px #999; margin: 1em 0 1em 0;color:#010101;',
+        gmnote: 'display: block; border-top: 2px dashed #d2dc65; margin: 2em -1em -1em -1em; border-radius: 0 0 .3em .3em; padding: .3em; background-color: #F2F5D3;color:#010101;',
+        gmtitle: 'font-size: 2em; font-weight:bold; margin:.5em 1em 1em 1em; text-align: center;line-height:1em;color:#010101',
         image: 'display: block; width: auto; height: auto;',
         motdLinkBox: 'display: block; text-align: center; font-size: .8em; font-weight:bold;',
         motdLink: 'color: #07c; text-decoration: underline;',
