@@ -348,6 +348,13 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
             },
             desc: 'Adds the accompanying attribute as a decimal (0.01)'
         },
+        'tie-breaker-token_bar': {
+            type: adjustments.TOKEN,
+            func: function(t, idx) {
+                return 0.01*(parseFloat(t.get(`bar${idx}_value`))||0);
+            },
+            desc: 'Apply the bonus from the numbered bar on the token as a decimal (0.01), Defaults to 0 in the absence of a number'
+        },
         'ceiling': {
             type: adjustments.STAT,
             func: function(v) {
