@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.77';
+    const version = '0.8.78';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1689718962;
+    const lastUpdate = 1696633259;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -177,11 +177,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         };
 
     const getCleanImgsrc = (imgsrc) => {
-      let parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
+      let parts = (imgsrc||'').match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
       if(parts) {
-        return parts[1]+'thumb'+parts[3]+(parts[4]?parts[4]:`?${Math.round(Math.random()*9999999)}`);
-      }
-      return;
+        let leader = parts[1].replace(/^https:\/\/files.d20.io\//,'https://s3.amazonaws.com/files.d20.io/');
+          return `${leader}thumb${parts[3]}${parts[4] ? parts[4] : `?${Math.round(Math.random()*9999999)}`}`;
+        }
     };
 
     const forceLightUpdateOnPage = (()=>{
@@ -3127,12 +3127,10 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                       let o = option_fields[cmd];
                       let ks = Object.keys(o);
                       let arg = args.shift().toLowerCase();
-                      if(0 === arg.length){
+                      if(0 === arg.length || !ks.includes(arg)) {
                         arg='__default__';
                       }
-                      if(ks.includes(arg)){
-                        retr[cmd].push(o[arg](args.shift()));
-                      }
+                      retr[cmd].push(o[arg](args.shift()));
                     }
                     break;
 
