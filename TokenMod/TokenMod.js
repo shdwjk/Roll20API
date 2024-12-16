@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.78';
+    const version = '0.8.79';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1696633259;
+    const lastUpdate = 1734377331;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -179,7 +179,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     const getCleanImgsrc = (imgsrc) => {
       let parts = (imgsrc||'').match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
       if(parts) {
-        let leader = parts[1].replace(/^https:\/\/files.d20.io\//,'https://s3.amazonaws.com/files.d20.io/');
+        let leader = parts[1].replace(/^https:\/\/s3.amazonaws.com\/files.d20.io\//,'https://files.d20.io/');
           return `${leader}thumb${parts[3]}${parts[4] ? parts[4] : `?${Math.round(Math.random()*9999999)}`}`;
         }
     };
@@ -328,7 +328,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
         class numberOp {
             static parse(field, str, permitBlank=true) {
-                const regexp = /^([=+\-/*!])?(-?\d+\.?|\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?(!)?$/i; // */
+                const regexp = /^([=+\-/*!])?(-?\d+\.?|-?\d*\.\d+)(u|g|s|ft|m|km|mi|in|cm|un|hex|sq)?(!)?$/i; // */
 
                 if(!str.length && permitBlank){
                     return new numberOp(field, '','','' );
@@ -3841,7 +3841,7 @@ const OutputDebugInfo = (msg,ids /*, modlist, badCmds */) => {
           },[]).join(', ');
           return [...m,{k:`$[[${k}]]`, v:(ti.length && ti) || v.results.total || 0}];
         },[])
-        .reduce((m,o) => m.replace(o.k,o.v), msg.content);
+        .reduce((m,o) => m.replaceAll(o.k,o.v), msg.content);
     } else {
       return msg.content;
     }
