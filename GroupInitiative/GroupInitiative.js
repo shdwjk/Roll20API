@@ -5,8 +5,8 @@
 const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "GroupInitiative";
-    const version = '0.9.36';
-    const lastUpdate = 1643852555;
+    const version = '0.9.37';
+    const lastUpdate = 1734910257;
     const schemaVersion = 1.3;
 
     const isString = (s)=>'string'===typeof s || s instanceof String;
@@ -166,7 +166,7 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
     };
 
     const formatDieRoll = function(rollData) {
-        var critFail = _.reduce(rollData.rolls,function(m,r){
+        let critFail = _.reduce(rollData.rolls,function(m,r){
                     return m || _.contains(r.rolls,1);
                 },false),
             critSuccess = _.reduce(rollData.rolls,function(m,r){
@@ -184,7 +184,7 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
             ),
             dicePart = _.reduce(rollData.rolls, function(m,r){
                 _.reduce(r.rolls,function(dm,dr){
-                    var dielight=( 1 === dr ?
+                    let dielight=( 1 === dr ?
                         '#ff0000' :
                             ( r.sides === dr ?
                                 '#00ff00' :
@@ -212,13 +212,13 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
     };
 
     const buildAnnounceGroups = function(l) {
-        var groupColors = {
+        let groupColors = {
             npc: '#eef',
             character: '#efe',
             gmlayer: '#aaa'
         };
         return _.reduce(l,function(m,s){
-            var type= ('gmlayer' === s.token.get('layer') ?
+            let type= ('gmlayer' === s.token.get('layer') ?
                 'gmlayer' : (
                     (s.character && _.filter(s.character.get('controlledby').split(/,/),function(c){ 
                         return 'all' === c || ('' !== c && !playerIsGM(c) );
@@ -380,7 +380,7 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
     };
 
     const buildInitDiceExpression = function(s){
-        var stat=(''!== state[scriptName].config.diceCountAttribute && s.character && getAttrByName(s.character.id, state[scriptName].config.diceCountAttribute, 'current'));
+        let stat=(''!== state[scriptName].config.diceCountAttribute && s.character && getAttrByName(s.character.id, state[scriptName].config.diceCountAttribute, 'current'));
         if(stat ) {
             stat = (_.isString(stat) ? stat : stat+'');
             if('0' !== stat) {
@@ -403,7 +403,7 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
         },
         'Least-All-Roll':{
             mutator: function(l){
-                var min=_.reduce(l,function(m,r){
+                let min=_.reduce(l,function(m,r){
                     if(!m || (r.total < m.total)) {
                         return r;
                     } 
@@ -420,7 +420,7 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
         },
         'Mean-All-Roll':{
             mutator: function(l){
-                var mean = l[Math.round((l.length/2)-0.5)];
+                let mean = l[Math.round((l.length/2)-0.5)];
                 return _.times(l.length, function(){
                     return mean;
                 });
@@ -442,7 +442,7 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
     };
 
     const assureHelpHandout = (create = false) => {
-        const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/127392204/tAiDP73rpSKQobEYm5QZUw/thumb.png?15878425385";
+      const helpIcon = "https://s3.amazonaws.com/files.d20.io/images/295769190/Abc99DVcre9JA2tKrVDCvA/thumb.png?1658515304";
 
         // find handout
         let props = {type:'handout', name:`Help: ${scriptName}`};
@@ -1172,7 +1172,7 @@ const _h = {
 
         _.each(initRolls, function(ir){
             sendChat('',ir.index+':'+ir.roll.replace(/\[\[\s+/,'[[') ,function(msg){
-                var parts = msg[0].content.split(/:/),
+                let parts = msg[0].content.split(/:/),
                 ird = msg[0].inlinerolls[parts[1].match(/\d+/)],
                 rdata = {
                     order: parseInt(parts[0],10),
@@ -1183,7 +1183,7 @@ const _h = {
                             if('R' === rs.type) {
                                 m.push({
                                     sides: rs.sides,
-                                    rolls: _.pluck(rs.results,'v')
+                                    rolls: _.pluck(rs.results.filter(r=>true!==r.d),'v')
                                 });
                             }
                             return m;
@@ -1210,7 +1210,7 @@ const _h = {
     };
 
     const handleInput = (msg_orig) => {
-        var msg = _.clone(msg_orig),
+        let msg = _.clone(msg_orig),
             prev=Campaign().get('turnorder'),
             args,
             cmds,
@@ -1280,7 +1280,7 @@ const _h = {
                             workvar={};
 
                             _.each(args,function(arg){
-                                var argParts=arg.split(/\s+(.+)/),
+                                let argParts=arg.split(/\s+(.+)/),
                                 adjustmentName,
                                 parameter=argParts[0].split(/:/);
                                 parameter[0]=parameter[0].toLowerCase();
@@ -1402,6 +1402,7 @@ const _h = {
                                     state[scriptName].savedTurnOrders.push(stackrecord(cmds.join(' ')));
                                     stacklist();
                                     break;
+
                                 case 'push':
                                     // take current Turn Order and put it on top.
                                     state[scriptName].savedTurnOrders.push(stackrecord(cmds.join(' ')));
@@ -1409,6 +1410,7 @@ const _h = {
                                     notifyObservers('turnOrderChange',Campaign().get('turnorder'),prev);
                                     stacklist();
                                     break;
+
                                 case 'pop':
                                     if(state[scriptName].savedTurnOrders.length){
                                         let sto=state[scriptName].savedTurnOrders.pop();
@@ -1423,6 +1425,7 @@ const _h = {
                                         );
                                     }
                                     break;
+
                                 case 'apply':
                                     if(state[scriptName].savedTurnOrders.length){
                                         let sto=state[scriptName].savedTurnOrders[0];
@@ -1437,6 +1440,7 @@ const _h = {
                                         );
                                     }
                                     break;
+
                                 case 'rot':
                                 case 'rotate':
                                     if(state[scriptName].savedTurnOrders.length){
@@ -1447,6 +1451,7 @@ const _h = {
                                         stacklist();
                                     }
                                     break;
+
                                 case 'rrot':
                                 case 'reverse-rotate':
                                     if(state[scriptName].savedTurnOrders.length){
@@ -1457,8 +1462,8 @@ const _h = {
                                         stacklist();
                                     }
                                     break;
+
                                 case 'swap':
-                                    
                                     if(state[scriptName].savedTurnOrders.length){
                                         let sto=state[scriptName].savedTurnOrders.shift();
                                         state[scriptName].savedTurnOrders.unshift(stackrecord(cmds.join(' ')));
@@ -1467,6 +1472,7 @@ const _h = {
                                         stacklist();
                                     }
                                     break;
+
                                 case 'tswap':
                                 case 'tail-swap':
                                     if(state[scriptName].savedTurnOrders.length){
@@ -1477,6 +1483,7 @@ const _h = {
                                         stacklist();
                                     }
                                     break;
+
                                 case 'amerge':
                                 case 'apply-merge':
                                     if(state[scriptName].savedTurnOrders.length){
@@ -1496,6 +1503,7 @@ const _h = {
                                         stacklist();
                                     }
                                     break;
+
                                 case 'merge':
                                     if(state[scriptName].savedTurnOrders.length){
                                         let sto=state[scriptName].savedTurnOrders.pop();
@@ -1737,7 +1745,7 @@ const _h = {
                   return;
                 }
                 _.each(args,function(a){
-                    var opt=a.split(/\|/),
+                    let opt=a.split(/\|/),
                         omsg='';
                     switch(opt.shift()) {
                         case 'apply-standard-config':
