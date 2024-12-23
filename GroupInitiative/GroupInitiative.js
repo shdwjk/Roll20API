@@ -5,8 +5,8 @@
 const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "GroupInitiative";
-    const version = '0.9.37';
-    const lastUpdate = 1734910257;
+    const version = '0.9.38';
+    const lastUpdate = 1734980923;
     const schemaVersion = 1.3;
 
     const isString = (s)=>'string'===typeof s || s instanceof String;
