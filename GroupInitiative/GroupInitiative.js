@@ -8,9 +8,9 @@ API_Meta.GroupInitiative={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = "GroupInitiative";
-  const version = '0.9.37';
+  const version = '0.9.39';
   API_Meta.GroupInitiative.version = version;
-  const lastUpdate = 1734981538;
+  const lastUpdate = 1735335074;
   const schemaVersion = 1.3;
 
   const isString = (s)=>'string'===typeof s || s instanceof String;
@@ -360,7 +360,8 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
     TOKEN: 'token',
     CHARACTER: 'character',
     BONUS: 'bonus',
-    FILTER: 'filter'
+    FILTER: 'filter',
+    ROLLADJ: 'roll-adjustment'
   };
 
   const statAdjustments = {
@@ -368,6 +369,31 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
       type: adjustments.FILTER,
       func: async (t,c,v) => c.get('charactersheetname') === v,
       desc: 'Forces calculations only for specific character sheets.'
+    },
+    'filter-status': {
+      type: adjustments.FILTER,
+      func: async (t,c,v) => t.get(`status_${v}`) !== false,
+      desc: 'Forces calculations only for tokens with a given status marker.'
+    },
+    'filter-tooltip': {
+      type: adjustments.FILTER,
+      func: async (t,c,v) => t.get(`tooltip`).toLowerCase().split(/[^a-zA-Z0-9:#|-]+/).includes(v),
+      desc: 'Forces calculations only for tokens with a tooltip containing the given word.'
+    },
+    'roll-die-count': {
+      type: adjustments.ROLLADJ,
+      func: async (t,c,v) => ({die_count:Number(v)||state[scriptName].config.diceCount}),
+      desc: 'Forces the number of dice rolled to this value for the matching tokens.'
+    },
+    'roll-die-size': {
+      type: adjustments.ROLLADJ,
+      func: async (t,c,v) => ({die_size:Number(v)||state[scriptName].config.dieSize}),
+      desc: 'Forces the size of the die rolled to this value for the matching tokens.'
+    },
+    'roll-die-mod': {
+      type: adjustments.ROLLADJ,
+      func: async (t,c,v) => ({die_mod:v}),
+      desc: 'Applies the given die mod to the roll.'
     },
     'bonus': {
       type: adjustments.BONUS,
@@ -447,16 +473,24 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
 
   };
 
-  const buildInitDiceExpression = function(s){
-    let stat=(''!== state[scriptName].config.diceCountAttribute && s.character && getAttrByName(s.character.id, state[scriptName].config.diceCountAttribute, 'current'));
-    if(stat ) {
-      stat = (_.isString(stat) ? stat : stat+'');
-      if('0' !== stat) {
-        stat = stat.replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{'+(s.character.get('name'))+'|$1}');
-        return '('+stat+')d'+state[scriptName].config.dieSize;
-      }
-    } 
-    return state[scriptName].config.diceCount+'d'+state[scriptName].config.dieSize+state[scriptName].config.diceMod;
+  const buildInitDiceExpression = function(s,a){
+    let diceCount = state[scriptName].config.diceCount;
+    let diceSize = a?.die_size || state[scriptName].config.dieSize;
+    let diceMod = a?.die_mod || state[scriptName].config.diceMod || '';
+    
+    if(a.hasOwnProperty('die_count')){
+      diceCount = a.die_count;
+    } else {
+      let stat=(''!== state[scriptName].config.diceCountAttribute && s.character && getAttrByName(s.character.id, state[scriptName].config.diceCountAttribute, 'current'));
+      if(stat ) {
+        stat = (_.isString(stat) ? stat : stat+'');
+        if('0' !== stat) {
+          stat = stat.replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{'+(s.character.get('name'))+'|$1}');
+          diceCount = `(${stat})`;
+        }
+      } 
+    }
+    return `${diceCount}d${diceSize}${diceMod}`;
   };
 
   const rollers = {
@@ -464,8 +498,8 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
       mutator: function(l){
         return l;
       },
-      func: function(s){
-        return buildInitDiceExpression(s);
+      func: function(s,a){
+        return buildInitDiceExpression(s,a);
       },
       desc: 'Sets the initiative individually for each member of the group.'
     },
@@ -481,8 +515,8 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
           return min;
         });
       },
-      func: function(s){
-        return buildInitDiceExpression(s);
+      func: function(s,a){
+        return buildInitDiceExpression(s,a);
       },
       desc: 'Sets the initiative to the lowest of all initiatives rolled for the group.'
     },
@@ -493,8 +527,8 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
           return mean;
         });
       },
-      func: function(s){
-        return buildInitDiceExpression(s);
+      func: function(s,a){
+        return buildInitDiceExpression(s,a);
       },
       desc: 'Sets the initiative to the mean (average) of all initiatives rolled for the group.'
     },
@@ -692,6 +726,21 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
       },
       'filter-sheet': {
         'background-color': '#996600'
+      },
+      'filter-status': {
+        'background-color': '#993300'
+      },
+      'filter-tooltip': {
+        'background-color': '#cc6600'
+      },
+      'roll-die-count': {
+        'background-color': '#0066cc'
+      },
+      'roll-die-size': {
+        'background-color': '#0033cc'
+      },
+      'roll-die-mod': {
+        'background-color': '#0099cc'
       },
       'computed': {
         'background-color': '#a61c00'
@@ -1205,8 +1254,10 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
 
 const findInitiativeBonus = async (charObj, token) => {
   let bonus = '';
+  let rolladj = {};
 
   const GetBonuses = async (group) => {
+    let cachedRollAdj = {};
     let bonusPromises = group.map( async (details) => {
       let stat=getAttrByName(charObj.id, details.attribute, details.type||'current');
 
@@ -1256,6 +1307,12 @@ const findInitiativeBonus = async (charObj, token) => {
                 memo = 0; // necessary to select this stat group
               }
               break;
+            case adjustments.ROLLADJ:{
+                let adj = await func(token,charObj,details.attribute);
+                cachedRollAdj = {...cachedRollAdj,...adj};
+                memo = 0; // necessary to select this stat group
+              }
+              break;
           }
         }
         return memo;
@@ -1264,11 +1321,14 @@ const findInitiativeBonus = async (charObj, token) => {
 
     bonus = await Promise.all(bonusPromises);
 
+
     if(_.contains(bonus,undefined) || _.contains(bonus,null) || _.contains(bonus,NaN)) {
       bonus='';
       return false;
     }
     bonus = bonus.join('+');
+    rolladj = cachedRollAdj;
+
     return true;
   };
 
@@ -1280,7 +1340,7 @@ const findInitiativeBonus = async (charObj, token) => {
       break;
     }
   }
-  return bonus;
+  return {bonus,rolladj};
 };
 
 const rollForTokenIDsExternal = (ids,options) => {
@@ -1316,14 +1376,14 @@ const makeRollsForIDs = async (ids,options={}) => {
     .map(async g => {
       g.roll=[];
 
-      let bonus = await findInitiativeBonus(g.character||{},g.token);
+      let {bonus,rolladj} = await findInitiativeBonus(g.character||{},g.token);
       bonus = (isString(bonus) ? (bonus.trim().length ? bonus : '0') : bonus);
       g.roll.push(bonus);
 
       if(options.manualBonus){
         g.roll.push( options.manualBonus );
       }
-      g.roll.push( initFunc(g) );
+      g.roll.push( initFunc(g,rolladj) );
       return g;
     });
 
