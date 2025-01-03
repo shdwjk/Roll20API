@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.79';
+    const version = '0.8.80';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1734377331;
+    const lastUpdate = 1735875678;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -1503,7 +1503,59 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         }
 
         ////////////////////////////////////////////////////////////
+        // IsComputedAttr //////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
+        const getComputedProxy = ("undefined" !== typeof getComputed)
+            ? async (...a) => await getComputed(...a)
+            : async ()=>{}
+          ;
 
+        class IsComputedAttr {
+          static #computedMap = new Map();
+          static #sheetMap = new Map();
+
+          static async DoReady() {
+            let c = Campaign();
+            Object.keys(c?.computedSummary||{}).forEach(k=>{
+              IsComputedAttr.#computedMap.set(k,c.computedSummary[k]);
+            });
+
+            let cMap = findObjs({type:"character"}).reduce((m,c)=>({...m,[c.get('charactersheetname')]:c.id}),{});
+            let promises = Object.keys(cMap).map(async c => {
+              let k = IsComputedAttr.#computedMap.keys().next().value;
+              if(k) {
+                let v = await getComputedProxy({characterId:cMap[c],property:k});
+                IsComputedAttr.#sheetMap.set(c, undefined !== v);
+              }
+            });
+            await Promise.all(promises);
+          }
+
+          static Check(attrName) {
+            return IsComputedAttr.#computedMap.has(attrName);
+          }
+
+          static Assignable(attrName) {
+            return IsComputedAttr.#computedMap.get(attrName)?.tokenBarValue ?? false;
+          }
+
+          static Readonly(attrName) {
+            return IsComputedAttr.#computedMap.get(attrName)?.readonly ?? true;
+          }
+
+          static IsComputed(sheet,attrName) {
+            let sheetName = sheet.get('charactersheetname');
+
+            if(IsComputedAttr.Check(attrName) && IsComputedAttr.#sheetMap.has(sheetName)){
+              return IsComputedAttr.#sheetMap.get(sheetName);
+            }
+            return false;
+          }
+
+        }
+        on('ready',IsComputedAttr.DoReady);
+
+        ////////////////////////////////////////////////////////////
 
 
 
@@ -3477,7 +3529,16 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                                 mods[k.split(/_/)[0]+'_value']=delta.get('current');
                                 mods[k.split(/_/)[0]+'_max']=delta.get('max');
                             } else {
-                                mods[k]=`sheetattr_${f[0]}`;
+                              let c = getObj('character',cid);
+                              if(c) {
+                                if(IsComputedAttr.IsComputed(c,f[0])){
+                                  if(IsComputedAttr.IsAssignable(f[0])){
+                                    mods[k]=f[0];
+                                  }
+                                } else {
+                                  mods[k]=`sheetattr_${f[0]}`;
+                                }
+                              }
                             }
                         }
                     }
@@ -3556,7 +3617,15 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                           if(/!$/.test(f[0])) {
                             delta = Math.max(0,Math.min(delta,token.get(k.replace(/_value$/,'_max'))));
                           }
-                          mods[k]=delta;
+                          let link = token.get(k.replace(/_value$/,'_link'));
+                          if(IsComputedAttr.Check(link)) {
+                            if(!IsComputedAttr.Readonly(link)){
+                              setComputed({characterId:token.get('represents'),property:link,args:[delta]});
+                              mods[k]=delta;
+                            }
+                          } else {
+                            mods[k]=delta;
+                          }
                         }
                       } else {
                           mods[k]=f[0];
@@ -3566,6 +3635,23 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'bar1_max':
                 case 'bar2_max':
                 case 'bar3_max':
+                    if(regex.numberString.test(f[0])){
+                        delta=getRelativeChange(token.get(k),f[0]);
+                        if(_.isNumber(delta) || _.isString(delta)) {
+                          let link = `${token.get(k.replace(/_max$/,'_link'))}_max`;
+                          if(IsComputedAttr.Check(link)) {
+                            if(!IsComputedAttr.Readonly(link)){
+                              setComputed({characterId:token.get('represents'),property:link,args:[delta]});
+                              mods[k]=delta;
+                            }
+                          } else {
+                            mods[k]=delta;
+                          }
+                        }
+                      } else {
+                          mods[k]=f[0];
+                      }
+                    break;
                 case 'name':
                     if(regex.numberString.test(f[0])){
                         delta=getRelativeChange(token.get(k),f[0]);
