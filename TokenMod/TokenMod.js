@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.80';
+    const version = '0.8.81';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1735875678;
+    const lastUpdate = 1736302467;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -3532,7 +3532,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                               let c = getObj('character',cid);
                               if(c) {
                                 if(IsComputedAttr.IsComputed(c,f[0])){
-                                  if(IsComputedAttr.IsAssignable(f[0])){
+                                  if(IsComputedAttr.Assignable(f[0])){
                                     mods[k]=f[0];
                                   }
                                 } else {
