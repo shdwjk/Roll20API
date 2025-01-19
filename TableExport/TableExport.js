@@ -12,7 +12,9 @@ var TableExport = TableExport || (function() {
             '['   : '<%%91%%>',
             ']'   : '<%%93%%>',
             '--' : '<%%-%%>',
-            ' --' : '[TABLEEXPORT:ESCAPE]'
+            ' --' : '[TABLEEXPORT:ESCAPE]',
+	    '<'   : '<%%60%%>',
+            '>'   : '<%%62%%>'
         },
     
     esRE = function (s) {
