@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.82';
+    const version = '0.8.83';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1738640677;
+    const lastUpdate = 1744079143;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -39,6 +39,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             aura1_square: {type: 'boolean'},
             aura2_square: {type: 'boolean'},
             lockMovement: {type: 'boolean'},
+            fadeOnOverlap: {type: 'boolean'},
+            renderAsScenery: {type: 'boolean'},
+            fadeOpacity: {type: 'percentage'},
+            baseOpacity: {type: 'percentage'},
+
 
             // UDL settings
             has_bright_light_vision: {type: 'boolean'},
@@ -137,30 +142,34 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         };
 
     const fieldAliases = {
-            bar1_current: "bar1_value",
-            bar2_current: "bar2_value",
-            bar3_current: "bar3_value",
-            bright_vision: "has_bright_light_vision",
-            night_vision: "has_night_vision",
-            emits_bright: "emits_bright_light",
-            emits_low: "emits_low_light",
-            night_distance: "night_vision_distance",   
-            bright_distance: "bright_light_distance",    
-            low_distance: "low_light_distance",
-            low_light_opacity: "dim_light_opacity",
-            has_directional_low_light: "has_directional_dim_light",
-            directional_low_light_total: "directional_dim_light_total",
-            directional_low_light_center: "directional_dim_light_center",
-            currentside: "currentSide",   // fix for case issue
-            lightcolor: "lightColor", // fix for case issue
-            light_color: "lightColor", // fix for case issue
-            lockmovement: "lockMovement", // fix for case issue
-            lock_movement: "lockMovement", // fix for case issue
-            disablesnapping: "disableSnapping", 
-            disabletokenmenu: "disableTokenMenu",
-            disable_snapping: "disableSnapping", 
-            disable_token_menu: "disableTokenMenu"
-        };
+      bar1_current: "bar1_value",
+      bar2_current: "bar2_value",
+      bar3_current: "bar3_value",
+      bright_vision: "has_bright_light_vision",
+      night_vision: "has_night_vision",
+      emits_bright: "emits_bright_light",
+      emits_low: "emits_low_light",
+      night_distance: "night_vision_distance",   
+      bright_distance: "bright_light_distance",    
+      low_distance: "low_light_distance",
+      low_light_opacity: "dim_light_opacity",
+      has_directional_low_light: "has_directional_dim_light",
+      directional_low_light_total: "directional_dim_light_total",
+      directional_low_light_center: "directional_dim_light_center",
+      currentside: "currentSide",   // fix for case issue
+      lightcolor: "lightColor", // fix for case issue
+      light_color: "lightColor", // fix for case issue
+      lockmovement: "lockMovement", // fix for case issue
+      lock_movement: "lockMovement", // fix for case issue
+      disablesnapping: "disableSnapping", 
+      disabletokenmenu: "disableTokenMenu",
+      disable_snapping: "disableSnapping", 
+      disable_token_menu: "disableTokenMenu",
+      fadeonoverlap: "fadeOnOverlap",
+      renderasscenery: "renderAsScenery",
+      fadeopacity: "fadeOpacity",
+      baseopacity: "baseOpacity"
+    };
 
     const reportTypes = [
             'gm', 'player', 'all', 'control', 'token', 'character'
@@ -308,7 +317,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
       numberString: /^[-+*/=]?[-+]?(0|[1-9][0-9]*)([.]+[0-9]*)?([eE][-+]?[0-9]+)?(!)?$/,
       stripSingleQuotes: /'([^']+(?='))'/g,
       stripDoubleQuotes: /"([^"]+(?="))"/g,
-      layers: /^(?:gmlayer|objects|map|walls)$/,
+      layers: /^(?:gmlayer|objects|map|walls|foreground)$/,
 
       imgsrc: /(.*\/images\/.*)(thumb|med|original|max)(.*)$/,
       imageOp: /^(?:(-(?:\d*(?:\s*,\s*\d+)*|\*)$)|(\/(?:\d+@\d+(?:\s*,\s*\d+@\d+)*|\*)$)|([+^]))?(=?)(?:(https?:\/\/.*$)|([-\d\w]*))(?::(.*))?$/,
@@ -2049,7 +2058,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.paragraph(`Anything else is considered false.`),
 
                     _h.subhead(`${_h.code('isdrawing')} split properties: ${_h.code('disableSnapping')} and ${_h.code('disableTokenMenu')} (Jumpgate)`),
-                    _h.paragraph( `On Jumpgate, these two properties control the individual facets of what was hadnled by ${_h.code('isdrawing')}.  You can set ${_h.code('disableSnapping')} to true to prevent a graphic from snapping to the page's grid lines while still retaining the bubbles and token menu:`),
+                    _h.paragraph( `On Jumpgate, these two properties control the individual facets of what was handled by ${_h.code('isdrawing')}.  You can set ${_h.code('disableSnapping')} to true to prevent a graphic from snapping to the page's grid lines while still retaining the bubbles and token menu:`),
                     _h.inset(
                         _h.pre('!token-mod --set disableSnapping|yes')
                     ),
@@ -2484,7 +2493,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell('gmlayer'),
                             _h.cell('objects'),
                             _h.cell('map'),
-                            _h.cell('walls')
+                            _h.cell('walls'),
+                            _h.cell('foreground')
                         )
                     ),
                     _h.paragraph('Moving something to the gmlayer.'),
@@ -3579,6 +3589,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     break;
 
 
+                case 'baseOpacity':
+                case 'fadeOpacity':
                 case 'dim_light_opacity':
                     mods = Object.assign( mods, f[0].getMods(token,mods));
                     break;
