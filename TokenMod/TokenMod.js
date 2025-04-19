@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.83';
+    const version = '0.8.84';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1744079143;
+    const lastUpdate = 1745071815;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -131,6 +131,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             bar1_link: {type: 'attribute'},
             bar2_link: {type: 'attribute'},
             bar3_link: {type: 'attribute'},
+            bar1_num_permission: {type: 'option'},
+            bar2_num_permission: {type: 'option'},
+            bar3_num_permission: {type: 'option'},
             currentSide: {type: 'sideNumber'},
             imgsrc: {type: 'image'},
             sides: {type: 'image' },
@@ -308,8 +311,19 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         none        : ()=>null,
         ['compact'] : ()=>'compact',
         ['on']      : ()=>'compact'
+      },
+      bar1_num_permission: {
+        __default__  : ()=>'',
+        ['editor']   : ()=>'',
+        ['']         : ()=>'',
+        ['none']     : ()=>'hidden',
+        ['hidden']   : ()=>'hidden',
+        ['everyone'] : ()=>'everyone',
+        ['all']      : ()=>'everyone'
       }
     };
+    option_fields.bar2_num_permission = option_fields.bar1_num_permission;
+    option_fields.bar3_num_permission = option_fields.bar1_num_permission;
 
     const regex = {
       moveAngle: /^(=)?([+-]?(?:0|[1-9][0-9]*))(!)?$/,
@@ -318,7 +332,6 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
       stripSingleQuotes: /'([^']+(?='))'/g,
       stripDoubleQuotes: /"([^"]+(?="))"/g,
       layers: /^(?:gmlayer|objects|map|walls|foreground)$/,
-
       imgsrc: /(.*\/images\/.*)(thumb|med|original|max)(.*)$/,
       imageOp: /^(?:(-(?:\d*(?:\s*,\s*\d+)*|\*)$)|(\/(?:\d+@\d+(?:\s*,\s*\d+@\d+)*|\*)$)|([+^]))?(=?)(?:(https?:\/\/.*$)|([-\d\w]*))(?::(.*))?$/,
       sideNumber: /^(\?)?([-+=*])?(\d*)$/,
@@ -2187,6 +2200,41 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         )
                       )
                     ),
+        setBarPermission: (/* context*/) => _h.join(
+                    _h.subhead('Bar Permission'),
+                    _h.inset(
+                        _h.paragraph(`Bar Permission specifes who sees numbers overlaid on the bar.  To not show any numbers, you can set it to ${_h.code('hidden')} or ${_h.code('none')}.  To only show it to editors (the default), you can set it to ${_h.code('editor')} or leave the field blank.  To make the numbers visible to everyone, you can set it to ${_h.code('everyone')} or ${_h.code('all')}.  Any other value is ignored.`),
+                        _h.minorhead('Available Bar Permission Properties:'),
+                        _h.inset(
+                            _h.grid(
+                                _h.cell('bar1_num_permission'),
+                                _h.cell('bar2_num_permission'),
+                                _h.cell('bar3_num_permission')
+                            )
+                        ),
+                        _h.paragraph(`Hide the numbers from everyone:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar1_num_permission|hidden' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar2_num_permission|none' )
+                        ),
+                        _h.paragraph(`Showing only the editors the numbers:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar3_num_permission|editor' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar2_num_permission|' )
+                        ),
+                        _h.paragraph(`Making the numbers visible to everyone:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar1_num_permission|everyone' )
+                        ),
+                        _h.inset(
+                            _h.pre( '!token-mod --set bar3_num_permission|all' )
+                        )
+                      )
+                    ),
 
         setBarLocation: (/* context*/) => _h.join(
                     _h.subhead('Bar Location'),
@@ -2994,6 +3042,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         helpParts.setNightVisionEffect(context),
                         helpParts.setBarLocation(context),
                         helpParts.setCompactBar(context),
+                        helpParts.setBarPermission(context),
                         helpParts.setLayer(context),
                         helpParts.setStatus(context),
                         helpParts.setImage(context),
