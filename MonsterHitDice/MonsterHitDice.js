@@ -8,9 +8,9 @@ API_Meta.MonsterHitDice={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 var globalconfig = globalconfig || undefined;  //eslint-disable-line no-var
 const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
 
-    const version = '0.3.11';
+    const version = '0.3.12';
     API_Meta.MonsterHitDice.version = version;
-    const lastUpdate = 1680641500;
+    const lastUpdate = 1748112536;
     const schemaVersion = 0.3;
 
     let tokenIds = [];
@@ -120,10 +120,10 @@ const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
             (msg.selected || [])
                 .map(o=>getObj('graphic',o._id))
                 .filter(g=>undefined !== g)
-                .forEach( o => {
+                .forEach( async o => {
                     ++count;
                     tokenIds.push(o.id);
-                    rollHitDice(o);
+                    await rollHitDice(o);
                 })
                 ;
             sendChat('',`/w "${who}" Rolling hit dice for ${count} token(s).`);
@@ -142,10 +142,9 @@ const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
       return 0;
     };
 
-    const rollHitDice = (obj) => {
+    const rollHitDice = async (obj) => {
         let sets = {};
         const bar = 'bar'+state.MonsterHitDice.config.bar;
-        let hdAttrib;
         let conAttrib;
         let hdExpression = 0;
         let conExpression = 0;
@@ -159,21 +158,17 @@ const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
             ''        !== obj.get('represents')
             ) {
                 if( obj && '' === obj.get(bar+'_link') ) {
-                    hdAttrib = findObjs({
-                        type: 'attribute', 
-                        characterid: obj.get('represents'),
-                        name: state.MonsterHitDice.config.hitDiceAttribute
-                    })[0];
+                    let hdHitDiceFormula = await getSheetItem(obj.get('represents'), state.MonsterHitDice.config.hitDiceAttribute);
                     conAttrib = findObjs({
                         _type: 'attribute', 
                         _characterid:obj.get('represents'),
                         name: state.MonsterHitDice.config.conBonusAttribute
                     })[0];
 
-                    if( hdAttrib ) {
+                    if( hdHitDiceFormula ) {
                         hdExpression = state.MonsterHitDice.config.findSRDFormula
-                          ? findSRDRoll(hdAttrib.get('current'))
-                          : hdAttrib.get('current')
+                          ? findSRDRoll(hdHitDiceFormula)
+                          : hdHitDiceFormula
                           ;
 
                         hdExpression = state.MonsterHitDice.config.HDis1eD8s
@@ -215,10 +210,10 @@ const MonsterHitDice = (() => { // eslint-disable-line no-unused-vars
         tokenIds.push(obj.id);
 
         setTimeout(((id) => {
-            return () => {
+            return async () => {
                 let token=getObj('graphic',id);
                 if(token){
-                    rollHitDice(token);
+                    await rollHitDice(token);
                 }
             };
         })(obj.id),100);
