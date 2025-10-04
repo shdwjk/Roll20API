@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.84';
+    const version = '0.8.85';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1745072381;
+    const lastUpdate = 1759617977;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -21,12 +21,14 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             showplayers_bar1: {type: 'boolean'},
             showplayers_bar2: {type: 'boolean'},
             showplayers_bar3: {type: 'boolean'},
+            showplayers_bar4: {type: 'boolean'},
             showplayers_aura1: {type: 'boolean'},
             showplayers_aura2: {type: 'boolean'},
             playersedit_name: {type: 'boolean'},
             playersedit_bar1: {type: 'boolean'},
             playersedit_bar2: {type: 'boolean'},
             playersedit_bar3: {type: 'boolean'},
+            playersedit_bar4: {type: 'boolean'},
             playersedit_aura1: {type: 'boolean'},
             playersedit_aura2: {type: 'boolean'},
             light_otherplayers: {type: 'boolean'},
@@ -100,15 +102,19 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             bar1_value: {type: 'text'},
             bar2_value: {type: 'text'},
             bar3_value: {type: 'text'},
+            bar4_value: {type: 'text'},
             bar1_max: {type: 'text'},
             bar2_max: {type: 'text'},
             bar3_max: {type: 'text'},
+            bar4_max: {type: 'text'},
             bar1: {type: 'text'},
             bar2: {type: 'text'},
             bar3: {type: 'text'},
+            bar4: {type: 'text'},
             bar1_reset: {type: 'text'},
             bar2_reset: {type: 'text'},
             bar3_reset: {type: 'text'},
+            bar4_reset: {type: 'text'},
 
             bar_location: {type: 'option'},
             compact_bar: {type: 'option'},
@@ -131,9 +137,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             bar1_link: {type: 'attribute'},
             bar2_link: {type: 'attribute'},
             bar3_link: {type: 'attribute'},
+            bar4_link: {type: 'attribute'},
             bar1_num_permission: {type: 'option'},
             bar2_num_permission: {type: 'option'},
             bar3_num_permission: {type: 'option'},
+            bar4_num_permission: {type: 'option'},
             currentSide: {type: 'sideNumber'},
             imgsrc: {type: 'image'},
             sides: {type: 'image' },
@@ -148,6 +156,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
       bar1_current: "bar1_value",
       bar2_current: "bar2_value",
       bar3_current: "bar3_value",
+      bar4_current: "bar4_value",
       bright_vision: "has_bright_light_vision",
       night_vision: "has_night_vision",
       emits_bright: "emits_bright_light",
@@ -324,6 +333,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     };
     option_fields.bar2_num_permission = option_fields.bar1_num_permission;
     option_fields.bar3_num_permission = option_fields.bar1_num_permission;
+    option_fields.bar4_num_permission = option_fields.bar1_num_permission;
 
     const regex = {
       moveAngle: /^(=)?([+-]?(?:0|[1-9][0-9]*))(!)?$/,
@@ -473,6 +483,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     case 'bar1_value':
                     case 'bar2_value':
                     case 'bar3_value':
+                    case 'bar4_value':
                         if(this.enforce){
                             adjuster = (a,t)=>Math.max(0,Math.min(a,t.get(this.field.replace(/_value/,'_max'))));
                         }
@@ -2025,12 +2036,14 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell('showplayers_bar1'),
                             _h.cell('showplayers_bar2'),
                             _h.cell('showplayers_bar3'),
+                            _h.cell('showplayers_bar4'),
                             _h.cell('showplayers_aura1'),
                             _h.cell('showplayers_aura2'),
                             _h.cell('playersedit_name'),
                             _h.cell('playersedit_bar1'),
                             _h.cell('playersedit_bar2'),
                             _h.cell('playersedit_bar3'),
+                            _h.cell('playersedit_bar4'),
                             _h.cell('playersedit_aura1'),
                             _h.cell('playersedit_aura2'),
                             _h.cell('light_otherplayers'),
@@ -2209,7 +2222,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.grid(
                                 _h.cell('bar1_num_permission'),
                                 _h.cell('bar2_num_permission'),
-                                _h.cell('bar3_num_permission')
+                                _h.cell('bar3_num_permission'),
+                                _h.cell('bar4_num_permission')
                             )
                         ),
                         _h.paragraph(`Hide the numbers from everyone:`),
@@ -2231,7 +2245,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.pre( '!token-mod --set bar1_num_permission|everyone' )
                         ),
                         _h.inset(
-                            _h.pre( '!token-mod --set bar3_num_permission|all' )
+                            _h.pre( '!token-mod --set bar4_num_permission|all' )
                         )
                       )
                     ),
@@ -2501,18 +2515,23 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.cell('bar1_value'),
                             _h.cell('bar2_value'),
                             _h.cell('bar3_value'),
+                            _h.cell('bar4_value'),
                             _h.cell('bar1_current'),
                             _h.cell('bar2_current'),
                             _h.cell('bar3_current'),
+                            _h.cell('bar4_current'),
                             _h.cell('bar1_max'),
                             _h.cell('bar2_max'),
                             _h.cell('bar3_max'),
+                            _h.cell('bar4_max'),
                             _h.cell('bar1'),
                             _h.cell('bar2'),
                             _h.cell('bar3'),
+                            _h.cell('bar4'),
                             _h.cell('bar1_reset'),
                             _h.cell('bar2_reset'),
-                            _h.cell('bar3_reset')
+                            _h.cell('bar3_reset'),
+                            _h.cell('bar4_reset')
                         )
                     ),
                     _h.paragraph(`Setting a token${ch("'")}s name to ${ch('"')}Sir Thomas${ch('"')} and bar1 value to 23.`),
@@ -2520,11 +2539,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.pre(`!token-mod --set name|${ch('"')}Sir Thomas${ch('"')} bar1_value|23`)
                     ),
                     _h.paragraph(`Setting a bar to a numeric value will be treated as a relative change if prefaced by ${_h.code('+')}, ${_h.code('-')}, ${_h.code(ch('*'))}, or ${_h.code('/')}, or will be explicitly set when prefaced with a ${_h.code('=')}.  If you are setting a bar value, you can append a ${_h.code('!')} to the value to force it to be bounded between ${_h.code('0')} and ${_h.code('max')} for the bar.`),
-                    _h.paragraph(`${_h.italic('bar1')}, ${_h.italic('bar2')} and ${_h.italic('bar3')} are special.  Any value set on them will be set in both the ${_h.italic('_value')} and ${_h.italic('_max')} fields for that bar.  This is most useful for setting hit points, particularly if the value comes from an inline roll.`),
+                    _h.paragraph(`${_h.italic('bar1')}, ${_h.italic('bar2')}, ${_h.italic('bar3')}, and ${_h.italic('bar4')} are special.  Any value set on them will be set in both the ${_h.italic('_value')} and ${_h.italic('_max')} fields for that bar.  This is most useful for setting hit points, particularly if the value comes from an inline roll.`),
                     _h.inset(
                         _h.pre(`!token-mod --set bar1|${ch('[')}${ch('[')}3d6+8${ch(']')}${ch(']')}`)
                     ),
-                    _h.paragraph(`${_h.italic('bar1_reset')}, ${_h.italic('bar2_reset')} and ${_h.italic('bar3_reset')} are special.  Any value set on them will be ignored, instead they will set the ${_h.italic('_value')} field for that bar to whatever the matching ${_h.italic('_max')} field is set to.  This is most useful for resetting hit points or resource counts like spells. (The ${_h.code('|')} is currently still required.)`),
+                    _h.paragraph(`${_h.italic('bar1_reset')}, ${_h.italic('bar2_reset')}, ${_h.italic('bar3_reset')}, and ${_h.italic('bar4_reset')} are special.  Any value set on them will be ignored, instead they will set the ${_h.italic('_value')} field for that bar to whatever the matching ${_h.italic('_max')} field is set to.  This is most useful for resetting hit points or resource counts like spells. (The ${_h.code('|')} is currently still required.)`),
                     _h.inset(
                         _h.pre(`!token-mod --set bar1_reset| bar3_reset|`)
                     )
@@ -2870,7 +2889,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.grid(
                             _h.cell('bar1_link'),
                             _h.cell('bar2_link'),
-                            _h.cell('bar3_link')
+                            _h.cell('bar3_link'),
+                            _h.cell('bar4_link')
                         )
                     ),
                     _h.paragraph('Here is setting the represents to the character Bob and setting bar1 to be the npc hit points attribute.'),
@@ -3430,6 +3450,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             case 'bar1':
             case 'bar2':
             case 'bar3':
+            case 'bar4':
                 args=args.join('|');
                 memo.push(cmd+'_value|'+args);
                 memo.push(cmd+'_max|'+args);
@@ -3606,11 +3627,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     mods.bar1_link='';
                     mods.bar2_link='';
                     mods.bar3_link='';
+                    mods.bar4_link='';
                     break;
 
                 case 'bar1_link':
                 case 'bar2_link':
                 case 'bar3_link':
+                case 'bar4_link':
                     if( '' === f[0] ) {
                         mods[k]='';
                     } else {
@@ -3693,7 +3716,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
                 case 'bar1_reset':
                 case 'bar2_reset':
-                case 'bar3_reset': {
+                case 'bar3_reset': 
+                case 'bar4_reset': {
                     let field = k.replace(/_reset$/,'_max');
                     delta = mods[field] || token.get(field);
                     if(!_.isUndefined(delta)) {
@@ -3706,6 +3730,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'bar1_value':
                 case 'bar2_value':
                 case 'bar3_value':
+                case 'bar4_value':
                     if(regex.numberString.test(f[0])){
                         delta=getRelativeChange(token.get(k),f[0]);
                         if(_.isNumber(delta) || _.isString(delta)) {
@@ -3730,6 +3755,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 case 'bar1_max':
                 case 'bar2_max':
                 case 'bar3_max':
+                case 'bar4_max':
                     if(regex.numberString.test(f[0])){
                         delta=getRelativeChange(token.get(k),f[0]);
                         if(_.isNumber(delta) || _.isString(delta)) {
