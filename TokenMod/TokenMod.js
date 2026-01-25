@@ -8,15 +8,16 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.85';
+    const version = '0.8.86';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1759617977;
+    const lastUpdate = 1769354532;
     const schemaVersion = 0.4;
 
     const fields = {
             // booleans
             showname: {type: 'boolean'},
             show_tooltip: {type: 'boolean'},
+            gm_only_tooltip: {type: 'boolean'},
             showplayers_name: {type: 'boolean'},
             showplayers_bar1: {type: 'boolean'},
             showplayers_bar2: {type: 'boolean'},
@@ -2032,6 +2033,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.grid(
                             _h.cell('showname'),
                             _h.cell('show_tooltip'),
+                            _h.cell('gm_only_tooltip'),
                             _h.cell('showplayers_name'),
                             _h.cell('showplayers_bar1'),
                             _h.cell('showplayers_bar2'),
