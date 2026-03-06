@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.86';
+    const version = '0.8.87';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1769354532;
+    const lastUpdate = 1772293196;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -47,6 +47,8 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             fadeOpacity: {type: 'percentage'},
             baseOpacity: {type: 'percentage'},
 
+            aura1_options: {type: 'option'},
+            aura2_options: {type: 'option'},
 
             // UDL settings
             has_bright_light_vision: {type: 'boolean'},
@@ -158,6 +160,10 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
       bar2_current: "bar2_value",
       bar3_current: "bar3_value",
       bar4_current: "bar4_value",
+      aura1_option: "aura1_options",
+      aura2_option: "aura2_options",
+      aura1_shape: "aura1_options",
+      aura2_shape: "aura2_options",
       bright_vision: "has_bright_light_vision",
       night_vision: "has_night_vision",
       emits_bright: "emits_bright_light",
@@ -322,6 +328,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         ['compact'] : ()=>'compact',
         ['on']      : ()=>'compact'
       },
+      aura1_options: {
+        __default__ : ()=>'circle',
+        ['circle']  : ()=>'circle',
+        ['square']  : ()=>'square'
+      },
       bar1_num_permission: {
         __default__  : ()=>'',
         ['editor']   : ()=>'',
@@ -335,6 +346,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
     option_fields.bar2_num_permission = option_fields.bar1_num_permission;
     option_fields.bar3_num_permission = option_fields.bar1_num_permission;
     option_fields.bar4_num_permission = option_fields.bar1_num_permission;
+    option_fields.aura2_options = option_fields.aura1_options;
 
     const regex = {
       moveAngle: /^(=)?([+-]?(?:0|[1-9][0-9]*))(!)?$/,
@@ -349,15 +361,15 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
       color : {
         ops: '([*=+\\-!])?',
         transparent: '(transparent)',
-        html: '#?((?:[0-9a-f]{6})|(?:[0-9a-f]{3}))',
-        rgb: '(rgb\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))\\s*\\))',
-        hsv: '(hsv\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))\\s*\\))'
+        html: '#?((?:[0-9a-f]{8})|(?:[0-9a-f]{6})|(?:[0-9a-f]{4})|(?:[0-9a-f]{3}))',
+        rgb: '(rgb\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))(?:\\s*,\\s*(?:\\d*\\.\\d+|\\d+))?\\s*\\))',
+        hsv: '(hsv\\(\\s*(?:(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)\\s*,\\s*(?:\\d*\\.\\d+)|(?:\\d+)\\s*,\\s*(?:\\d+)\\s*,\\s*(?:\\d+))(?:\\s*,\\s*(?:\\d*\\.\\d+|\\d+))?\\s*\\))'
       }
     };
 
     const colorOpReg = new RegExp(`^${regex.color.ops}(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i');
     const colorReg = new RegExp(`^(?:${regex.color.transparent}|${regex.color.html}|${regex.color.rgb}|${regex.color.hsv})$`,'i');
-    const colorParams = /\(\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*\)/;
+    const colorParams = /\(\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)\s*,\s*(\d*\.?\d+)(?:\s*,\s*(\d*\.?\d+))?\s*\)/;
 
 
 
@@ -863,7 +875,6 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         ////////////////////////////////////////////////////////////
         // Colors
         ////////////////////////////////////////////////////////////
-
         class Color {
           static hsv2rgb(h, s, v) {
             let r, g, b;
@@ -888,7 +899,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
           static rgb2hsv(r,g,b) {
             let max = Math.max(r, g, b),
-            min = Math.min(r, g, b);
+              min = Math.min(r, g, b);
             let h, s, v = max;
 
             let d = max - min;
@@ -919,15 +930,27 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
           }
 
           static html2rgb(htmlstring){
-            let s=htmlstring.toLowerCase().replace(/[^0-9a-f]/,'');
+            let s=htmlstring.toLowerCase().replace(/[^0-9a-f]/g,'');
             if(3===s.length){
               s=`${s[0]}${s[0]}${s[1]}${s[1]}${s[2]}${s[2]}`;
+            } else if(4===s.length){
+              s=`${s[0]}${s[0]}${s[1]}${s[1]}${s[2]}${s[2]}${s[3]}${s[3]}`;
             }
-            return {
+            const out = {
               r: this.hex2dec(s.substr(0,2)),
               g: this.hex2dec(s.substr(2,2)),
               b: this.hex2dec(s.substr(4,2))
             };
+            if(s.length>=8){
+              out.a = this.hex2dec(s.substr(6,2));
+            }
+            return out;
+          }
+
+          static parseAlphaParam(p){
+            if(!p) return undefined;
+            const v = /\./.test(p) ? parseFloat(p) : parseInt(p,10)/100;
+            return Math.max(0, Math.min(1, v));
           }
 
           static parseRGBParam(p){
@@ -964,27 +987,34 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
               let c = new Color();
               if(parsed[idx.transparent]){
                 c.type = 'transparent';
+                c.a = 0;
               } else if(parsed[idx.html]){
                 c.type = 'rgb';
-                _.each(Color.html2rgb(parsed[idx.html]),(v,k)=>{
-                  c[k]=v;
-                });
+                const fromHtml = Color.html2rgb(parsed[idx.html]);
+                c.r = fromHtml.r;
+                c.g = fromHtml.g;
+                c.b = fromHtml.b;
+                if(fromHtml.a !== undefined) c.a = fromHtml.a;
               } else if(parsed[idx.rgb]){
                 c.type = 'rgb';
                 let params = parsed[idx.rgb].match(colorParams);
                 c.r= Color.parseRGBParam(params[1]);
                 c.g= Color.parseRGBParam(params[2]);
                 c.b= Color.parseRGBParam(params[3]);
+                if(params[4] !== undefined) c.a = Color.parseAlphaParam(params[4]);
               } else if(parsed[idx.hsv]){
                 c.type = 'hsv';
                 let params = parsed[idx.hsv].match(colorParams);
                 c.h= Color.parseHSVParam(params[1],'h');
                 c.s= Color.parseHSVParam(params[2],'s');
                 c.v= Color.parseHSVParam(params[3],'v');
-              } 
+                if(params[4] !== undefined) c.a = Color.parseAlphaParam(params[4]);
+              }
               return c;
             }
-            return new Color();
+            const c = new Color();
+            c.a = 0;
+            return c;
           }
 
           constructor(){
@@ -1006,6 +1036,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
               this.r=0.0;
               this.g=0.0;
               this.b=0.0;
+              this.a=0;
             }
             delete this.h;
             delete this.s;
@@ -1024,6 +1055,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
               this.h=0.0;
               this.s=0.0;
               this.v=0.0;
+              this.a=0;
             }
 
             delete this.r;
@@ -1040,8 +1072,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
               case 'hsv': {
                 return this.clone().toRGB().toHTML();
               }
-            case 'rgb':
-              return `#${Color.dec2hex(this.r)}${Color.dec2hex(this.g)}${Color.dec2hex(this.b)}`;
+              case 'rgb': {
+                const hex = `#${Color.dec2hex(this.r)}${Color.dec2hex(this.g)}${Color.dec2hex(this.b)}`;
+                if(this.a !== undefined && this.a < 1){
+                  return hex + Color.dec2hex(this.a);
+                }
+                return hex;
+              }
             }
           }
         }
@@ -1065,7 +1102,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             let parsed = `${input}`.toLowerCase().match(colorOpReg)||[];
 
             if(parsed.length) {
-              return Object.assign(new ColorOp(parsed[idx.ops]||'='), Color.buildColor(parsed.slice(1)));
+              return Object.assign(new ColorOp(parsed[idx.ops]||'='), Color.buildColor([undefined, parsed[idx.transparent], parsed[idx.html], parsed[idx.rgb], parsed[idx.hsv]]));
             } else {
               return Object.assign(new ColorOp(parsed[idx.ops]||(input.length ? '*':'=')), Color.parseColor('transparent'));
             }
@@ -1074,6 +1111,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
           applyTo(c){
             if( !(c instanceof Color) ){
               c = Color.parseColor(c);
+            }
+            if (this.type === 'transparent') {
+              return c;
             }
             switch(this.operation){
               case '=':
@@ -1091,18 +1131,30 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     c.h*=this.h;
                     c.s*=this.s;
                     c.v*=this.v;
+                    if(this.a !== undefined){
+                      const ea = c.a !== undefined ? c.a : 1;
+                      c.a = Math.max(0, Math.min(1, ea * this.a));
+                    }
                     c.toRGB();
                     return c;
                   case '+':
                     c.h+=this.h;
                     c.s+=this.s;
                     c.v+=this.v;
+                    if(this.a !== undefined){
+                      const ea = c.a !== undefined ? c.a : 1;
+                      c.a = Math.max(0, Math.min(1, ea + this.a));
+                    }
                     c.toRGB();
                     return c;
                   case '-':
                     c.h-=this.h;
                     c.s-=this.s;
                     c.v-=this.v;
+                    if(this.a !== undefined){
+                      const ea = c.a !== undefined ? c.a : 1;
+                      c.a = Math.max(0, Math.min(1, ea - this.a));
+                    }
                     c.toRGB();
                     return c;
                 }
@@ -1114,16 +1166,28 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     c.r*=this.r;
                     c.g*=this.g;
                     c.b*=this.b;
+                    if(this.a !== undefined){
+                      const ea = c.a !== undefined ? c.a : 1;
+                      c.a = Math.max(0, Math.min(1, ea * this.a));
+                    }
                     return c;
                   case '+':
                     c.r+=this.r;
                     c.g+=this.g;
                     c.b+=this.b;
+                    if(this.a !== undefined){
+                      const ea = c.a !== undefined ? c.a : 1;
+                      c.a = Math.max(0, Math.min(1, ea + this.a));
+                    }
                     return c;
                   case '-':
                     c.r-=this.r;
                     c.g-=this.g;
                     c.b-=this.b;
+                    if(this.a !== undefined){
+                      const ea = c.a !== undefined ? c.a : 1;
+                      c.a = Math.max(0, Math.min(1, ea - this.a));
+                    }
                     return c;
                 }
             }
@@ -1136,19 +1200,21 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             let extra ='';
             switch (this.type){
               case 'transparent':
-                extra='(0.0, 0.0, 0.0, 1.0)';
+                extra='(0.0, 0.0, 0.0, 0.0)';
                 break;
               case 'rgb':
-                extra=`(${this.r},${this.g},${this.b})`;
+                extra = this.a !== undefined ? `(${this.r},${this.g},${this.b},${this.a})` : `(${this.r},${this.g},${this.b})`;
                 break;
               case 'hsv':
-                extra=`(${this.h},${this.s},${this.v})`;
+                extra = this.a !== undefined ? `(${this.h},${this.s},${this.v},${this.a})` : `(${this.h},${this.s},${this.v})`;
                 break;
             }
             return `${this.operation} ${this.type}${extra} ${this.toHTML()}`;
           }
 
         }
+
+
 
         ////////////////////////////////////////////////////////////
         // StatusMarkers
@@ -1760,7 +1826,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
           try {
             handler(obj,prev);
           } catch(e) {
-            log(`TokenMod: An observer threw and exception in handler: ${handler}`);
+            log(`TokenMod: An observer threw an exception in handler: ${handler}`);
           }
         });
     };
@@ -2138,6 +2204,28 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     )
                 ),
 
+        setAuraOptions: (/* context*/) => _h.join(
+                    _h.subhead('Aura Options'),
+                    _h.inset(
+                        _h.paragraph(`Aura Options sets the shape that an aura is displayed in on the tabletop.  There are two shapes that can be used: ${_h.code('square')} and ${_h.code('circle')}. Any other value is ignored.`),
+                        _h.minorhead('Available Aura Options Properties:'),
+                        _h.inset(
+                            _h.grid(
+                                _h.cell('aura1_options'),
+                                _h.cell('aura2_options')
+                            )
+                        ),
+                        _h.paragraph(`Set aura1 to be square:`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set aura1_options|square' )
+                        ),
+                        _h.paragraph(`In addition, you can also use the aliases ${_h.code('aura1_option')}, ${_h.code('aura2_option')}, ${_h.code('aura1_shape')}, and ${_h.code('aura2_shape')}.`),
+                        _h.inset(
+                            _h.pre( '!token-mod --set aura1_option|square aura2_shape|circle' )
+                        )
+                    )
+                ),
+
         setNightVisionEffect: (/* context*/) => _h.join(
                     _h.subhead('Night Vision Effect'),
                     _h.inset(
@@ -2437,12 +2525,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.paragraph(`Colors can be specified in multiple formats:`),
                     _h.inset(
                         _h.ul(
-                            `${_h.bold('Transparent')} -- This is the special literal ${_h.code('transparent')} and represents no color at all.`,
-                            `${_h.bold('HTML Color')} -- This is 6 or 3 hexidecimal digits, optionally prefaced by ${_h.code('#')}.  Digits in a 3 digit hexidecimal color are doubled.  All of the following are the same: ${_h.code('#ff00aa')}, ${_h.code('#f0a')}, ${_h.code('ff00aa')}, ${_h.code('f0a')}`,
-                            `${_h.bold('RGB Color')} -- This is an RGB color in the format ${_h.code('rgb(1.0,1.0,1.0)')} or ${_h.code('rgb(256,256,256)')}.  Decimal numbers are in the scale of 0.0 to 1.0, integer numbers are scaled 0 to 256.  Note that numbers can be outside this range for the purpose of doing math.`,
-                            `${_h.bold('HSV Color')} -- This is an HSV color in the format ${_h.code('hsv(1.0,1.0,1.0)')} or ${_h.code('hsv(360,100,100)')}.  Decimal numbers are in the scale of 0.0 to 1.0, integer numbers are scaled 0 to 360 for the hue and 0 to 100 for saturation and value.  Note that numbers can be outside this range for the purpose of doing math.`
+                            `${_h.bold('Transparent')} -- This is the special literal ${_h.code('transparent')} and represents no color at all (fully transparent).`,
+                            `${_h.bold('HTML Color')} -- This is 3, 4, 6, or 8 hexadecimal digits, optionally prefaced by ${_h.code('#')}.  Three digits are expanded to six (each digit doubled), four digits are expanded to six (each digit doubled).  Eight digits are ${_h.code('rrggbbaa')} with alpha.  When alpha is omitted (3 or 6 digits), it is treated as fully opaque and is not included in output; when specified (4 or 8 digits), output may be 8-digit hex if alpha is less than 1.  All of the following are the same: ${_h.code('#ff00aa')}, ${_h.code('#f0a')}, ${_h.code('ff00aa')}, ${_h.code('f0a')}.`,
+                            `${_h.bold('RGB Color')} -- This is an RGB color in the format ${_h.code('rgb(1.0,1.0,1.0)')} or ${_h.code('rgb(255,255,255)')}.  An optional fourth value sets alpha: ${_h.code('rgb(1,0,0,0.5)')} or ${_h.code('rgb(255,0,0,50)')} (decimal 0.0–1.0, integer 0–100).  When omitted, alpha is 1.  Decimal numbers are in the scale of 0.0 to 1.0, integer numbers are scaled 0 to 255.  Note that numbers can be outside this range for the purpose of doing math.`,
+                            `${_h.bold('HSV Color')} -- This is an HSV color in the format ${_h.code('hsv(1.0,1.0,1.0)')} or ${_h.code('hsv(360,100,100)')}.  An optional fourth value sets alpha (same as RGB: 0.0–1.0 or 0–100).  Decimal numbers are in the scale of 0.0 to 1.0, integer numbers are scaled 0 to 360 for the hue and 0 to 100 for saturation and value (and alpha).  Note that numbers can be outside this range for the purpose of doing math.`
                         )
                     ),
+                    _h.paragraph(`When alpha is not specified, it is assumed to be 1 (fully opaque) and is not written in the output (e.g. ${_h.code('#ff0000')} not ${_h.code('#ff0000ff')}).  When alpha is specified and is less than 1, the output uses 8-digit hex (e.g. ${_h.code('#ff000080')}).`),
                     _h.minorhead('Available Colors Properties:'),
                     _h.inset(
                         _h.grid(
@@ -2471,6 +2560,11 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         _h.pre('!token-mod --set tint_color|hsv(0,50,100)'),
                         _h.pre('!token-mod --set tint_color|hsv(0.0,.5,1.0)')
                     ),
+                    _h.paragraph('Setting a color with optional alpha (e.g. half-transparent red):'),
+                    _h.inset(
+                        _h.pre('!token-mod --set aura1_color|#ff000080'),
+                        _h.pre('!token-mod --set aura1_color|rgb(1,0,0,0.5)')
+                    ),
 
                     _h.paragraph(`You can toggle a color on and off by prefacing it with ${_h.code('!')}.  If the color is currently transparent, it will be set to the specified color, otherwise it will be set to transparent:`),
                     _h.inset(
@@ -2479,7 +2573,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
                     _h.minorhead('Color Math'),
 
-                    _h.paragraph(`You can perform math on colors using ${_h.code('+')}, ${_h.code('-')}, and ${_h.code(ch('*'))}.`),
+                    _h.paragraph(`You can perform math on colors using ${_h.code('+')}, ${_h.code('-')}, and ${_h.code(ch('*'))}.  If the color you are adding, subtracting, or multiplying by does not include alpha, the target color's alpha is left unchanged (e.g. ${_h.code('#ff000080')} − ${_h.code('#110000')} gives ${_h.code('#ee000080')}).  If the operand does include alpha, the same operation is applied to alpha (a target with no alpha is treated as fully opaque; e.g. ${_h.code('#ff0000')} − ${_h.code('#11000011')} gives ${_h.code('#ee0000ee')}).`),
                     _h.paragraph(`Making the aura just a little more red:`),
                     _h.inset(
                         _h.pre('!token-mod --set aura1_color|+#330000')
@@ -3065,6 +3159,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         helpParts.setBarLocation(context),
                         helpParts.setCompactBar(context),
                         helpParts.setBarPermission(context),
+                        helpParts.setAuraOptions(context),
                         helpParts.setLayer(context),
                         helpParts.setStatus(context),
                         helpParts.setImage(context),
