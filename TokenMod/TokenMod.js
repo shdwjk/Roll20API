@@ -8,9 +8,9 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.87';
+    const version = '0.8.88';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1772293196;
+    const lastUpdate = 1773589151;
     const schemaVersion = 0.4;
 
     const fields = {
@@ -1113,6 +1113,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
               c = Color.parseColor(c);
             }
             if (this.type === 'transparent') {
+              if(this.operation === '=') {
+                return this;
+              }
               return c;
             }
             switch(this.operation){
