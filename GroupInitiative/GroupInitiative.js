@@ -8,13 +8,34 @@ API_Meta.GroupInitiative={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
 
   const scriptName = "GroupInitiative";
-  const version = '0.9.41';
+  const version = '0.9.42';
   API_Meta.GroupInitiative.version = version;
-  const lastUpdate = 1737482748;
+  const lastUpdate = 1787499131;
   const schemaVersion = 1.3;
 
   const isString = (s)=>'string'===typeof s || s instanceof String;
   const isFunction = (f)=>'function'===typeof f;
+  const tokenizeWords = (s) => (s||'').toLowerCase().split(/[^a-zA-Z0-9:#|-]+/).filter(t=>t.length);
+  const normalizeWith = (w) => {
+    if(Array.isArray(w)) {
+      return tokenizeWords(w.join(' '));
+    }
+    if(isString(w)) {
+      return tokenizeWords(w);
+    }
+    return [];
+  };
+  const hasWithPhrase = (withWords, phrase) => {
+    const needle = tokenizeWords(phrase);
+    const hay = withWords || [];
+    if(!needle.length) {
+      return false;
+    }
+    if(1 === needle.length) {
+      return hay.includes(needle[0]);
+    }
+    return hay.some((_,i) => needle.every((w,j) => hay[i+j] === w));
+  };
   const getComputedProxy = ("undefined" !== typeof getComputed)
     ? async (...a) => await getComputed(...a)
     : async ()=>{}
@@ -383,6 +404,11 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
       func: async (t,c,v) => t && isFunction(t.get) && (t.get(`tooltip`)||'').toLowerCase().split(/[^a-zA-Z0-9:#|-]+/).includes(v),
       desc: 'Forces calculations only for tokens with a tooltip containing the given word.'
     },
+    'filter-with': {
+      type: adjustments.FILTER,
+      func: async (t,c,v,ctx) => hasWithPhrase((ctx&&ctx.with)||[], v),
+      desc: 'Forces calculations only when the roll command includes --with with the given word or phrase.'
+    },
     'roll-die-count': {
       type: adjustments.ROLLADJ,
       func: async (t,c,v) => ({die_count:Number(v)||state[scriptName].config.diceCount}),
@@ -741,6 +767,9 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
       'filter-tooltip': {
         'background-color': '#cc6600'
       },
+      'filter-with': {
+        'background-color': '#cc9900'
+      },
       'roll-die-count': {
         'background-color': '#0066cc'
       },
@@ -889,6 +918,14 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
         ),
         _h.paragraph(
           `This command uses the configured Roller to determine the initiative order for all tokens whose ids are specified.`
+        ),
+        _h.font.command(
+          `!group-init`,
+          `--with`,
+          _h.required('word or phrase')
+        ),
+        _h.paragraph(
+          `This command is just like the bare !group-init roll, but records the supplied word or phrase for Stat Groups that use ${_h.code('--filter-with')}.  Only groups whose ${_h.code('--filter-with')} value is present will match.  Place those groups above more general groups so they are selected first.  ${_h.code('--with')} can be combined with other rolling commands such as ${_h.code('--bonus')}, ${_h.code('--reroll')}, and ${_h.code('--ids')}.`
         ),
 
         _h.font.command(
@@ -1264,7 +1301,7 @@ const GroupInitiative = (() => { // eslint-disable-line no-unused-vars
     return stext;
   };
 
-const findInitiativeBonus = async (charObj, token) => {
+const findInitiativeBonus = async (charObj, token, context={}) => {
   let bonus = '';
   let rolladj = {};
 
@@ -1313,7 +1350,7 @@ const findInitiativeBonus = async (charObj, token) => {
               break;
 
             case adjustments.FILTER:
-              if(!await func(token,charObj,details.attribute)) {
+              if(!await func(token,charObj,details.attribute,context)) {
                 memo=null;
               } else {
                 memo = 0; // necessary to select this stat group
@@ -1361,7 +1398,8 @@ const rollForTokenIDsExternal = (ids,options) => {
     setTimeout(()=>makeRollsForIDs(ids,{
       isReroll: false,
       prev: Campaign().get('turnorder'),
-      manualBonus: parseFloat(options && options.manualBonus)||0
+      manualBonus: parseFloat(options && options.manualBonus)||0,
+      context: { with: normalizeWith(options && options.with) }
     }), 0);
   }
 };
@@ -1389,7 +1427,7 @@ const makeRollsForIDs = async (ids,options={}) => {
     .map(async g => {
       g.roll=[];
 
-      let {bonus,rolladj} = await findInitiativeBonus(g.character||{},g.token);
+      let {bonus,rolladj} = await findInitiativeBonus(g.character||{},g.token, options.context||{with:[]});
       bonus = (isString(bonus) ? (bonus.trim().length ? bonus : '0') : bonus);
       g.roll.push(bonus);
 
@@ -1508,7 +1546,8 @@ const handleInput = async (msg_orig) => {
     cont=false,
     manualBonus=0,
     manualBonusMin=0,
-    isReroll=false
+    isReroll=false,
+    rollContext={ with: [] }
   ;
   const who=(getObj('player',msg.playerid)||{get:()=>'API'}).get('_displayname');
 
@@ -1542,6 +1581,14 @@ const handleInput = async (msg_orig) => {
   args = msg.content.split(/\s+--/);
   switch(args.shift()) {
     case '!group-init':
+      args = args.filter((a) => {
+        let parts = a.split(/\s+/);
+        if('with' === (parts[0]||'').toLowerCase()) {
+          rollContext.with.push(...tokenizeWords(parts.slice(1).join(' ')));
+          return false;
+        }
+        return true;
+      });
       if(args.length > 0) {
         cmds=args.shift().split(/\s+/);
 
@@ -2036,7 +2083,7 @@ const handleInput = async (msg_orig) => {
 
       if(cont) {
         if(ids.length) {
-          await makeRollsForIDs(ids,{isReroll,manualBonus,prev});
+          await makeRollsForIDs(ids,{isReroll,manualBonus,prev,context:rollContext});
         } else {
           showHelp(msg.playerid);
         }

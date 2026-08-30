@@ -8,10 +8,12 @@ API_Meta.TokenMod={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
 const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     const scriptName = "TokenMod";
-    const version = '0.8.88';
+    const version = '0.8.91';
     API_Meta.TokenMod.version = version;
-    const lastUpdate = 1773589151;
-    const schemaVersion = 0.4;
+    const lastUpdate = 1788116722;
+    const schemaVersion = 0.6;
+    const STATUS_MARKER_SOURCES = ['default', 'sheet', 'custom'];
+    const STATUS_MARKER_SOURCE_LABELS = { default: 'Default', sheet: 'Sheet', custom: 'Custom' };
 
     const fields = {
             // booleans
@@ -1236,6 +1238,9 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             getTag() {
                 return this.tag;
             }
+            getKind() {
+                return 'custom';
+            }
 
             getHTML(scale = 1.4){
                 return `<div style="width: ${scale}em; vertical-align: middle; height: ${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; padding:0;background-image: url('${this.url}');background-repeat:no-repeat; background-size: auto ${scale}em;"></div>`;
@@ -1248,8 +1253,12 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 this.color = color;
             }
 
+            getKind() {
+                return 'default';
+            }
+
             getHTML(scale = 1.4){
-                return `<div style="width: ${scale*.9}em; height: 1em; border-radius:${scale}em; display:inline-block; margin: 0 3px 0 0; border:0; background-color: ${this.color}; text-align: center; line-height: 1em;"></div>`;
+                return `<div style="width: ${scale}em; height: ${scale}em; border-radius:50%; display:inline-block; margin: 0 3px 0 0; border:0; background-color: ${this.color};"></div>`;
             }
         }
 
@@ -1260,8 +1269,12 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 this.letter = letter;
             }
 
+            getKind() {
+                return 'default';
+            }
+
             getHTML(scale = 1.4){
-                return `<div style="width: 1em; height: ${scale}em; font-size: ${scale}em; display:inline-block; margin: 0; border:0; font-weight: bold; color: ${this.color}">${this.letter}</div>`;
+                return `<div style="width: 1em; height: 1em; font-size: ${scale}em; line-height: 1em; display:inline-block; margin: 0; border:0; padding:0; font-weight: bold; color: ${this.color}; text-align: center;">${this.letter}</div>`;
             }
         }
 
@@ -1272,6 +1285,10 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 this.offset = offset;
             }
 
+            getKind() {
+                return 'default';
+            }
+
             getHTML(scale = 1.4){
                 const ratio = 2.173913;
                 const statusSheet = 'https://app.roll20.net/images/statussheet.png';
@@ -1280,31 +1297,69 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
             }
         }
 
+        class SheetTokenMarker extends TokenMarker {
+            getKind() {
+                return 'sheet';
+            }
+        }
+
+        class CustomTokenMarker extends TokenMarker {
+            getKind() {
+                return 'custom';
+            }
+        }
+
         class StatusMarkers {
 
-            static init(){
+            static resolveOrder(specified = []) {
+                const seen = [];
+                for (const s of specified || []) {
+                    if (STATUS_MARKER_SOURCES.includes(s) && !seen.includes(s)) {
+                        seen.push(s);
+                    }
+                }
+                for (const s of STATUS_MARKER_SOURCES) {
+                    if (!seen.includes(s)) {
+                        seen.push(s);
+                    }
+                }
+                return seen;
+            }
+
+            static init(order){
                 let tokenMarkers = {};
                 let orderedLookup = new Set();
                 let reverseLookup = {};
+                let currentOrder = StatusMarkers.resolveOrder(order);
 
-                const insertTokenMarker = (tm) => {
+                const insertByTag = (tm) => {
                     tokenMarkers[tm.getTag()] = tm;
-                    orderedLookup.add(tm.getTag());
+                };
 
-                    reverseLookup[tm.getName()] = reverseLookup[tm.getName()]||[];
-                    reverseLookup[tm.getName()].push(tm.getTag()); 
+                const rebuildOrderedLookups = () => {
+                    orderedLookup = new Set();
+                    reverseLookup = {};
+                    for (const kind of currentOrder) {
+                        for (const tm of Object.values(tokenMarkers)) {
+                            if (tm.getKind() === kind) {
+                                orderedLookup.add(tm.getTag());
+                                reverseLookup[tm.getName()] = reverseLookup[tm.getName()]||[];
+                                reverseLookup[tm.getName()].push(tm.getTag());
+                            }
+                        }
+                    }
                 };
 
                 const buildStaticMarkers = () => {
-                    insertTokenMarker(new ColorDotTokenMarker('red', '#C91010'));
-                    insertTokenMarker(new ColorDotTokenMarker(`blue`, '#1076c9'));
-                    insertTokenMarker(new ColorDotTokenMarker(`green`, '#2fc910'));
-                    insertTokenMarker(new ColorDotTokenMarker(`brown`, '#c97310'));
-                    insertTokenMarker(new ColorDotTokenMarker(`purple`, '#9510c9'));
-                    insertTokenMarker(new ColorDotTokenMarker(`pink`, '#eb75e1'));
-                    insertTokenMarker(new ColorDotTokenMarker(`yellow`, '#e5eb75'));
+                    insertByTag(new ColorDotTokenMarker('red', '#C91010'));
+                    insertByTag(new ColorDotTokenMarker(`blue`, '#1076c9'));
+                    insertByTag(new ColorDotTokenMarker(`green`, '#2fc910'));
+                    insertByTag(new ColorDotTokenMarker(`brown`, '#c97310'));
+                    insertByTag(new ColorDotTokenMarker(`purple`, '#9510c9'));
+                    insertByTag(new ColorDotTokenMarker(`pink`, '#eb75e1'));
+                    insertByTag(new ColorDotTokenMarker(`yellow`, '#e5eb75'));
 
-                    insertTokenMarker(new ColorTextTokenMarker('dead', 'X', '#cc1010'));
+                    insertByTag(new ColorTextTokenMarker('dead', 'X', '#cc1010'));
                 };
 
                 const buildLegacyMarkers = () => {
@@ -1321,25 +1376,54 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         'grab', 'screaming', 'grenade', 'sentry-gun', 'all-for-one',
                         'angel-outfit', 'archery-target'
                     ];
-                    legacyNames.forEach( (n,i)=>insertTokenMarker(new ImageStripTokenMarker(n,i)));
+                    legacyNames.forEach( (n,i)=>insertByTag(new ImageStripTokenMarker(n,i)));
                 };
 
                 const readTokenMarkers = () => {
-                    JSON.parse(Campaign().get('_token_markers')||'[]').forEach( tm => insertTokenMarker(new TokenMarker(tm.name, tm.tag, tm.url)));
+                    JSON.parse(Campaign().get('_token_markers')||'[]').forEach( tm => {
+                        const MarkerClass = (tm.tag||'').startsWith('sheet-') ? SheetTokenMarker : CustomTokenMarker;
+                        insertByTag(new MarkerClass(tm.name, tm.tag, tm.url));
+                    });
                 };
 
-                StatusMarkers.getStatus = (keyOrName) => {
+                StatusMarkers.getStatus = (keyOrName, opts = {}) => {
+                    if(opts.byTag){
+                        if(tokenMarkers.hasOwnProperty(keyOrName)){
+                            return tokenMarkers[keyOrName];
+                        }
+                        return;
+                    }
+                    if(reverseLookup.hasOwnProperty(keyOrName)){
+                        return tokenMarkers[reverseLookup[keyOrName][0]];
+                    }
                     if(tokenMarkers.hasOwnProperty(keyOrName)){
                         return tokenMarkers[keyOrName];
                     }
-                    if(reverseLookup.hasOwnProperty(keyOrName)){
-                        return tokenMarkers[reverseLookup[keyOrName][0]]; // returning first one...
-                    }
-                    // maybe return a null status marker object?
                 };
 
                 StatusMarkers.getOrderedList = () => {
                     return [...orderedLookup].map( key => tokenMarkers[key]);
+                };
+
+                StatusMarkers.getOrder = () => {
+                    return [...currentOrder];
+                };
+
+                StatusMarkers.setOrder = (nextOrder) => {
+                    currentOrder = StatusMarkers.resolveOrder(nextOrder);
+                    rebuildOrderedLookups();
+                };
+
+                StatusMarkers.getMarkerHash = () => {
+                    const sig = Object.values(tokenMarkers)
+                        .map((tm) => `${tm.getName()}|${tm.getTag()}|${tm.url||''}`)
+                        .sort()
+                        .join('\n');
+                    let h = 5381;
+                    for (let i = 0; i < sig.length; i++) {
+                        h = Math.imul(h, 33) ^ sig.charCodeAt(i);
+                    }
+                    return (h >>> 0).toString(16);
                 };
 
                 const simpleObj = o => JSON.parse(JSON.stringify(o||'{}'));
@@ -1351,6 +1435,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 } else {
                     buildLegacyMarkers();
                 }
+                rebuildOrderedLookups();
             }
         }
 
@@ -1411,8 +1496,13 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                 }
 
                 stat = ( op ? stat.substring(1) : stat);
+                let byTag = false;
+                if('$' === stat[0]){
+                    byTag = true;
+                    stat = stat.substring(1);
+                }
 
-                let tokenMarker = StatusMarkers.getStatus(stat);
+                let tokenMarker = StatusMarkers.getStatus(stat, {byTag});
 
                 if(tokenMarker) {
                     return new statusOp(
@@ -1799,6 +1889,14 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                   state.TokenMod.lastHelpVersion = version;
                   /* falls through */
 
+                case 0.4:
+                  state.TokenMod.statusMarkerOrder = [...STATUS_MARKER_SOURCES];
+                  /* falls through */
+
+                case 0.5:
+                  state.TokenMod.statusMarkersHash = '';
+                  /* falls through */
+
                 case 'UpdateSchemaVersion':
                     state.TokenMod.version = schemaVersion;
                     break;
@@ -1808,14 +1906,24 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         version: schemaVersion,
                         globalconfigCache: {lastsaved:0},
                         playersCanUse_ids: false,
-                        lastHelpVersion: version
+                        lastHelpVersion: version,
+                        statusMarkerOrder: [...STATUS_MARKER_SOURCES],
+                        statusMarkersHash: ''
                     };
                     break;
             }
         }
+        if(!Array.isArray(state.TokenMod.statusMarkerOrder) || !state.TokenMod.statusMarkerOrder.length){
+            state.TokenMod.statusMarkerOrder = [...STATUS_MARKER_SOURCES];
+        } else {
+            state.TokenMod.statusMarkerOrder = StatusMarkers.resolveOrder(state.TokenMod.statusMarkerOrder);
+        }
         checkGlobalConfig();
-        StatusMarkers.init();
-        assureHelpHandout();
+        StatusMarkers.init(state.TokenMod.statusMarkerOrder);
+        const markerHash = StatusMarkers.getMarkerHash();
+        const markersChanged = markerHash !== state.TokenMod.statusMarkersHash;
+        state.TokenMod.statusMarkersHash = markerHash;
+        assureHelpHandout(markersChanged);
     };
 
     const observeTokenChange = function(handler){
@@ -1929,6 +2037,37 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
 
     };
 
+    const promotedStatusMarkerOrder = (order, kind) => {
+        const next = [...order];
+        const i = next.indexOf(kind);
+        if (i > 0) {
+            const swap = next[i-1];
+            next[i-1] = next[i];
+            next[i] = swap;
+        }
+        return next;
+    };
+
+    const statusMarkerPromoteButton = (order, kind) => {
+        const i = order.indexOf(kind);
+        if (i <= 0) {
+            return '';
+        }
+        const href = `!token-mod --config status-marker-order|${promotedStatusMarkerOrder(order, kind).join('|')}`;
+        return `<a style="border: 1px solid #cccccc; border-radius: .5em; background-color: #006dcc; margin: 0 .1em; font-weight: bold; padding: .1em .25em; color: white;" href="${href}">&#11165;</a>`;
+    };
+
+    const getConfigOption_StatusMarkerOrder = function() {
+        const order = state.TokenMod.statusMarkerOrder || STATUS_MARKER_SOURCES;
+        const rows = order.map((kind, idx) => {
+            const btn = idx > 0
+                ? `<span style="display:inline-block; margin-left:2.5em; vertical-align:middle;">${statusMarkerPromoteButton(order, kind)}</span>`
+                : '';
+            return `<div style="padding:.15em 0 .15em 3em;"><span style="display:inline-block; min-width:5em; font-weight:bold; vertical-align:middle;">${STATUS_MARKER_SOURCE_LABELS[kind]||kind}</span>${btn}</div>`;
+        });
+        return `<div>Status marker order:${rows.join('')}</div>`;
+    };
+
     const _h = {
         outer: (...o) => `<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">${o.join(' ')}</div>`,
         title: (t,v) => `<div style="font-weight: bold; border-bottom: 1px solid black;font-size: 130%;">${t} v${v}</div>`,
@@ -1946,8 +2085,14 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
         grid: (...o) => `<div style="padding: 12px 0;">${o.join('')}<div style="clear:both;"></div></div>`, 
         cell: (o) =>  `<div style="width: 200px; padding: 0 3px; float: left;">${o}</div>`,
         statusCell: (o) =>  {
-            let text = `${o.getName()}${o.getName()!==o.getTag()?` [${_h.code(o.getTag())}]`:''}`;
-            return `<div style="width: auto; padding: .2em; margin: .1em .25em; border: 1px solid #ccc; border-radius: .25em; background-color: #eee; line-height:1.5em; height: auto;float:left;">${o.getHTML()}${text}</div>`;
+            const tagLabel = 'default'===o.getKind() ? `$${o.getName()}` : o.getTag();
+            return `<div style="float:left; height:2.8em; overflow:hidden; padding:.2em; margin:.1em .25em; border:1px solid #ccc; border-radius:.25em; background-color:#eee;">`+
+                `<div style="display:inline-block; vertical-align:middle; width:2.4em; height:2.4em; overflow:hidden; text-align:center;">${o.getHTML(2.4)}</div>`+
+                `<div style="display:inline-block; vertical-align:middle; line-height:1.2em; padding-left:.3em;">`+
+                    `<div style="font-size:1.1em">${o.getName()}</div>`+
+                    `<div>${_h.code(tagLabel)}</div>`+
+                `</div>`+
+            `</div>`;
         },
         helpHandoutLink: ()=>{
           let props = {type:'handout', name:`Help: ${scriptName}`};
@@ -2262,7 +2407,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             _h.pre( '!token-mod --set night_vision_effect|dimming|+10%' ),
                             _h.pre( '!token-mod --set night_vision_effect|dimming|-5ft' ),
                             _h.pre( '!token-mod --set night_vision_effect|dimming|/2' ),
-                            _h.pre( '!token-mod --set night_vision_effect|dimming|*10' )
+                            _h.pre( `!token-mod --set night_vision_effect|dimming|${ch('*')}10` )
                         ),
                         _h.paragraph(`Disable any Night Vision Effects on a token:`),
                         _h.inset(
@@ -2411,7 +2556,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         ),
                         _h.paragraph( `${_h.code('scale')} is a pseudo field which adjusts both ${_h.code('width')} and ${_h.code('height')} with the same operation.  This will scale a token to twice it's current size.`),
                         _h.inset(
-                            _h.pre( '!token-mod --set scale|*2' )
+                            _h.pre( `!token-mod --set scale|${ch('*')}2` )
                         ),
                         _h.paragraph(`You can follow a number by one of ${_h.code('u')}, ${_h.code('g')}, or ${_h.code('s')} to adjust the scale that the number is applied in.`),
                         _h.paragraph(`Use ${_h.code('u')} to use a number based on Roll20 Units, which are 70 pixels at 100% zoom.  This will set a graphic to 280x140.`),
@@ -2669,14 +2814,28 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     )
                 )
             ),
-        availableStatusMarkers: (/* context */) => _h.join(
-                    _h.minorhead('Available Status Markers:'),
-                    _h.inset(
-                        _h.grid(
-                            ...StatusMarkers.getOrderedList().map(tm=>_h.statusCell(tm))
-                        )
-                    )
-            ),
+        availableStatusMarkers: (context) => {
+                    const order = StatusMarkers.getOrder();
+                    const list = StatusMarkers.getOrderedList();
+                    const showPromote = playerIsGM(context.playerid);
+                    const blocks = order.map((kind, idx) => {
+                        const markers = list.filter((tm)=>tm.getKind()===kind);
+                        if(!markers.length){
+                            return '';
+                        }
+                        const promote = (showPromote && idx > 0)
+                            ? `<div style="float:right;">${statusMarkerPromoteButton(order, kind)}</div>`
+                            : '';
+                        return _h.join(
+                            `<div style="clear:both;">${promote}${_h.minorhead(STATUS_MARKER_SOURCE_LABELS[kind]||kind)}</div>`,
+                            _h.grid(...markers.map((tm)=>_h.statusCell(tm)))
+                        );
+                    }).filter((b)=>b);
+                    return _h.join(
+                        _h.minorhead('Available Status Markers:'),
+                        _h.inset(...blocks)
+                    );
+            },
         setStatus: ( context ) => _h.join(
                 _h.subhead('Status'),
                 _h.inset(
@@ -2774,6 +2933,12 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                     _h.inset(
                         _h.pre('!token-mod --set statusmarkers|blue:3|-dead|red:3')
                     ),
+                    _h.paragraph(`You can preface a status with ${_h.code('$')} to treat it as a tag rather than a name. This is useful when a sheet or custom marker shares a name with a built-in marker such as ${_h.code('dead')}. The ${_h.code('$')} comes after any operation:`),
+                    _h.inset(
+                        _h.pre('!token-mod --set statusmarkers|$dead'),
+                        _h.pre('!token-mod --set statusmarkers|!$dead')
+                    ),
+
                     helpParts.availableStatusMarkers(context),
                     _h.paragraph(`Status Markers with a space in the name must be specified using the tag name, which appears in ${_h.code('[')}${_h.code(']')} above.`),
                     _h.inset(
@@ -3237,10 +3402,14 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         ),
                         _h.minorhead('Available Configuration Properties:'),
                         _h.ul(
-                            `${_h.bold('players-can-ids')} -- Determines if players can use <i>--ids</i>.  Specifying a value which is true allows players to use --ids.  Omitting a value flips the current setting. `
+                            `${_h.bold('players-can-ids')} -- Determines if players can use <i>--ids</i>.  Specifying a value which is true allows players to use --ids.  Omitting a value flips the current setting. `,
+                            `${_h.bold('status-marker-order')} -- Sets the order used when a status is specified by name and more than one marker shares that name. Values are ${_h.code('default')}, ${_h.code('sheet')}, and ${_h.code('custom')}. Omitted values are filled in using the default remainder order (${_h.code('default')}, ${_h.code('sheet')}, ${_h.code('custom')}). Specifying only ${_h.code('custom')} results in custom, default, sheet.`
                         ),
                         ( playerIsGM(context.playerid)
-                            ?  _h.paragraph(getConfigOption_PlayersCanIDs())
+                            ?  _h.join(
+                                _h.paragraph(getConfigOption_PlayersCanIDs()),
+                                _h.paragraph(getConfigOption_StatusMarkerOrder())
+                            )
                             : ''
                         )
                     )
@@ -4092,6 +4261,24 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                             '</div>'
                         );
                         break;
+                    case 'status-marker-order': {
+                        let unknown = args.filter((a)=>a && !STATUS_MARKER_SOURCES.includes(a));
+                        state.TokenMod.statusMarkerOrder = StatusMarkers.resolveOrder(args);
+                        StatusMarkers.setOrder(state.TokenMod.statusMarkerOrder);
+                        assureHelpHandout(true);
+                        sendChat('','/w "'+who+'" '+
+                            '<div style="border: 1px solid black; background-color: white; padding: 3px 3px;">'+
+                                getConfigOption_StatusMarkerOrder()+
+                                (unknown.length
+                                    ? '<div style="padding:1px 3px;margin-top:3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
+                                        '<span style="font-weight:bold;color:#990000;">Ignored:</span> '+
+                                        'Unknown status-marker-order value'+ (unknown.length>1?'s':'') +' ['+unknown.join(', ')+']'+
+                                      '</div>'
+                                    : '')+
+                            '</div>'
+                        );
+                        break;
+                    }
                     default:
                         sendChat('', '/w "'+who+'" '+
                             '<div style="padding:1px 3px;border: 1px solid #8B4513;background: #eeffee; color: #8B4513; font-size: 80%;">'+
@@ -4109,6 +4296,7 @@ const TokenMod = (() => { // eslint-disable-line no-unused-vars
                         'TokenMod v'+version+
                     '</div>'+
                     getConfigOption_PlayersCanIDs()+
+                    getConfigOption_StatusMarkerOrder()+
                 '</div>'
             );
         }
@@ -4370,7 +4558,11 @@ const OutputDebugInfo = (msg,ids /*, modlist, badCmds */) => {
 
     const registerEventHandlers = function() {
         on('chat:message', handleInput);
-        on('change:campaign:_token_markers',()=>StatusMarkers.init());
+        on('change:campaign:_token_markers',()=>{
+            StatusMarkers.init(state.TokenMod.statusMarkerOrder);
+            state.TokenMod.statusMarkersHash = StatusMarkers.getMarkerHash();
+            assureHelpHandout(true);
+        });
     };
 
     on("ready",() => {
