@@ -133,6 +133,10 @@ const TokenLock = (() => { // eslint-disable-line no-unused-vars
 				switch(args.shift()) {
 					case 'lock':
                         state.TokenLock.locked=true;
+                        if (args.includes('--moveOnly')) {
+                            state.TokenLock.lockedMoveOnly=true;
+                        }
+
                         sendChat('TokenLock','/w gm ' +
                             getCommandOption_ToggleLock()
                         );
@@ -141,6 +145,7 @@ const TokenLock = (() => { // eslint-disable-line no-unused-vars
 
 					case 'unlock':
                         state.TokenLock.locked=false;
+                        state.TokenLock.lockedMoveOnly=false;
                         sendChat('TokenLock','/w gm ' +
                             getCommandOption_ToggleLock()
                         );
@@ -216,11 +221,11 @@ const TokenLock = (() => { // eslint-disable-line no-unused-vars
             );
 
 			if('' !== obj.get('controlledby')) {
-				obj.set({left: prev.left, top: prev.top, rotation: prev.rotation});	
+				obj.set({left: prev.left, top: prev.top, rotation: (state.TokenLock.lockedMoveOnly ? obj.rotation : prev.rotation)});
 			} else if('' !== obj.get('represents') ) {
 				let character = getObj('character',obj.get('represents'));
 				if( character && character.get('controlledby') ) {
-					obj.set({left: prev.left, top: prev.top, rotation: prev.rotation});	
+					obj.set({left: prev.left, top: prev.top, rotation: (state.TokenLock.lockedMoveOnly ? obj.rotation : prev.rotation)});
 				}
 			}
 		}
@@ -252,7 +257,8 @@ const TokenLock = (() => { // eslint-disable-line no-unused-vars
                         config: {
                             allowMoveOnTurn: false
                         },
-                        locked: false
+                        locked: false,
+                        lockedMoveOnly: false
                     };
             }
 		} 
