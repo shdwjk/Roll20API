@@ -9,8 +9,8 @@
 
 var TurnMarker = TurnMarker || (function(){
     "use strict";
-    
-    var version = '1.3.12',
+
+    var version = '1.3.12a',
         lastUpdate = 1643855734,
         schemaVersion = 1.18,
         active = false,
@@ -38,7 +38,7 @@ var TurnMarker = TurnMarker || (function(){
         }
     },
 
-    checkInstall = function() {    
+    checkInstall = function() {
         log('-=> TurnMarker v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
 
         if( ! state.hasOwnProperty('TurnMarker') || state.TurnMarker.version !== schemaVersion) {
@@ -298,18 +298,18 @@ var TurnMarker = TurnMarker || (function(){
                 break;
 
             case "!eot":
-                requestTurnAdvancement(msg.playerid);   
+                requestTurnAdvancement(msg.playerid);
                 break;
             case "!pot":
-                requestTurnRetreat(msg.playerid);   
+                requestTurnRetreat(msg.playerid);
                 break;
         }
     },
 
-    getMarker = function(){  
+    getMarker = function(){
         var marker = findObjs({
             imgsrc: state.TurnMarker.tokenURL,
-            pageid: Campaign().get("playerpageid")    
+            pageid: Campaign().get("playerpageid")
         })[0];
 
         if (marker === undefined) {
@@ -337,7 +337,7 @@ var TurnMarker = TurnMarker || (function(){
                 _pageid: marker.get('pageid')
             });
         }
-        return marker;    
+        return marker;
     },
 
     stepAnimation = function( sync ){
@@ -371,7 +371,7 @@ var TurnMarker = TurnMarker || (function(){
             current = _.first(turnOrder);
             if( obj && current && current.id === obj.id) {
                threadSync++;
-                
+
                 marker = getMarker();
                 marker.set({
                     lastmove: obj.get('lastmove'),
@@ -379,7 +379,7 @@ var TurnMarker = TurnMarker || (function(){
                     top: obj.get("top"),
                     left: obj.get("left")
                 });
-                
+
                setTimeout(_.bind(stepAnimation,this,threadSync), 300);
             }
         }
@@ -429,11 +429,11 @@ var TurnMarker = TurnMarker || (function(){
     announceRound = function(round){
         if(state.TurnMarker.announceRounds) {
             sendChat(
-                '', 
+                '',
                 "/direct "+
                 "<div style='"+
-                    'background-color: #4B0082;'+
-                    'border: 3px solid #808080;'+
+                    'background-color: #3d3d3d;'+
+                    'border-radius: 3px;'+
                     'font-size: 20px;'+
                     'text-align:center;'+
                     'vertical-align: top;'+
@@ -445,20 +445,20 @@ var TurnMarker = TurnMarker || (function(){
                     "Round "+ round +
                     "<img src='"+state.TurnMarker.tokenURL+"' style='width:20px; height:20px; padding: 0px 5px;' />"+
                 "</div>"+
-                '<a style="position:relative;z-index:10000; top:-1em; float: right;font-size: .6em; color: white; border: 1px solid #cccccc; border-radius: 1em; margin: 0 .1em; font-weight: bold; padding: .1em .4em;" href="!tm reset ?{Round number|0}">Reset &'+'#x21ba;</a>'
+                '<a style="position:relative;z-index:10000; top:-3.1em; float: right;font-size: .6em; color: white; border: 0px; border-radius: 3px; margin: 0 .1em; font-weight: bold; padding: .1em .4em;background-color:#616161;right:5px;" href="!tm reset ?{Round number|0}">Reset &'+'#x21ba;</a>'
             );
         }
     },
 
     turnOrderChange = function(FirstTurnChanged,backwards=false){
         var marker = getMarker();
-                    
+
         if( !Campaign().get('initiativepage') ) {
             return;
         }
-        
+
         var turnOrder = TurnOrder.Get();
-        
+
         if (!turnOrder.length) {
             return;
         }
@@ -469,11 +469,11 @@ var TurnMarker = TurnMarker || (function(){
             threadSync++;
             setTimeout(_.bind(stepAnimation,this,threadSync), 300);
         }
-        
+
         if (current.id === "-1") {
             return;
         }
-      
+
         handleMarkerTurn(backwards);
 
         if(state.TurnMarker.autoskipHidden) {
@@ -488,7 +488,7 @@ var TurnMarker = TurnMarker || (function(){
         }
 
         current = _.first(TurnOrder.Get());
-        
+
         var currentToken = getObj("graphic", turnOrder[0].id),
             currentChar = getObj('character', (currentToken||{get:_.noop}).get('represents'));
         if(currentToken) {
@@ -496,9 +496,9 @@ var TurnMarker = TurnMarker || (function(){
             if(FirstTurnChanged) {
                 handleAnnounceTurnChange();
             }
-            
+
             var size = Math.max(currentToken.get("height"),currentToken.get("width")) * state.TurnMarker.scale;
-              
+
             if (marker.get("layer") === "gmlayer" && currentToken.get("layer") !== "gmlayer") {
                 marker.set({
                     lastmove:`${marker.get('left')},${marker.get('top')}`,
@@ -510,7 +510,7 @@ var TurnMarker = TurnMarker || (function(){
                 setTimeout(function() {
                     marker.set({
                         "layer": currentToken.get("layer")
-                    });    
+                    });
                 }, 500);
             } else {
                 marker.set({
@@ -520,7 +520,7 @@ var TurnMarker = TurnMarker || (function(){
                     left: currentToken.get("left"),
                     height: size,
                     width: size
-                });   
+                });
             }
             toFront(currentToken);
 
@@ -611,38 +611,42 @@ var TurnMarker = TurnMarker || (function(){
                     token.get('layer') !== 'gmlayer' &&
                     element.id !== marker.id;
             }));
-            
+
             /* find previous token. */
             var previousToken = getObj("graphic", previousTurn.id);
             var pImage=previousToken.get('imgsrc');
             var cImage=currentToken.get('imgsrc');
             var pRatio=previousToken.get('width')/previousToken.get('height');
             var cRatio=currentToken.get('width')/currentToken.get('height');
-            
-            var pNameString="The Previous turn is done.";
+
+            var pNameString='<span style=\''+
+                    'font-weight: bold;'+
+                '\'>'+
+                    previousToken.get('name')+
+                '</span>\'s turn is done.';
             if(previousToken && previousToken.get('showplayers_name')) {
                 pNameString='<span style=\''+
-                        'font-family: Baskerville, "Baskerville Old Face", "Goudy Old Style", Garamond, "Times New Roman", serif;'+
-                        'text-decoration: underline;'+
-                        'font-size: 130%;'                        +
+                        'font-weight: bold;'+
                     '\'>'+
                         previousToken.get('name')+
-                    '</span>\'s turn is done.';                
+                    '</span>\'s turn is done.';
             }
-            
-            var cNameString='The next turn has begun!';
+
+            var cNameString='<span style=\''+
+                'font-weight: bold;'+
+            '\'>'+
+                currentToken.get('name')+
+            '</span> it\'s now your turn!';
             if(currentToken && currentToken.get('showplayers_name')) {
                 cNameString='<span style=\''+
-                    'font-family: Baskerville, "Baskerville Old Face", "Goudy Old Style", Garamond, "Times New Roman", serif;'+
-                    'text-decoration: underline;'+
-                    'font-size: 130%;'+
+                    'font-weight: bold;'+
                 '\'>'+
                     currentToken.get('name')+
-                '</span>, it\'s now your turn!';
+                '</span> it\'s now your turn!';
             }
- 
-            
-            var PlayerAnnounceExtra='<a style="position:relative;z-index:10000; top:-1em;float: left;font-size: .6em; color: white; border: 1px solid #cccccc; border-radius: 1em; margin: 0 .1em; font-weight: bold; padding: .1em .4em;" href="!pot">&'+'#x23ea; POT</a><a style="position:relative;z-index:10000; top:-1em;float: right;font-size: .6em; color: white; border: 1px solid #cccccc; border-radius: 1em; margin: 0 .1em; font-weight: bold; padding: .1em .4em;" href="!eot">EOT &'+'#x23e9;</a>';
+
+
+            var PlayerAnnounceExtra='<a style="float: left;font-size: 1em;color: #b6b6b6;border: 0px;border-radius: 3em;margin: 0 0.1em;font-weight: bold;padding: 0.25em 1em;background-color: transparent;text-decoration: none;position: absolute;top: 65px;" href="!pot">&'+'#x276E; Prev</a><a style="font-size: 1em;color: #f1672c;border: 0px;border-radius: 3em;margin: 0 0.1em;font-weight: bold;padding: 0.25em 1em;background-color: transparent;text-decoration: none;position: absolute;top: 65px;right: 0px;" href="!eot">Next &'+'#x276F;</a>';
             if(state.TurnMarker.announcePlayerInTurnAnnounce) {
                 var Char=currentToken.get('represents');
                 if(Char) {
@@ -662,6 +666,7 @@ var TurnMarker = TurnMarker || (function(){
                                             'color: black;'+
                                             'letter-spacing: 3px;'+
                                             'line-height: 130%;'+
+                                            'display:none;'+
                                         '">'+
                                             'All'+
                                         '</div>';
@@ -684,6 +689,7 @@ var TurnMarker = TurnMarker || (function(){
                                                     ' 1px  1px 1px #000;'+
                                                 'letter-spacing: 3px;'+
                                                 'line-height: 130%;'+
+                                                'display:none;'+
                                             '">'+
                                                 PlayerName+
                                             '</div>';
@@ -694,23 +700,23 @@ var TurnMarker = TurnMarker || (function(){
                     }
                 }
             }
-            
+
             var tokenSize=70;
             sendChat(
-                '', 
+                '',
                 "/direct "+
-                "<div style='border: 3px solid #808080; background-color: #4B0082; color: white; padding: 1px 1px;'>"+
-                    '<div style="text-align: left;  margin: 5px 5px;">'+
-                        '<a style="position:relative;z-index:1000;float:left; background-color:transparent;border:0;padding:0;margin:0;display:block;" href="!tm ping-target '+previousToken.id+'">'+
-                            "<img src='"+pImage+"' style='width:"+Math.round(tokenSize*pRatio)+"px; height:"+tokenSize+"px; padding: 0px 2px;' />"+
+                "<div style='border: 1px solid #808080; border-radius: 3px; color: #3d3d3d; padding: 1px 1px; box-sizing: border-box; position:relative;'>"+
+                    '<div style="font-size: 80%;background: #ccc;color: #8c8c8c;width: 100%;">'+
+                        '<a style="background-color: transparent;border: 0;padding: 0;margin: 0;display: inline-block;vertical-align: middle;" href="!tm ping-target '+previousToken.id+'">'+
+                            "<img src='"+pImage+"' style='width:25px; height:25px; padding: 2px 5px;;' />"+
                         '</a>'+
                          pNameString+
                     '</div>'+
-                    '<div style="text-align: right; margin: 5px 5px; position: relative; vertical-align: text-bottom;">'+
-                        '<a style="position:relative;z-index:1000;float:right; background-color:transparent;border:0;padding:0;margin:0;display:block;" href="!tm ping-target '+currentToken.id+'">'+
+                    '<div style="text-align: center;padding:1rem 0;">'+
+                        '<a style="display: block;background: none;border: 0px;" href="!tm ping-target '+currentToken.id+'">'+
                             "<img src='"+cImage+"' style='width:"+Math.round(tokenSize*cRatio)+"px; height:"+tokenSize+"px; padding: 0px 2px;' />"+
                         '</a>'+
-                         '<span style="position:absolute; bottom: 0;right:'+Math.round((tokenSize*cRatio)+6)+'px;">'+
+                         '<span style="">'+
                             cNameString+
                          '</span>'+
                         '<div style="clear:both;"></div>'+
@@ -726,7 +732,7 @@ var TurnMarker = TurnMarker || (function(){
         threadSync++;
 
         var marker = getMarker();
-        
+
         marker.set({
             layer: "gmlayer",
             aura1_radius: '',
@@ -746,13 +752,13 @@ var TurnMarker = TurnMarker || (function(){
             marker.set({
                 aura1_radius: state.TurnMarker.aura1.size,
                 aura1_color: state.TurnMarker.aura1.color
-            });   
+            });
         }
         if(state.TurnMarker.playAnimations && state.TurnMarker.aura2.pulse) {
             marker.set({
                 aura2_radius: state.TurnMarker.aura2.size,
                 aura2_color: state.TurnMarker.aura2.color
-            });   
+            });
         }
         active=true;
         stepAnimation(threadSync);
@@ -765,7 +771,7 @@ var TurnMarker = TurnMarker || (function(){
             startMarker();
         }
     },
-    registerEventHandlers = function(){        
+    registerEventHandlers = function(){
         on("change:campaign:initiativepage", dispatchInitiativePage );
         on("change:campaign:turnorder", handleTurnOrderChange );
         on("change:graphic:lastmove", checkForTokenMove );
@@ -787,7 +793,7 @@ var TurnMarker = TurnMarker || (function(){
 on("ready",function(){
     'use strict';
 
-	TurnMarker.CheckInstall(); 
+	TurnMarker.CheckInstall();
 	TurnMarker.RegisterEventHandlers();
 });
 
@@ -797,7 +803,7 @@ var TurnOrder = TurnOrder || (function() {
     return {
         Get: function(){
             var to=Campaign().get("turnorder");
-            to=(''===to ? '[]' : to); 
+            to=(''===to ? '[]' : to);
             return JSON.parse(to);
         },
         Set: function(turnOrder){
@@ -872,4 +878,3 @@ Array.prototype.rotate = (function() {
         return this;
     };
 }());
-
